@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lecturers | Academic System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="assets/style.css" rel="stylesheet">
+</head>
+<body>
+  <div id="app"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="assets/app.js"></script>
+  <script>
+crud({
+  page: 'lecturers', title: 'Lecturers', table: 'lecturers', order: 'full_name',
+  exportName: 'lecturers', nameKey: 'full_name',
+  columns: ['full_name', 'phone_number', 'bachelor_degree', 'master_degree', 'doctoral_degree', 'cv_url'],
+  fields: [
+    { key: 'full_name', label: 'Full Name', required: true },
+    { key: 'date_of_birth', label: 'Date of Birth', type: 'date' },
+    { key: 'phone_number', label: 'Phone Number', type: 'tel', max: 30 },
+    { key: 'bank_account', label: 'Bank Account' },
+    { key: 'address', label: 'Address', type: 'textarea', wide: true },
+    { key: 'bachelor_degree', label: 'Bachelor Degree' },
+    { key: 'master_degree', label: 'Master Degree' },
+    { key: 'doctoral_degree', label: 'Doctoral Degree' },
+    { key: 'other_degree', label: 'Other Degrees' },
+    { key: 'work_experience', label: 'Work Experience', type: 'textarea', wide: true },
+    { key: 'organization_experience', label: 'Organization Experience', type: 'textarea', wide: true },
+    { key: 'photo_url', label: 'Photo URL', type: 'url' },
+    { key: 'cv_url', label: 'URL CV', type: 'url' },
+  ],
+});
+  </script>
+</body>
+</html>

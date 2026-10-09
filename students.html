@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Students | Academic System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="assets/style.css" rel="stylesheet">
+</head>
+<body>
+  <div id="app"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="assets/app.js"></script>
+  <script>
+crud({
+  page: 'students', title: 'Students', table: 'students', order: 'full_name',
+  exportName: 'students', nameKey: 'full_name',
+  columns: ['student_id', 'full_name', 'academic_year', 'study_program', 'faculty', 'student_status', 'phone_number'],
+  filters: [{ key: 'academic_year', label: 'Academic Year' }],
+  fields: [
+    { section: 'Personal Data', key: 'full_name', label: 'Full Name', required: true },
+    { key: 'student_id', label: 'NIM', required: true, max: 50 },
+    { key: 'place_of_birth', label: 'Place of Birth' },
+    { key: 'date_of_birth', label: 'Date of Birth', type: 'date' },
+    { key: 'gender', label: 'Gender', type: 'select', options: [['Male', 'Male'], ['Female', 'Female']] },
+    { key: 'religion', label: 'Religion', max: 30, suggest: ['Islam', 'Christianity', 'Catholicism', 'Hinduism', 'Buddhism', 'Confucianism'] },
+    { key: 'nationality', label: 'Nationality', max: 50 },
+    { key: 'national_id', label: 'National ID', max: 30 },
+    { key: 'phone_number', label: 'Phone Number', type: 'tel', max: 30 },
+    { key: 'email', label: 'Email', type: 'email', max: 100 },
+    { key: 'full_address', label: 'Full Address', type: 'textarea', wide: true },
+
+    { section: 'Parents/Guardian Information', key: 'father_name', label: 'Father\'s Name' },
+    { key: 'mother_name', label: 'Mother\'s Name' },
+    { key: 'father_phone_number', label: 'Father\'s Phone Number', type: 'tel', max: 30 },
+    { key: 'mother_phone_number', label: 'Mother\'s Phone Number', type: 'tel', max: 30 },
+    { key: 'father_occupation', label: 'Father\'s Occupation' },
+    { key: 'mother_occupation', label: 'Mother\'s Occupation' },
+    { key: 'father_income', label: 'Father\'s Income' },
+    { key: 'mother_income', label: 'Mother\'s Income' },
+    { key: 'guardian_name', label: 'Guardian\'s Name' },
+    { key: 'guardian_phone_number', label: 'Guardian\'s Phone Number', type: 'tel', max: 30 },
+    { key: 'guardian_relationship', label: 'Guardian\'s Relationship' },
+
+    { section: 'Academic Information', key: 'study_program', label: 'Study Program' },
+    { key: 'faculty', label: 'Faculty' },
+    { key: 'academic_year', label: 'Academic Year', max: 10, pattern: '[0-9]{4}/[0-9]{4}', hint: '2025/2026' },
+    { key: 'student_status', label: 'Student Status', max: 30, suggest: ['Active', 'Inactive', 'On Leave', 'Graduated', 'Dropped Out'] },
+
+    { section: 'Internship Information', key: 'company_name', label: 'Company Name' },
+    { key: 'internship_position', label: 'Internship Position' },
+    { key: 'company_address', label: 'Company Address', type: 'textarea', wide: true },
+    { key: 'internship_start_date', label: 'Internship Start Date', type: 'date' },
+    { key: 'internship_end_date', label: 'Internship End Date', type: 'date' },
+    { key: 'field_supervisor', label: 'Field Supervisor' },
+    { key: 'academic_advisor', label: 'Academic Advisor' },
+  ],
+});
+  </script>
+</body>
+</html>

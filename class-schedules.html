@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Class Schedule | Academic System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="assets/style.css" rel="stylesheet">
+</head>
+<body>
+  <div id="app"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="assets/app.js"></script>
+  <script>
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+crud({
+  page: 'jadwal', title: 'Class Schedule', table: 'class_schedules', order: 'created_at',
+  exportName: 'class-schedules', nameKey: 'subject_name',
+  sort: (a, b) => DAYS.indexOf(a.day_of_week) - DAYS.indexOf(b.day_of_week) || (a.start_time || '').localeCompare(b.start_time || ''),
+  columns: ['day_of_week', 'start_time', 'end_time', 'subject_code', 'subject_name', 'subject_credit', 'lectures', 'room'],
+  filters: [{ key: 'batch', label: 'Batch' }, { key: 'academic_year', label: 'Academic Year' }, { key: 'semester', label: 'Semester' }],
+  fields: [
+    { key: 'subject_name', label: 'Subject', required: true },
+    { key: 'subject_code', label: 'Subject Code', type: 'number' },
+    { key: 'subject_credit', label: 'Credit Hours', type: 'number' },
+    { key: 'lectures', label: 'Lecturer' },
+    { key: 'batch', label: 'Batch', max: 20 },
+    { key: 'academic_year', label: 'Academic Year', max: 20, hint: '2025/2026' },
+    { key: 'semester', label: 'Semester', max: 10 },
+    { key: 'day_of_week', label: 'Day', type: 'select', options: [['Monday', 'Monday'], ['Tuesday', 'Tuesday'], ['Wednesday', 'Wednesday'], ['Thursday', 'Thursday'], ['Friday', 'Friday'], ['Saturday', 'Saturday'], ['Sunday', 'Sunday']] },
+    { key: 'room', label: 'Room', max: 50 },
+    { key: 'start_time', label: 'Start Time', type: 'time' },
+    { key: 'end_time', label: 'End Time', type: 'time' },
+  ],
+});
+  </script>
+</body>
+</html>
