@@ -1,0 +1,54 @@
+id,semester,kode,nama_en,nama_id,sks,rumpun,jenis_pengampu,pengampu,mitra,mode,trent_code,obe
+mk_19z6pt,1,MJU231001,Business Practice 1,Praktik Bisnis 1,2,MKI,Ikut Fakultas,Team Teaching Fakultas,Asia,Onsite,,true
+mk_2o4k19,1,MJF231002,Micro Economy,Ekonomi Mikro,3,MKF,Dosen Internal,"Risa Santoso, B.A., M.Ed.",Asia,Onsite,,true
+mk_3hmlji,1,,Intro Business Law,Pengantar Hukum Bisnis Indonesia,3,MKP,Dosen External,"Antonius Adhi S., S.H., M.Hum.",Ansugi Law,Hybrid,,true
+mk_44wv1i,1,MJF231004,Intro to Business,Pengantar Bisnis,3,MKF,Dosen External,"Arie Liyono, S.Kom., M.M.",BWI,Onsite,,true
+mk_5pkh4g,1,MJP231005,Intro to Management,Pengantar Manajemen,3,MKF,Dosen Internal,"Lussia Mariesti Andriany, S.E., M.M., Ph.D.",Asia,Onsite,,true
+mk_6868un,1,MJD236028,Religious Education,Pendidikan Agama,2,MKD,Ikut Fakultas,Ikut Fakultas,Asia,Onsite,,true
+mk_7qv7sn,1,MJD231006,Citizenship,Kewarganegaraan,2,MKD,Dosen Internal,"Reza Ramadhania, S.Sos., M.Ak.",Asia,Onsite,,true
+mk_8yuieu,1,MJF231008,Computer Application,Pengantar Aplikasi Komputer,2,MKF,Dosen Internal,"Agus Purnomo Sidi, S.Sos., M.M.",Asia,Onsite,,true
+mk_927f9j,2,MJF232012,English Conversation,Percakapan Bahasa Inggris (Professional Communication),2,MKF,Dosen External,"Elsafan Nahak, S.Tr.Pt",English Cafe,Onsite,DTG-04,false
+mk_acj3kb,2,MJF232011,Business Communication,Komunikasi Bisnis,3,MKF,Dosen Internal,"Karolus Danar Kurniawan, S.I.Kom., M.I.Kom.",Carabicara,Onsite,,true
+mk_bd5ez0,2,MJF232016,Entrepreneurship,Kewirausahaan,3,MKF,Dosen Internal,"Dr. Puji Subekti, S.Si., M.Si.",Asia/InBis,Onsite,,true
+mk_ctqeb7,2,MJP232014,Operational Management,Manajemen Operasional,3,MKP,Dosen External,"Rachmat Anggara Supriyadi, S.E.",Qasir.id,Onsite,,true
+mk_dlww7k,2,MJU232010,Business Practice 2,Praktik Bisnis 2,2,MKI,Ikut Fakultas,Team Teaching Fakultas,Asia,Onsite,,true
+mk_ebnfg4,2,MJD232009,Business Ethics,Etika Bisnis,2,MKF,Dosen External,"Ganda Mohamad Pamungkas, S.H., M.M., C-HRA., CLA.",Asia,Onsite,,true
+mk_fy0j46,2,MJU232015,Critical Thinking,Berpikir Kritis,2,MKI,Dosen Internal,"Prof. Dr. Ronald Suryaputra, M.M.",Asia/BWI,Onsite,,true
+mk_g08e5z,2,MJH236206,Content and Copywriting,Konten dan Penulisan Naskah,3,MKF,Dosen Internal,"Nur Elif, S.E., M.M.",Asia,Onsite,,true
+mk_hb4wy6,2,,Professional English Matriculation,Matrikulasi Bahasa Inggris,2,IBM Activity,Dosen External,"Veronica Setijadi, S.Pd.",Asia,Onsite,,true
+mk_i45z3v,3,MJU233017,Business Practice 3,Praktik Bisnis 3,3,MKI,Ikut Fakultas,Team Teaching Fakultas,Prodi,Onsite,,true
+mk_j74fp4,3,MJP233018,Marketing Management,Manajemen Pemasaran,3,MKP,Dosen Internal,"Prof. Dr. Ronald Suryaputra, M.M.",Recosta,Onsite,,true
+mk_k4wv8q,3,MJP233019,Human Resource Management,Manajemen Sumber Daya Manusia,3,MKP,Dosen External,"Novaldi Nur Rochman Putra, S.AB., M.M., CHCM.",DSG,Onsite,,true
+mk_l77nk6,3,MJP233020,Financial Management,Manajemen Keuangan,3,MKP,Dosen External,"Mochamad Rizal Rosyadi, S.E.",Bingkai Karya,Onsite,,true
+mk_mexjzn,3,MJF233003,Macro Economy,Ekonomi Makro,3,MKF,Dosen External,"Hironimus Hari Kurniawan, S.E., M.M.",Asia,Onsite,,true
+mk_nqds73,3,MJF233013,Banking & Financial Services,Perbankan dan Jasa Keuangan,3,MKPil,Dosen Internal,"Yuniar Fitriyani, S.E., M.M.",Asia,Onsite,,true
+mk_owa38a,3,MJH-237327,CRPD,Career Readiness and Professional Development,3,MKPil,Dosen Internal,"Karolus Danar Kurniawan, S.I.Kom., M.I.Kom.",Carabicara,Onsite,DTG-03,false
+mk_pqtvlf,3,MJH-237328,Intro to Hospitality,Pengenalan Hospitality,3,MKPil,Dosen External,Andina Paramita Sari,Ngalup.Co/BeOn,Onsite,ITH-01,false
+mk_qvn8w7,4,MJK234040,Strategic Management,Manajemen Strategi,3,MKP,Dosen Internal,"Dr. Yunus Handoko, S.E., M.M., CRA",Pasca Asia,Onsite,,true
+mk_r54m7k,4,,Financial Statement,Analisa Laporan Keuangan,3,MKL,Dosen Internal,"Mulyaningtyas, S.E., M.Ak.",Asia,Onsite,,true
+mk_si49y3,4,MJH-234331,F&B Operations,Food & Beverage Operations,3,MKK,Dosen External,Puguh Santoso,Shanaya Resort,Onsite,ITH-02,false
+mk_t56fym,4,,Leadership : Building Teamwork and Conflict Resolution,Kepemimpinan: Membangun Tim dan Penyelesaian Konflik,3,MKP,Dosen External,"Arie Liyono, S.Kom., M.M.",BWI,Onsite,,true
+mk_uhc4u3,4,MJP234021,International Business Export Import,Bisnis Internasional dan Ekspor Impor,3,MKP,Dosen External,"Anggri Sartika Wiguna, S.T., M.T.",Exportir.id,Onsite,,true
+mk_v6k5sw,4,,Innovation & Value Creation,Inovasi dan Penciptaan Nilai,3,MKPil,Dosen Internal,"Ratna Putri Nilasari, S.E., M.M.",Asia,Onsite,,true
+mk_wj8k2i,4,MJP234023,Matemathics for Business,Matematika Bisnis,3,MKP,Dosen Internal,"Widiya Dewi Anjaningrum, S.Si., M.M.",Asia,Onsite,,true
+mk_xe4ip2,4,MJH-234330,Foundation in Travel and Tourism,Dasar-dasar Travel & Tourism,3,MKK,Dosen External,Suci Andriani,Santika Group,Onsite,ITH-03,false
+mk_y7g3a1,4,IBMACT05,Public Speaking by Carabicara,Public Speaking & Komunikasi,1,IBM Activity,Dosen Internal,"Karolus Danar Kurniawan, S.I.Kom., M.I.Kom.",Carabicara,Onsite,,true
+mk_zwdy11,5,MJF235024,Supply Chain Management,Supply Chain Management,3,MKF,Ikut Fakultas,Konversi Magang,Internship,Konversi Magang,,true
+mk_10839b4,5,MJP235025,Managerial Economics,Ekonomi Manajerial,3,MKP,Ikut Fakultas,Konversi Magang,Internship,Konversi Magang,,true
+mk_11bm79l,5,MJP235026,Research Methods,Metode Penelitian,3,MKP,Ikut Fakultas,Ikut kelas DM Online,Asia,Online,,true
+mk_12ksaos,5,MJP235027,Statistics,Statistik,3,MKP,Ikut Fakultas,Ikut kelas DM Online,Asia,Online,,true
+mk_13whgxo,5,,Management in the Service Industry,Manajemen pada Industri Jasa,3,MKL,Ikut Fakultas,Konversi Magang,Internship,Konversi Magang,,true
+mk_143sm2d,5,MJH-234329,"Meetings, Incentives, Conventions, and Exhibitions Management",MICE & Event Management,3,MKK,Dosen External,Selly Fatmawati,LDC,Online,ITH-04,false
+mk_15zzly8,5,,Immersion Studies,Program Belajar ke Luar Negeri,3,MKK,Dosen Internal,"Karolus Danar Kurniawan, S.I.Kom., M.I.Kom.","Osaka, Japan",Immersion,,true
+mk_16sq4vu,6,MJD236028,Indonesian/Religion,Bahasa Indonesia / Agama,2,MKD,Ikut Fakultas,Ikut Fakultas,Asia,Onsite,,true
+mk_17xwrkz,6,MJH233301,International Business Management,Manajemen Bisnis Internasional,3,MKPil,Dosen Internal,"Risa Santoso, B.A., M.Ed.",Asia,Onsite,,true
+mk_18wzgn4,6,MJP236032,Business Valuation,Valuasi Bisnis,3,MKPil,Dosen External,Arif Bawono Surya,Lets Play Indonesia,Onsite,,true
+mk_19r6nea,6,MJH236306,Global Strategic Management,Manajemen Strategi Global,3,MKPil,Dosen External,Haikal Basagili,Asia,Onsite,,true
+mk_1afe79q,6,MJK234312,Digital Marketing : Managing Omnichannels Marketing,Pemasaran Digital: Manajemen Omnichannel,3,MKF,Dosen External,Hari Obbie,Asia,Onsite,,true
+mk_1b2t7fa,6,MJF230030,Internship,Magang (Laporan & Presentasi),6,MKF,Ikut Fakultas,Tim Dosen Pembimbing,Internship,Konversi Magang,,true
+mk_1cms6h1,7,MJD232009,Pancasila,Pendidikan Pancasila,2,MKD,Ikut Fakultas,Ikut Fakultas,Asia,Onsite,,true
+mk_1dfz2dj,7,MJF236031,Corporate Budgeting,Penganggaran Perusahaan,3,MKF,Dosen Internal,"Ditya Wardana, S.ST., M.S.A.",Asia,Onsite,,true
+mk_1eki5i8,7,MJP237035,English Advanced: Pitching & Presentations,Bahasa Inggris Lanjutan: Pitching & Presentasi,2,MKP,Dosen External,Augy Kurnia Widjaja,BWI,Onsite,,true
+mk_1f0pxa2,7,,Big Data Analysis & Management,Manajemen dan Analisa Big Data,3,MKK,Dosen External,Ziaelfikar Albaba,Nortis,Onsite,,true
+mk_1g56l5o,7,MJU230033,Capstone Project / Thesis,Skripsi,4,MKI,Ikut Fakultas,Ikut Fakultas,Asia,Onsite,,true
+mk_1hz41q9,7,MJU237034,Career Development,Pengembangan Karir,2,MKI,Dosen Internal,"Abdul Aziz Muslim, S.Psi., M.Psi.",Asia,Onsite,,true

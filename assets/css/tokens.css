@@ -1,0 +1,133 @@
+/* =========================================================================
+   DESIGN TOKENS — disalin dari style website IBM agar seragam.
+   Bagian "Tambahan dashboard" di bawah hanya menambah token yang dibutuhkan
+   dashboard (status, grafik, sidebar); token asli tidak diubah.
+   ========================================================================= */
+
+/* ---------- 1. Design tokens ---------- */
+:root {
+  /* Biru identitas dan turunannya */
+  --brand:      #173671;
+  --brand-700:  #102A5C;
+  --brand-800:  #0C2048;
+  --brand-900:  #08142F;
+  --brand-500:  #2A52A0;
+  --brand-300:  #8CA2D2;
+  --brand-100:  #DDE4F2;
+  --brand-50:   #EEF2F9;
+
+  /* Kuning identitas dan turunannya */
+  --gold:       #EBB213;
+  --gold-hover: #F5C93A;
+  --gold-ink:   #7F5E00;   /* teks aksen di latar terang (kontras 6:1) */
+  --gold-100:   #FCF3D2;
+
+  /* Netral */
+  --ink:    #0F1A33;       /* judul */
+  --text:   #33415C;       /* isi */
+  --muted:  #5B6882;       /* teks sekunder */
+  --line:   #DAE0EC;       /* garis/border */
+  --paper:  #F4F6FA;       /* latar halaman */
+  --white:  #FFFFFF;
+
+  /* Token semantik */
+  --surface:      #FFFFFF;   /* kartu, header, input */
+  --surface-alt:  #FFFFFF;   /* latar section putih */
+  --link:         var(--brand);
+  --link-2:       var(--brand-500);
+  --fill-ui:      var(--brand);
+  --fill-ui-hover: var(--brand-700);
+  --focus:        var(--brand-500);
+  --header-bg:    rgba(255, 255, 255, .92);
+  --partner-surface: #FFFFFF;
+
+  /* Tipografi */
+  --font-head: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+
+  /* Layout */
+  --container: 1200px;
+  --gutter: clamp(1.25rem, 4vw, 2.5rem);
+  --space-section: clamp(4rem, 2.5rem + 5.5vw, 7.5rem);
+  --header-h: 80px;
+
+  /* Bentuk */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 22px;
+  --shadow-pop: 0 20px 44px -20px rgba(8, 20, 47, .38);
+  --ease: cubic-bezier(.2, .7, .2, 1);
+
+  color-scheme: light;
+
+  /* ---------- Tambahan dashboard ---------- */
+  --topbar-h: 64px;
+  --sidebar-w: 264px;
+  --surface-sunk: #F8FAFD;            /* header tabel, area input pasif */
+  --row-hover:    var(--brand-50);
+  --shadow-card:  0 1px 2px rgba(8, 20, 47, .05);
+
+  /* Status — selalu dipasangkan dengan label/ikon, tidak warna saja */
+  --ok:       #1B7347;  --ok-bg:   #E2F3E9;
+  --warn:     var(--gold-ink); --warn-bg: var(--gold-100);
+  --bad:      #B42318;  --bad-bg:  #FDECEA;
+  --info:     var(--brand-500); --info-bg: var(--brand-50);
+  --neutral:  var(--muted); --neutral-bg: #EEF1F6;
+
+  /* Grafik (divalidasi untuk buta warna & kontras terhadap permukaan) */
+  --chart-1: #2A52A0;   /* pemasukan / seri utama */
+  --chart-2: #C8940A;   /* pengeluaran / seri kedua */
+  --chart-3: #B4466E;   /* seri ketiga (divalidasi CVD bersama chart-1 & 2) */
+  --chart-grid: #E6EAF2;
+
+  /* Sidebar: tetap biru identitas di kedua mode */
+  --side-bg:      var(--brand-800);
+  --side-ink:     #D5DEF0;
+  --side-muted:   #8CA2D2;
+  --side-hover:   rgba(255, 255, 255, .06);
+  --side-active:  rgba(235, 178, 19, .14);
+  --side-line:    rgba(255, 255, 255, .08);
+}
+
+/* =========================================================================
+   MODE GELAP — hanya menimpa token warna saat <html data-theme="dark">.
+   Pilihan disimpan di localStorage ("ibm_theme"), sama dengan website.
+   ========================================================================= */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper:        #0A1124;
+  --surface:      #111B36;
+  --surface-alt:  #0D1630;
+  --ink:          #F2F5FB;
+  --text:         #C6D0E6;
+  --muted:        #98A5C2;
+  --line:         #25335A;
+  --brand-50:     #1A284D;
+  --brand-100:    #263760;
+  --gold-ink:     #EBB213;
+  --gold-100:     rgba(235, 178, 19, .13);
+  --link:         #A5BEF2;
+  --link-2:       #8FB0F5;
+  --fill-ui:      #2A52A0;
+  --fill-ui-hover:#3A66BE;
+  --focus:        #EBB213;
+  --header-bg:    rgba(10, 17, 36, .88);
+  --partner-surface: #F5F7FC;
+  --shadow-pop:   0 20px 44px -20px rgba(0, 0, 0, .75);
+  background: var(--paper);
+
+  /* Tambahan dashboard */
+  --surface-sunk: #0D1630;
+  --row-hover:    #16224A;
+  --shadow-card:  0 1px 0 rgba(255, 255, 255, .02) inset;
+  --ok:  #74D3A2;  --ok-bg:  rgba(116, 211, 162, .12);
+  --bad: #FF9C94;  --bad-bg: rgba(255, 120, 110, .13);
+  --info: #8FB0F5; --info-bg: rgba(143, 176, 245, .12);
+  --neutral-bg: rgba(152, 165, 194, .12);
+  --chart-1: #5A82D2;
+  --chart-2: #B8870A;
+  --chart-3: #C8608A;
+  --chart-grid: #1E2A4D;
+  --side-bg: #070E20;
+  --side-line: rgba(255, 255, 255, .06);
+}

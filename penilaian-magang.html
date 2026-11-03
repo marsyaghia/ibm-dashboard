@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Penilaian Tempat Magang · IBM Institut Asia Malang</title>
+  <meta name="description" content="Form penilaian tempat magang untuk mahasiswa International Business Management (IBM) Institut Asia Malang.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="assets/img/logo.svg" type="image/svg+xml">
+  <script src="assets/js/boot.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/app.css">
+  <link rel="stylesheet" href="assets/css/form-publik.css">
+</head>
+<body class="public">
+  <main class="pf" id="app">
+    <header class="pf-head">
+      <img src="assets/img/logo.svg" alt="" width="40" height="40">
+      <div>
+        <span class="eyebrow">International Business Management · Institut Asia Malang</span>
+        <h1>Penilaian Tempat Magang</h1>
+        <p id="pf-batch">Penilaian Anda akan membantu mahasiswa angkatan berikutnya dalam memilih tempat magang yang tepat.</p>
+      </div>
+      <button class="btn btn-icon" type="button" id="pf-theme" aria-label="Ganti tema terang/gelap" title="Ganti tema terang/gelap"></button>
+    </header>
+    <div id="pf-body" class="pf-body">
+      <div class="boot" role="status"><p class="muted">Memuat form…</p></div>
+    </div>
+    <footer class="pf-foot">Jawaban hanya dapat dibaca tim IBM. Ulasan dipakai untuk evaluasi mitra magang dan rekomendasi bagi mahasiswa berikutnya.</footer>
+  </main>
+  <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+  <noscript>Form ini memerlukan JavaScript.</noscript>
+  <script type="module" src="assets/js/penilaian-form.js"></script>
+</body>
+</html>

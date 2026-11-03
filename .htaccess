@@ -1,0 +1,41 @@
+# Dashboard IBM — dashboard.ibmasia.ac.id (Apache / LiteSpeed, Jagoan Hosting)
+
+Options -Indexes
+DirectoryIndex index.html
+
+# --- Paksa HTTPS ---
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # File pengembangan tidak perlu bisa diakses publik
+  RewriteRule ^(supabase|tools|docs|\.vscode)(/|$) - [F,L]
+  RewriteRule ^(README|CLAUDE)\.md$ - [F,L]
+</IfModule>
+
+# --- Header keamanan ---
+<IfModule mod_headers.c>
+  Header always set Strict-Transport-Security "max-age=31536000"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://vhecgwfuoapzdwvephhz.supabase.co wss://vhecgwfuoapzdwvephhz.supabase.co; frame-src 'self' blob: https://vhecgwfuoapzdwvephhz.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+
+  # HTML/JS/CSS selalu dicek ulang agar revisi langsung terpakai
+  <FilesMatch "\.(html|js|css)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  <FilesMatch "\.(svg|png|jpg|jpeg|webp|ico|woff2?)$">
+    Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+</IfModule>
+
+# --- Tipe berkas & kompresi ---
+AddType text/javascript .js .mjs
+AddType image/svg+xml .svg
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json image/svg+xml
+</IfModule>

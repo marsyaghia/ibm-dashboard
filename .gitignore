@@ -1,0 +1,6 @@
+.DS_Store
+Thumbs.db
+node_modules/
+*.log
+# Cadangan data berisi data pribadi mahasiswa/dosen — jangan di-commit
+Cadangan_Dashboard_IBM_*.json
