@@ -581,6 +581,9 @@ create table if not exists public.mahasiswa (
   formulir_label text,
   formulir_link text,
   formulir_file jsonb,
+  foto_label text,
+  foto_link text,
+  foto_file jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   updated_by text
@@ -598,6 +601,7 @@ create index if not exists mahasiswa_batch_id_idx on public.mahasiswa (batch_id)
 comment on column public.mahasiswa.jk is 'L / P';
 comment on column public.mahasiswa.status_mhs is 'Mahasiswa Aktif / Cuti / Lulus / Non-aktif / Mengundurkan Diri';
 comment on column public.mahasiswa.dokumen_magang is 'CV, Surat Permohonan, Transkrip Nilai, Lainnya';
+comment on column public.mahasiswa.foto_link is 'foto profil: link Google Drive (foto_link) atau unggahan (foto_file)';
 
 -- Biodata Dosen: Biodata dosen internal & Dosen External (format Google Form Data Dosen).
 create table if not exists public.dosen (

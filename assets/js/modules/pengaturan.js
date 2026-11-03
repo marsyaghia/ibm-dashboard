@@ -6,7 +6,7 @@
    • Akun superadmin : siapa yang bisa masuk, ganti kata sandi
    • Data & impor    : template CSV per tabel Supabase, cadangan, ekspor
    ========================================================================= */
-import { h, icon, clear, badge, tabs, pref, toast, confirmDialog, fmtDateLong, sum, openModal } from '../ui.js';
+import { h, icon, clear, badge, tabPage, toast, confirmDialog, fmtDateLong, sum, openModal } from '../ui.js';
 import { crudView, kpiRow } from '../crud.js';
 import { buildForm } from '../form.js';
 import { dataTable } from '../table.js';
@@ -21,7 +21,7 @@ const head = (eyebrow, title, desc, ...actions) => h('div', { class: 'page-head'
   actions.length ? h('div', { class: 'actions no-print' }, ...actions) : null);
 
 /* =================== Umum =================== */
-const PROFIL = [{ title: 'Profil divisi', note: 'Digunakan pada sapaan Beranda, kop laporan, dan formulir cetak (tanda tangan Rektor dan Koordinator IBM).', fields: [
+const PROFIL = [{ title: 'Profil divisi', note: 'Digunakan pada sapaan Dashboard, kop laporan, dan formulir cetak (tanda tangan Rektor dan Koordinator IBM).', fields: [
   { key: 'nama_divisi', label: 'Nama divisi', type: 'text', required: true },
   { key: 'koordinator', label: 'Koordinator IBM (nama & gelar)', type: 'text', col: 'half' },
   { key: 'rektor', label: 'Rektor (nama & gelar)', type: 'text', col: 'half' },
@@ -159,7 +159,7 @@ function akun(root) {
   });
   const list = h('div', {}, h('p', { class: 'muted' }, 'Memuat daftar akun…'));
   box.append(
-    head('Pengaturan', 'Akun superadmin', 'Hanya email yang terdaftar pada tabel admin_pengguna (Supabase) yang dapat masuk. Sapaan di Beranda mengikuti kolom “sapaan”.'),
+    head('Pengaturan', 'Akun superadmin', 'Hanya email yang terdaftar pada tabel admin_pengguna (Supabase) yang dapat masuk. Sapaan di Dashboard mengikuti kolom “sapaan”.'),
     h('div', { class: 'grid grid-main' },
       h('div', { class: 'card' }, h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, 'Akun yang memiliki akses'), h('p', {}, 'Dikelola di Supabase, bukan dari dashboard'))), list,
         h('div', { class: 'card-body' }, h('div', { class: 'note' }, icon('info'), h('div', {},
@@ -274,14 +274,6 @@ const TABS = [
 ];
 export default {
   mount(root) {
-    let tab = pref.get('tab_set', 'umum'); let inner = null; const body = h('div');
-    const draw = () => {
-      inner && inner.destroy && inner.destroy(); clear(root);
-      root.appendChild(tabs(TABS, tab, (t) => { tab = t; pref.set('tab_set', t); draw(); }));
-      clear(body); root.appendChild(body);
-      inner = (TABS.find(x => x.id === tab) || TABS[0]).fn(body);
-    };
-    draw();
-    return { destroy: () => inner && inner.destroy && inner.destroy() };
+    return tabPage(root, TABS.map(x => ({ ...x, fn: (b) => x.fn(b) })), { eyebrow: 'Sistem', title: 'Pengaturan', key: 'tab_set', def: 'umum' });
   },
 };

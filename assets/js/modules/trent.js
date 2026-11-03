@@ -4,7 +4,7 @@
    • Progres mahasiswa per mata kuliah Trent (matriks centang)
    • Mata kuliah & silabus per pertemuan
    ========================================================================= */
-import { h, icon, clear, badge, docLink, fmtIDR, fmtSGD, fmtDate, fmtNum, sum, batchName, batchOptions, batches, tabs, pref, toast, openDrawer, openModal, hasAttachment, pct, uniq } from '../ui.js';
+import { h, icon, clear, badge, docLink, fmtIDR, fmtSGD, fmtDate, fmtNum, sum, batchName, batchOptions, batches, batchSelect, firstBatch, tabPage, pref, toast, chain, byBatch, byText, openDrawer, openModal, hasAttachment, pct, uniq } from '../ui.js';
 import { crudView, kpiRow } from '../crud.js';
 import { buildForm } from '../form.js';
 import { exportWorkbook } from '../io.js';
@@ -70,9 +70,10 @@ const payExport = [
 ];
 
 const pembayaran = crudView({
-  id: 'trentPayments', collection: 'trentPayments', noun: 'pembayaran Trent', title: 'Trent Global College', eyebrow: 'Kemitraan',
+  id: 'trentPayments', collection: 'trentPayments', noun: 'pembayaran Trent', title: 'Pembayaran per Batch', eyebrow: 'Kemitraan',
   description: 'Tagihan dan pembayaran ke Trent Global College per batch dan mata kuliah (tarif per mahasiswa + GST), lengkap dengan bukti transfer dan marksheet.',
-  sections: paySections, columns: payColumns, exportColumns: payExport, exportName: 'Pembayaran_Trent', sort: { key: 'batch_id', dir: 'asc' }, pageSize: 50,
+  sections: paySections, columns: payColumns, exportColumns: payExport, exportName: 'Pembayaran_Trent', pageSize: 50,
+  order: chain(byBatch(), (a, b) => (Number(a.semester) || 99) - (Number(b.semester) || 99), byText(r => r.trent_code)),
   searchPlaceholder: 'Cari mata kuliah, kode…',
   search: r => [r.subjek, r.trent_code, r.asia_code, batchName(r.batch_id), r.invoice_no, r.catatan].join(' '),
   filters: [
@@ -107,7 +108,7 @@ const pembayaran = crudView({
 
 /* ---------- Tab 2: Progres mahasiswa ---------- */
 function progresMahasiswa(root) {
-  let bid = pref.get('trent_batch', (batches()[0] || {}).id);
+  let bid = pref.get('trent_batch', firstBatch()); if (!store.get('batches', bid)) bid = firstBatch();
   const box = h('div');
   const codes = () => subjects().map(s => s.kode);
 
@@ -135,8 +136,7 @@ function progresMahasiswa(root) {
     const own = (e, s) => e.student_id === s.id || (e.nim && s.nim && String(e.nim) === String(s.nim)) || (!e.student_id && e.nama_mahasiswa && e.nama_mahasiswa.toLowerCase() === s.nama.toLowerCase());
     const rows = studs.map(s => ({ s, en: ens.find(e => own(e, s)) })).filter(x => x.en);
     const missing = studs.filter(s => !ens.some(e => own(e, s)));
-    const sel = h('select', { class: 'select', style: { width: 'auto' }, 'aria-label': 'Pilih batch' }, batchOptions().map(o => h('option', { value: o.value }, o.label)));
-    sel.value = bid || ''; sel.addEventListener('change', () => { bid = sel.value; pref.set('trent_batch', bid); render(); });
+    const sel = batchSelect({ value: bid, onChange: (v) => { bid = v; pref.set('trent_batch', bid); render(); } });
     const doneCount = (en) => cs.filter(c => en[ck(c)]).length;
     const totalTicks = sum(rows, x => doneCount(x.en));
 
@@ -214,14 +214,10 @@ function silabus(root) {
 
 export default {
   mount(root) {
-    let tab = pref.get('tab_trent', 'bayar'); let inner = null; const body = h('div');
-    const draw = () => {
-      inner && inner.destroy && inner.destroy(); clear(root);
-      root.appendChild(tabs([{ id: 'bayar', label: 'Pembayaran per batch' }, { id: 'progres', label: 'Progres mahasiswa' }, { id: 'silabus', label: 'Mata kuliah & silabus' }], tab, (t) => { tab = t; pref.set('tab_trent', t); draw(); }));
-      clear(body); root.appendChild(body);
-      inner = tab === 'progres' ? progresMahasiswa(body) : tab === 'silabus' ? silabus(body) : pembayaran(body);
-    };
-    draw();
-    return { destroy: () => inner && inner.destroy && inner.destroy() };
+    return tabPage(root, [
+      { id: 'bayar', label: 'Pembayaran per batch', fn: (b) => pembayaran(b) },
+      { id: 'progres', label: 'Progres mahasiswa', fn: (b) => progresMahasiswa(b) },
+      { id: 'silabus', label: 'Mata kuliah & silabus', fn: (b) => silabus(b) },
+    ], { eyebrow: 'Program', title: 'Trent Global College', key: 'tab_trent', def: 'bayar' });
   },
 };

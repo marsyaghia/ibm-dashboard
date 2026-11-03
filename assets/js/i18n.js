@@ -17,12 +17,34 @@ export function setLang(l) {
   document.documentElement.lang = current;
 }
 
+/* Judul ditampilkan dalam Title Case (ui.js → tc), sedangkan kamus ditulis dengan huruf
+   biasa. Karena itu pencarian juga dicoba tanpa membedakan huruf besar/kecil, lalu hasil
+   terjemahannya ikut dijadikan Title Case. */
+let EN_LC = null; let PAT_I = null;
+const SMALL_EN = new Set(['a', 'an', 'the', 'and', 'or', 'of', 'to', 'for', 'in', 'on', 'at', 'by', 'per', 'with', 'from', 'as', 'into', 'vs', 'via']);
+function titleEN(s) {
+  let first = true;
+  return s.replace(/[^\s/()–—-]+/g, (w) => {
+    const isFirst = first; first = false;
+    if (w !== w.toLowerCase() || /\.|@|^\d|^[^\p{L}]*$/u.test(w)) return w;
+    if (!isFirst && SMALL_EN.has(w.replace(/[^\p{L}]/gu, ''))) return w;
+    return w.replace(/\p{L}/u, (c) => c.toUpperCase());
+  });
+}
+const SMALL_ID = new Set(['dan', 'atau', 'di', 'ke', 'dari', 'untuk', 'yang', 'per', 'pada', 'dengan', 'dalam', 'oleh', 'serta', 'bagi', 'tentang', 'tanpa', 'terhadap', 'hingga', 'vs']);
+const isTitled = (s) => { const ws = s.split(/[\s/]+/).filter(w => /\p{L}/u.test(w) && !/\./.test(w)); return ws.length > 1 && ws.every(w => !/^[^\p{L}]*\p{Ll}/u.test(w) || SMALL_ID.has(w.toLowerCase())); };
+
 /** Terjemahkan satu string (untuk dipakai langsung di kode bila perlu) */
 export function t(s) {
   if (current !== 'en' || s === null || s === undefined) return s;
   const str = String(s); const trimmed = str.trim(); if (!trimmed) return str;
   if (EN[trimmed] !== undefined) return str.replace(trimmed, EN[trimmed]);
   for (const [re, rep] of EN_PATTERNS) { if (re.test(trimmed)) return str.replace(trimmed, trimmed.replace(re, rep)); }
+  // Tidak membedakan huruf besar/kecil (judul Title Case)
+  if (!EN_LC) { EN_LC = new Map(Object.entries(EN).map(([k, v]) => [k.toLowerCase(), v])); PAT_I = EN_PATTERNS.map(([re, rep]) => [new RegExp(re.source, re.flags.includes('i') ? re.flags : re.flags + 'i'), rep]); }
+  const lc = EN_LC.get(trimmed.toLowerCase());
+  if (lc !== undefined) return str.replace(trimmed, isTitled(trimmed) ? titleEN(lc) : lc);
+  for (const [re, rep] of PAT_I) { if (re.test(trimmed)) { const o = trimmed.replace(re, rep); return str.replace(trimmed, isTitled(trimmed) ? titleEN(o) : o); } }
   let out = trimmed;
   for (const [re, rep] of EN_PHRASES) out = out.replace(re, rep);
   return out === trimmed ? str : str.replace(trimmed, out);

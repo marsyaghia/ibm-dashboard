@@ -4,7 +4,7 @@
    (format sheet "Biaya Batch 1 sd 4").
    Tab Data biaya (input & daftar) + tab Rekapitulasi (grafik per batch).
    ========================================================================= */
-import { h, icon, clear, fmtIDR, sum, batchName, batchOptions, batches, tabs, pref } from '../ui.js';
+import { h, icon, clear, fmtIDR, sum, batchName, batchOptions, batches, tabPage, chain, byBatch, byText } from '../ui.js';
 import { crudView, kpiRow } from '../crud.js';
 import { groupedBars } from '../charts.js';
 import { dataTable } from '../table.js';
@@ -70,7 +70,8 @@ function rekapExcel(rows) {
 const data = crudView({
   id: 'incomes', collection: 'incomes', noun: 'data mahasiswa', title: 'Perolehan dari Mahasiswa', eyebrow: 'Keuangan',
   description: 'Rincian biaya setiap mahasiswa IBM per batch: DU (Daftar Ulang), DPP, dan UKT per semester.',
-  sections, columns, exportColumns: exportCols, exportName: 'Perolehan_Mahasiswa_IBM', sort: { key: 'batch_id', dir: 'asc' }, unit: 'mahasiswa',
+  sections, columns, exportColumns: exportCols, exportName: 'Perolehan_Mahasiswa_IBM', unit: 'mahasiswa',
+  order: chain(byBatch(), byText(r => r.nama_mahasiswa)),
   searchPlaceholder: 'Cari nama atau NIM…',
   search: r => [r.nama_mahasiswa, r.nim, batchName(r.batch_id)].join(' '),
   filters: [{ key: 'batch_id', label: 'Batch', options: () => batchOptions() }],
@@ -123,14 +124,9 @@ function rekap(root) {
 
 export default {
   mount(root) {
-    let tab = pref.get('tab_inc', 'transaksi'); let inner = null; const body = h('div');
-    const draw = () => {
-      inner && inner.destroy && inner.destroy(); clear(root);
-      root.appendChild(tabs([{ id: 'transaksi', label: 'Data biaya' }, { id: 'rekap', label: 'Rekapitulasi' }], tab, (t) => { tab = t; pref.set('tab_inc', t); draw(); }));
-      clear(body); root.appendChild(body);
-      inner = tab === 'rekap' ? rekap(body) : data(body);
-    };
-    draw();
-    return { destroy: () => inner && inner.destroy && inner.destroy() };
+    return tabPage(root, [
+      { id: 'transaksi', label: 'Data biaya', fn: (b) => data(b) },
+      { id: 'rekap', label: 'Rekapitulasi', fn: (b) => rekap(b) },
+    ], { eyebrow: 'Keuangan', title: 'Perolehan Mahasiswa', key: 'tab_inc', def: 'transaksi' });
   },
 };

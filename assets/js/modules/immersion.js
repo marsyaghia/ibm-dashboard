@@ -9,7 +9,7 @@
                         penukaran uang asing, dan rencana anggaran
    • Target           : goal tabungan per batch
    ========================================================================= */
-import { h, icon, clear, fmtIDR, fmtNum, fmtDate, fmtDateLong, sum, uniq, pct, badge, docLink, batchName, batches, studentOf, withStudent, today, parseDate, tabs, pref, toast, openModal } from '../ui.js';
+import { h, icon, clear, fmtIDR, fmtNum, fmtDate, fmtDateLong, sum, uniq, pct, badge, docLink, batchName, batches, studentOf, withStudent, today, parseDate, tabPage, batchSelect, firstBatch, pref, toast, openModal, chain, byBatch, byText } from '../ui.js';
 import { crudView, kpiRow } from '../crud.js';
 import { dataTable } from '../table.js';
 import { hbars } from '../charts.js';
@@ -34,12 +34,10 @@ const isIn = (r) => jenisOf(r) === 'Pemasukan lain';
 const toneJenis = (j) => ({ Pengeluaran: 'bad', 'Pemasukan lain': 'ok', 'Penukaran uang': '' }[j] || '');
 const fmtAsing = (r) => r.mata_uang && r.mata_uang !== 'IDR' && r.nominal_asing ? `${SIMBOL[r.mata_uang] || r.mata_uang} ${fmtNum(r.nominal_asing)}${r.kurs ? ` × ${fmtNum(r.kurs, 2)}` : ''}` : '';
 
-/* ---------- Batch aktif (berlaku di semua tab) ---------- */
-const hasData = (b) => store.all('immersionTargets').some(t => t.batch_id === b) || store.all('immersionSavings').some(r => r.batch_id === b) || store.all('immersionExpenses').some(r => r.batch_id === b);
+/* ---------- Batch aktif (berlaku di semua tab) — bawaan Batch 1 bila belum dipilih ---------- */
 function currentBatch() {
-  let bid = pref.get('imm_batch', '');
-  if (!store.get('batches', bid)) bid = (batches().find(b => (targetOf(b.id) || {}).status === 'Aktif') || batches().find(b => hasData(b.id)) || batches()[0] || {}).id || '';
-  return bid;
+  const bid = pref.get('imm_batch2', '');
+  return store.get('batches', bid) ? bid : firstBatch();
 }
 
 /** Target aktif sebuah batch */
@@ -142,7 +140,7 @@ function rekap(root, go, bid) {
       h('div', { class: byKat.length && !noSav ? 'grid grid-main imm-split' : 'stack' },
         noSav ? null : h('div', { class: 'card' },
           h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, 'Progres tabungan per mahasiswa'), h('p', {}, 'Pilih nama mahasiswa untuk melihat riwayat cicilan. Hanya setoran terverifikasi yang diperhitungkan.'))),
-          dataTable({ rows: P.rows, pageSize: Infinity, sort: { key: 'persen', dir: 'asc' }, onRowClick: x => studentLog(x, P, go),
+          dataTable({ rows: P.rows, pageSize: Infinity, order: byText(x => x.s.nama), onRowClick: x => studentLog(x, P, go),
             emptyNode: h('div', { class: 'empty' }, icon('users'), h('h3', {}, 'Belum ada mahasiswa aktif di batch ini')),
             columns: [
               { key: 'nama', label: 'Mahasiswa', main: true, value: x => x.s.nama, render: x => h('div', {}, h('span', { class: 'primary' }, x.s.nama), h('span', { class: 'secondary' }, [x.s.nim, x.last ? `terakhir ${fmtDate(x.last)}` : 'belum ada setoran'].filter(Boolean).join(' · '))) },
@@ -159,7 +157,7 @@ function rekap(root, go, bid) {
           h('div', { class: 'card-body' }, hbars(byKat.map(([label, value]) => ({ label, value, display: `${fmtIDR(value)} · ${pct(value, P.terpakai)}%` }))))) : null,
       ),
       allB.length > 1 ? h('div', { class: 'card' }, h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, 'Perbandingan antarbatch'), h('p', {}, 'Dana terkumpul (tabungan + pemasukan lain) dan pengeluaran realisasi tiap batch'))),
-        dataTable({ rows: allB, pageSize: Infinity, compact: true, onRowClick: x => { pref.set('imm_batch', x.b.id); go('rekap'); },
+        dataTable({ rows: allB, pageSize: Infinity, compact: true, onRowClick: x => { pref.set('imm_batch2', x.b.id); go('rekap'); },
           columns: [
             { key: 'b', label: 'Batch', main: true, value: x => x.b.angkatan, render: x => h('div', {}, h('span', { class: 'primary' }, x.b.nama), h('span', { class: 'secondary' }, (x.P.target && x.P.target.program) || '–')) },
             { key: 'masuk', label: 'Dana masuk', align: 'right', value: x => x.P.total + x.P.masukLain, render: x => h('span', { class: 'num' }, fmtIDR(x.P.total + x.P.masukLain)) },
@@ -375,40 +373,25 @@ const targetCfg = (bid) => ({
     { key: 'tenggat', label: 'Tenggat', render: r => r.tenggat ? fmtDate(r.tenggat) : null, nowrap: true },
     { key: 'status', label: 'Status', render: r => badge(r.status || 'Aktif') },
   ],
-  exportName: 'Target_Immersion', sort: { key: 'tenggat', dir: 'asc' }, importable: true,
+  exportName: 'Target_Immersion', order: chain(byBatch(), byText(r => r.tenggat)), importable: true,
   defaults: () => ({ batch_id: bid, status: 'Aktif' }),
   emptyTitle: 'Belum ada target tabungan', emptyText: 'Tetapkan target tabungan immersion untuk setiap batch.',
 });
 
 export default {
   mount(root) {
-    let tab = pref.get('tab_imm', 'rekap'); let bid = currentBatch(); let inner = null; const body = h('div');
-    const TABS = [{ id: 'rekap', label: 'Rekap' }, { id: 'cicilan', label: 'Cicilan per mahasiswa' }, { id: 'setoran', label: 'Log setoran' }, { id: 'kas', label: 'Kas & pengeluaran' }, { id: 'target', label: 'Target' }];
-    if (!TABS.some(t => t.id === tab)) tab = tab === 'pengeluaran' ? 'kas' : 'rekap';
-    const go = (t, preset) => {
-      tab = t; pref.set('tab_imm', t); bid = currentBatch(); draw();
-      if (preset && inner && inner.ctx) setTimeout(() => inner.ctx.openForm(preset), 30);
-    };
-    const batchBar = () => {
-      const list = batches(); const withData = list.filter(b => hasData(b.id));
-      const show = withData.length ? list.filter(b => hasData(b.id) || b.id === bid) : list;
-      return h('div', { class: 'imm-batchbar no-print' },
-        h('span', { class: 'flabel' }, 'Batch'),
-        h('div', { class: 'seg', role: 'group', 'aria-label': 'Pilih batch' }, show.map(b => h('button', { type: 'button', 'aria-pressed': String(b.id === bid), onclick: () => { pref.set('imm_batch', b.id); go(tab); } }, b.nama))),
-        list.length > show.length ? h('select', { class: 'select', 'aria-label': 'Batch lain', onchange: (e) => { if (e.target.value) { pref.set('imm_batch', e.target.value); go(tab); } } },
-          h('option', { value: '' }, 'Batch lain…'), list.filter(b => !show.includes(b)).map(b => h('option', { value: b.id }, `${b.nama} · ${b.angkatan}`))) : null);
-    };
-    const draw = () => {
-      inner && inner.destroy && inner.destroy(); clear(root);
-      root.append(batchBar(), tabs(TABS, tab, (t) => go(t)));
-      clear(body); root.appendChild(body);
-      inner = tab === 'rekap' ? rekap(body, go, bid)
-        : tab === 'cicilan' ? cicilan(body, go, bid)
-        : tab === 'setoran' ? crudView(setoranCfg(bid))(body)
-        : tab === 'kas' ? crudView(kasCfg(bid))(body)
-        : crudView(targetCfg(bid))(body);
-    };
-    draw();
-    return { destroy: () => inner && inner.destroy && inner.destroy() };
+    // Pindah tab (opsional langsung membuka formulir dengan isian awal)
+    const goWith = (ctx) => (t, preset) => { const inner = ctx.go(t); if (preset && inner && inner.ctx) setTimeout(() => inner.ctx.openForm(preset), 30); };
+    return tabPage(root, [
+      { id: 'rekap', label: 'Rekap', fn: (b, ctx) => rekap(b, goWith(ctx), currentBatch()) },
+      { id: 'cicilan', label: 'Cicilan per mahasiswa', fn: (b, ctx) => cicilan(b, goWith(ctx), currentBatch()) },
+      { id: 'setoran', label: 'Log setoran', fn: (b) => crudView(setoranCfg(currentBatch()))(b) },
+      { id: 'kas', label: 'Kas & pengeluaran', fn: (b) => crudView(kasCfg(currentBatch()))(b) },
+      { id: 'target', label: 'Target', fn: (b) => crudView(targetCfg(currentBatch()))(b) },
+    ], {
+      eyebrow: 'Program', title: 'Immersion', key: 'tab_imm', def: 'rekap',
+      description: 'Tabungan dan arus kas program immersion. Pilih batch untuk menampilkan datanya di semua tab.',
+      actions: (ctx) => [batchSelect({ value: currentBatch(), onChange: (v) => { pref.set('imm_batch2', v); ctx.redraw(); } })],
+    });
   },
 };

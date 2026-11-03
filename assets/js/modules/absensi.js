@@ -6,7 +6,7 @@
    • Log absensi     : semua catatan (filter, ekspor)
    Absensi cepat juga bisa diisi dari Jadwal Kuliah → Daily.
    ========================================================================= */
-import { h, icon, clear, badge, batchName, batchOptions, tabs, pref, toast, fmtDate, today, pct, uniq } from '../ui.js';
+import { h, icon, clear, badge, batchName, batchOptions, batchSelect, picker, selectEl, tabPage, pref, toast, fmtDate, today, pct, uniq, chain, byBatch, byText } from '../ui.js';
 import { crudView, kpiRow } from '../crud.js';
 import { dataTable } from '../table.js';
 import { exportWorkbook } from '../io.js';
@@ -21,17 +21,14 @@ const lbSlots = (periode, batch) => slotsOf(periode, batch).filter(s => HARI.inc
 const dosenOptions = (slot, cur) => uniq([slot.dosen, ...store.all('lecturers').filter(l => l.status !== 'Tidak aktif').map(l => l.nama).sort((a, b) => a.localeCompare(b)), cur]);
 
 function selectors(state, render, { slot = false } = {}) {
-  const per = h('select', { class: 'select', 'aria-label': 'Periode' }, periodeOptions().map(p => h('option', { value: p }, p)));
-  per.value = state.periode; per.addEventListener('change', () => { state.periode = per.value; state.slot = ''; render(); });
-  const bat = h('select', { class: 'select', 'aria-label': 'Batch' }, h('option', { value: '' }, 'Semua batch'), batchOptions().map(o => h('option', { value: o.value }, o.label)));
-  bat.value = state.batch || ''; bat.addEventListener('change', () => { state.batch = bat.value; state.slot = ''; render(); });
+  const per = picker('Periode', selectEl(periodeOptions(), state.periode, (v) => { state.periode = v; state.slot = ''; render(); }, { label: 'Periode' }));
+  const bat = batchSelect({ value: state.batch || '', withAll: true, onChange: (v) => { state.batch = v; state.slot = ''; render(); } });
   const out = [per, bat];
   if (slot) {
-    const slots = lbSlots(state.periode, state.batch);
+    const slots = lbSlots(state.periode, state.batch).sort(chain(byBatch(s => s.batch_id), (a, b) => HARI.indexOf(a.hari) - HARI.indexOf(b.hari), byText(s => s.jam_mulai)));
     if (!slots.some(s => s.id === state.slot)) state.slot = (slots[0] || {}).id || '';
-    const sl = h('select', { class: 'select select-wide', 'aria-label': 'Kelas' }, slots.map(s => h('option', { value: s.id }, `${s.mata_kuliah}${state.batch ? '' : ' · ' + batchName(s.batch_id)} · ${s.hari} ${s.jam_mulai || ''}`)));
-    sl.value = state.slot; sl.addEventListener('change', () => { state.slot = sl.value; render(); });
-    out.push(sl);
+    const sl = selectEl(slots.map(s => ({ value: s.id, label: `${s.mata_kuliah}${state.batch ? '' : ' · ' + batchName(s.batch_id)} · ${s.hari} ${s.jam_mulai || ''}` })), state.slot, (v) => { state.slot = v; render(); }, { label: 'Kelas' });
+    out.push(picker('Kelas', sl, 'picker-wide'));
   }
   return out;
 }
@@ -68,7 +65,7 @@ function rekap(root, goSheet) {
       ]);
     };
     const num = (v, warn) => warn && v ? h('b', { class: 'num', style: { color: 'var(--warn)' } }, v) : h('span', { class: 'num' }, v);
-    const tblKelas = dataTable({ rows, pageSize: Infinity, sort: { key: 'persen', dir: 'asc' }, onRowClick: x => goSheet(x.s),
+    const tblKelas = dataTable({ rows, pageSize: Infinity, order: chain(byBatch(x => x.s.batch_id), byText(x => x.s.mata_kuliah)), onRowClick: x => goSheet(x.s),
       columns: [
         { key: 'mk', label: 'Mata kuliah', main: true, value: x => x.s.mata_kuliah, render: x => h('div', {}, h('span', { class: 'primary' }, x.s.mata_kuliah), h('span', { class: 'secondary' }, `${x.s.dosen || '—'} · ${batchName(x.s.batch_id)}`)) },
         { key: 'jadwal', label: 'Jadwal', nowrap: true, value: x => `${HARI.indexOf(x.s.hari)}${x.s.jam_mulai}`, render: x => h('div', {}, x.s.hari, h('span', { class: 'secondary num' }, timeLabel(x.s))) },
@@ -80,7 +77,7 @@ function rekap(root, goSheet) {
         { key: 'persen', label: 'Kehadiran', width: '130px', value: x => x.r.persen ?? 101, render: x => pctCell(x.r.persen) },
       ],
       rowActions: x => h('div', { class: 'row-actions' }, h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => goSheet(x.s) }, icon('clipboard', 'sm'), 'Isi absensi')) });
-    const tblDosen = dataTable({ rows: byDosen, pageSize: Infinity, sort: { key: 'persen', dir: 'asc' },
+    const tblDosen = dataTable({ rows: byDosen, pageSize: Infinity, order: byText(g => g.nama),
       columns: [
         { key: 'nama', label: 'Dosen', main: true, render: g => h('div', {}, h('span', { class: 'primary' }, g.nama), h('span', { class: 'secondary' }, uniq(g.kelas).join(' · '))) },
         { key: 'due', width: '96px', label: 'Terjadwal', align: 'right', render: g => num(g.due) },
@@ -101,7 +98,7 @@ function rekap(root, goSheet) {
         { label: 'Absensi tercatat', value: `${pct(tot.rec, tot.due)}%`, sub: `${tot.rec} dari ${tot.due}`, meter: pct(tot.rec, tot.due), icon: 'check' },
         { label: 'Belum dicatat', value: tot.belum, sub: 'perlu dicatat oleh Tim IBM', icon: 'alert' },
       ]),
-      h('div', { class: 'card' }, !rows.length ? h('div', { class: 'empty' }, icon('teacher'), h('h3', {}, 'Tidak ada kelas Dosen External'), h('p', {}, 'Periode/batch ini tidak memiliki kelas Dosen External dengan hari tetap. Jenis dosen dapat diatur melalui Jadwal Kuliah → Slot jadwal atau Biodata Dosen.'))
+      h('div', { class: 'card' }, !rows.length ? h('div', { class: 'empty' }, icon('teacher'), h('h3', {}, 'Tidak ada kelas Dosen External'), h('p', {}, 'Periode/batch ini tidak memiliki kelas Dosen External dengan hari tetap. Jenis dosen dapat diatur melalui Jadwal Kuliah → List Jadwal atau Biodata Dosen.'))
         : (state.mode === 'dosen' ? tblDosen : tblKelas).el),
     ].filter(Boolean));
   }
@@ -117,11 +114,12 @@ function lembar(root) {
     clear(box);
     const sels = selectors(state, render, { slot: true }); pref.set('abs_slot', state.slot);
     const slot = store.get('schedules', state.slot);
-    const head = h('div', { class: 'page-head' },
+    const pickBar = h('div', { class: 'sheet-picker no-print' }, ...sels);
+    const head = (...actions) => h('div', { class: 'page-head' },
       h('div', {}, h('span', { class: 'eyebrow' }, 'Akademik · Absensi Dosen External'), h('h1', {}, 'Lembar Absensi Dosen External'),
-        h('p', {}, slot ? `${slot.mata_kuliah} · ${batchName(slot.batch_id)} · ${slot.hari} ${timeLabel(slot)} · ${slot.dosen || 'dosen belum ditentukan'}` : 'Silakan pilih kelas Dosen External.')),
-      h('div', { class: 'actions no-print' }, ...sels));
-    if (!slot) { box.append(head, h('div', { class: 'card' }, h('div', { class: 'empty' }, icon('teacher'), h('h3', {}, 'Tidak ada kelas Dosen External dengan hari tetap'), h('p', {}, 'Silakan pilih periode/batch lain atau lengkapi hari, jam, dan jenis dosen melalui Jadwal Kuliah → Slot jadwal.')))); return; }
+        h('p', {}, 'Pilih periode, batch, dan kelas, lalu isi status kehadiran dosen pada setiap pertemuan. Perubahan tersimpan otomatis.')),
+      actions.length ? h('div', { class: 'actions no-print' }, ...actions) : null);
+    if (!slot) { box.append(head(), h('div', { class: 'card' }, pickBar, h('div', { class: 'empty' }, icon('teacher'), h('h3', {}, 'Tidak ada kelas Dosen External dengan hari tetap'), h('p', {}, 'Silakan pilih periode/batch lain atau lengkapi hari, jam, dan jenis dosen melalui Jadwal Kuliah → List Jadwal.')))); return; }
     const sessions = sessionsOf(slot, periodInfo(slot.periode));
     const t = today(); const sm = attendanceSummary(slot, t);
     const save = async (x, patch, rowEl) => {
@@ -135,7 +133,7 @@ function lembar(root) {
       ...sessions.map(x => { const a = x.absen || {}; return [x.no, x.tanggal, x.jenis, a.status || '', a.dosen_hadir || '', a.jam_masuk || '', a.jam_keluar || '', a.catatan || '']; }),
     ], header: false, widths: [11, 12, 9, 20, 34, 10, 10, 40] }]);
 
-    const L = (label, ...kids) => h('td', { 'data-label': label, class: /Dosen|Catatan/.test(label) ? 'wide' : '' }, ...kids);
+    const L = (label, ...kids) => h('td', { 'data-label': label, class: /Dosen|Catatan|Jam/.test(label) ? 'wide' : '' }, ...kids);
     const tbody = h('tbody', {}, sessions.map(x => {
       const a = x.absen || {}; const tr = h('tr', { class: [x.tanggal === t ? 'is-today' : '', x.tanggal > t ? 'is-future' : ''].join(' ') });
       const st = h('select', { class: `select st-${toneAbsen(a.status) || 'none'}`, 'aria-label': `Status pertemuan ${x.no}` }, h('option', { value: '' }, x.tanggal <= t ? '— Belum dicatat —' : '—'), STATUS_ABSEN.map(v => h('option', { value: v }, v)));
@@ -157,18 +155,21 @@ function lembar(root) {
       return tr;
     }));
 
-    box.append(head,
+    const meta = (label, value) => value ? h('span', {}, `${label} `, h('b', {}, value)) : null;
+    box.append(
+      head(h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => window.print() }, icon('print'), 'Cetak'),
+        h('button', { class: 'btn btn-ghost', type: 'button', onclick: exportSheet }, icon('sheet'), 'Ekspor Excel')),
       kpiRow([
         { label: 'Kehadiran dosen', value: sm.persen === null ? '–' : `${sm.persen}%`, sub: `${sm.hadir} hadir · ${sm.diganti} diganti · ${sm.tidak} tidak hadir`, meter: sm.persen || 0, meterTone: 'ok', icon: 'teacher', accent: true },
         { label: 'Pertemuan berlangsung', value: `${sm.due} / ${sm.total}`, meter: pct(sm.due, sm.total), icon: 'calendar' },
         { label: 'Belum dicatat', value: sm.belum, sub: 'pertemuan yang telah berlangsung', icon: 'alert' },
       ]),
       h('div', { class: 'card' },
-        h('div', { class: 'toolbar' }, h('span', { class: 'muted', style: { fontSize: '13px' } }, 'Perubahan disimpan secara otomatis. Pemilihan dosen pengganti akan mengubah status menjadi “Diganti dosen lain” secara otomatis.'), h('span', { class: 'count' }),
-          h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => window.print() }, icon('print', 'sm'), 'Cetak'),
-          h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: exportSheet }, icon('sheet', 'sm'), 'Ekspor Excel')),
+        pickBar,
+        h('div', { class: 'sheet-meta' }, meta('Batch', batchName(slot.batch_id)), meta('Jadwal', `${slot.hari} ${timeLabel(slot)}`), meta('Dosen', slot.dosen || 'belum ditentukan'), meta('Ruang', slot.ruang), meta('Periode', slot.periode)),
         h('div', { class: 'table-wrap' }, h('table', { class: 'tbl compact presensi stack' },
-          h('thead', {}, h('tr', {}, ['Pertemuan', 'Tanggal', 'Status', 'Dosen mengajar', 'Jam masuk – keluar', 'Catatan'].map(x => h('th', {}, x)))), tbody))));
+          h('thead', {}, h('tr', {}, [['Pertemuan', '120px'], ['Tanggal', '150px'], ['Status', '200px'], ['Dosen mengajar', ''], ['Jam masuk – keluar', '210px'], ['Catatan', '18%']].map(([x, w]) => h('th', { style: w ? { width: w } : null }, x)))), tbody)),
+        h('div', { class: 'legend-row' }, icon('info', 'sm'), h('span', {}, 'Memilih dosen pengganti otomatis mengubah status menjadi “Diganti dosen lain”.'))));
   }
   render(); root.appendChild(box);
   return { destroy: store.subscribe(() => { if (!muted) render(); }) };
@@ -177,7 +178,7 @@ function lembar(root) {
 /* =================== Log absensi =================== */
 const logView = crudView({
   id: 'attendance', collection: 'attendance', noun: 'catatan absensi', title: 'Log Absensi Dosen External', eyebrow: 'Akademik · Absensi Dosen External',
-  description: 'Seluruh catatan kehadiran Dosen External yang telah diisi oleh Tim IBM. Untuk menambahkan catatan, gunakan tab Lembar absensi atau menu Jadwal Kuliah → Daily.',
+  description: 'Seluruh catatan kehadiran Dosen External yang telah diisi oleh Tim IBM, diurutkan dari yang terbaru. Untuk menambahkan catatan, gunakan tab Lembar Absensi atau menu Jadwal Kuliah → Daily.',
   addable: false, exportName: 'Log_Absensi_Dosen_LB', sort: { key: 'tanggal', dir: 'desc' }, pageSize: 50,
   sections: [{ fields: [
     { key: 'tanggal', label: 'Tanggal', type: 'date', col: 'half' },
@@ -217,17 +218,13 @@ const logView = crudView({
   emptyTitle: 'Belum ada absensi tercatat', emptyText: 'Absensi dapat diisi melalui tab Lembar absensi atau langsung dari menu Jadwal Kuliah → Daily.',
 });
 
+/* Urutan tab: Lembar absensi (langsung siap diisi) · Log absensi · Rekap kehadiran */
 export default {
   mount(root) {
-    let tab = pref.get('tab_absen', 'rekap'); let inner = null; const body = h('div');
-    const draw = () => {
-      inner && inner.destroy && inner.destroy(); clear(root);
-      root.appendChild(tabs([{ id: 'rekap', label: 'Rekap kehadiran' }, { id: 'lembar', label: 'Lembar absensi' }, { id: 'log', label: 'Log absensi' }], tab, (t) => { tab = t; pref.set('tab_absen', t); draw(); }));
-      clear(body); root.appendChild(body);
-      const goSheet = (s) => { pref.set('abs_slot', s.id); pref.set('abs_batch', s.batch_id); pref.set('abs_periode', s.periode); tab = 'lembar'; pref.set('tab_absen', 'lembar'); draw(); window.scrollTo(0, 0); };
-      inner = tab === 'lembar' ? lembar(body) : tab === 'log' ? logView(body) : rekap(body, goSheet);
-    };
-    draw();
-    return { destroy: () => inner && inner.destroy && inner.destroy() };
+    return tabPage(root, [
+      { id: 'lembar', label: 'Lembar absensi', fn: (body) => lembar(body) },
+      { id: 'log', label: 'Log absensi', fn: (body) => logView(body) },
+      { id: 'rekap', label: 'Rekap kehadiran', fn: (body, ctx) => rekap(body, (s) => { pref.set('abs_slot', s.id); pref.set('abs_batch', s.batch_id); pref.set('abs_periode', s.periode); ctx.go('lembar'); }) },
+    ], { eyebrow: 'Akademik', title: 'Absensi Dosen External', def: 'lembar', remember: false });
   },
 };

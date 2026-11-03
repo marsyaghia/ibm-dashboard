@@ -4,7 +4,7 @@
    Kalender akademik. Semua tampilan dibentuk dari Slot jadwal (kelas
    mingguan) + Kalender akademik (data PDF bagian akademik).
    ========================================================================= */
-import { h, icon, clear, badge, batchName, batchOptions, tabs, pref, toast, fmtDate, fmtDateLong, fmtDayDate, parseDate, isoDate, today, uniq, pct, sum, openDrawer, confirmDialog } from '../ui.js';
+import { h, icon, clear, badge, batchName, batchOptions, batchSelect, picker, selectEl, tabPage, pref, toast, fmtDate, fmtDateLong, fmtDayDate, parseDate, isoDate, today, uniq, pct, sum, openDrawer, confirmDialog, chain, byBatch, byText, batchRank } from '../ui.js';
 import { buildForm } from '../form.js';
 import { crudView, kpiRow } from '../crud.js';
 import { dataTable } from '../table.js';
@@ -31,10 +31,8 @@ const absenCell = (x, t) => {
 
 /* ---------- Pemilih periode & batch ---------- */
 function pickers(state, onChange, { allBatch = true } = {}) {
-  const per = h('select', { class: 'select', 'aria-label': 'Periode akademik' }, periodeOptions().map(p => h('option', { value: p }, p)));
-  per.value = state.periode; per.addEventListener('change', () => { state.periode = per.value; onChange(); });
-  const bat = h('select', { class: 'select', 'aria-label': 'Batch' }, allBatch ? h('option', { value: '' }, 'Semua batch') : null, batchOptions().map(o => h('option', { value: o.value }, o.label)));
-  bat.value = state.batch || ''; bat.addEventListener('change', () => { state.batch = bat.value; onChange(); });
+  const per = picker('Periode', selectEl(periodeOptions(), state.periode, (v) => { state.periode = v; onChange(); }, { label: 'Periode akademik' }));
+  const bat = batchSelect({ value: state.batch || '', withAll: allBatch, onChange: (v) => { state.batch = v; onChange(); } });
   return [per, bat];
 }
 const calNote = (periode, info) => {
@@ -174,7 +172,7 @@ function weekly(root) {
       ]),
       fixed.length ? h('div', { class: 'card' }, grid, mobile,
         h('div', { class: 'legend-row' }, h('span', {}, h('i'), 'Kuliah'), h('span', {}, h('i', { class: 'trent' }), 'Trent Global College'), h('span', {}, h('i', { class: 'act' }), 'IBM Activity'), h('span', {}, 'P = pertemuan ke-'))) :
-        h('div', { class: 'card' }, h('div', { class: 'empty' }, icon('calendar'), h('h3', {}, 'Belum ada kelas dengan hari tetap'), h('p', {}, 'Tambahkan kelas, impor slot jadwal melalui tab “Slot jadwal”, atau pilih periode/batch lain.'))),
+        h('div', { class: 'card' }, h('div', { class: 'empty' }, icon('calendar'), h('h3', {}, 'Belum ada kelas dengan hari tetap'), h('p', {}, 'Tambahkan kelas, impor jadwal melalui tab “List Jadwal”, atau pilih periode/batch lain.'))),
       looseCard(loose, !st.batch),
     ].filter(Boolean));
   }
@@ -195,8 +193,7 @@ function daily(root) {
     const shift = (n) => { st.date = isoDate(addDays(parseDate(st.date), n)); render(); };
     const dateIn = h('input', { class: 'input', type: 'date', value: st.date, 'aria-label': 'Tanggal' });
     dateIn.addEventListener('change', () => { if (dateIn.value) { st.date = dateIn.value; render(); } });
-    const bat = h('select', { class: 'select', 'aria-label': 'Batch' }, h('option', { value: '' }, 'Semua batch'), batchOptions().map(o => h('option', { value: o.value }, o.label)));
-    bat.value = st.batch; bat.addEventListener('change', () => { st.batch = bat.value; render(); });
+    const bat = batchSelect({ value: st.batch || '', withAll: true, onChange: (v) => { st.batch = v; render(); } });
     const lb = sessions.filter(x => jenisDosen(x.slot) === 'Dosen External'); const done = lb.filter(x => x.absen && x.absen.status).length;
     const wk = weekNo(info, st.date);
 
@@ -274,14 +271,18 @@ export const slotBeforeSave = (r) => {
   if (out.hari) { const hit = HARI.find(x => x.toLowerCase() === String(out.hari).toLowerCase().trim() || { monday: 'Senin', tuesday: 'Selasa', wednesday: 'Rabu', thursday: 'Kamis', friday: 'Jumat', saturday: 'Sabtu' }[String(out.hari).toLowerCase().trim()] === x); out.hari = hit || ''; }
   return out;
 };
+/* Urutan bawaan List Jadwal (berlaku untuk semua filter): Batch → Semester → Hari → Jam → Mata kuliah */
+const hariIdx = (r) => { const i = HARI.indexOf(r.hari); return i < 0 ? 9 : i; };
+const slotOrder = chain(byBatch(), (a, b) => (Number(a.semester) || 99) - (Number(b.semester) || 99), (a, b) => hariIdx(a) - hariIdx(b), byText(r => r.jam_mulai || '99'), byText(r => r.mata_kuliah));
 const slotView = crudView({
-  id: 'schedules', collection: 'schedules', noun: 'slot jadwal', title: 'Slot Jadwal', eyebrow: 'Jadwal Kuliah · Data dasar',
-  description: 'Setiap baris mewakili satu kelas mingguan (hari dan jam) untuk satu batch pada satu periode. Jadwal Full, Weekly, Daily, dan Absensi Dosen External disusun berdasarkan data ini. Kosongkan kolom hari untuk kelas tanpa hari/jam tetap.',
-  sections: slotSections, beforeSave: slotBeforeSave, exportName: 'Slot_Jadwal_IBM', sort: { key: 'hari', dir: 'asc' }, pageSize: 50,
+  id: 'schedules', collection: 'schedules', noun: 'jadwal', title: 'List Jadwal', eyebrow: 'Jadwal Kuliah · Data dasar',
+  description: 'Daftar seluruh kelas mingguan per batch dan periode, diurutkan berdasarkan batch, semester, hari, dan jam. Jadwal Full, Weekly, Daily, serta Absensi Dosen External disusun dari data ini. Kosongkan kolom hari untuk kelas tanpa hari/jam tetap.',
+  sections: slotSections, beforeSave: slotBeforeSave, exportName: 'List_Jadwal_IBM', order: slotOrder, pageSize: 100, addLabel: 'Tambah jadwal',
+  groupBy: r => [batchName(r.batch_id), r.semester ? `Semester ${r.semester}` : 'Semester belum diisi'].join(' · '),
   columns: [
-    { key: 'mata_kuliah', label: 'Mata kuliah', main: true, render: r => h('div', {}, h('span', { class: 'primary' }, r.mata_kuliah), r.tipe && r.tipe !== 'Kuliah' ? h('span', { class: 'pill gold', style: { marginLeft: '6px' } }, r.tipe) : null, h('span', { class: 'secondary' }, [r.kode, r.sks ? `${r.sks} SKS` : '', r.semester ? `Semester ${r.semester}` : ''].filter(Boolean).join(' · '))) },
-    { key: 'hari', label: 'Hari & jam', value: r => `${HARI.indexOf(r.hari) < 0 ? 9 : HARI.indexOf(r.hari)}${r.jam_mulai || ''}`, render: r => h('div', {}, h('span', { class: 'primary' }, r.hari || 'Tanpa hari tetap'), h('span', { class: 'secondary num' }, timeLabel(r))), exportValue: r => r.hari },
-    { key: 'batch_id', label: 'Batch', value: r => batchName(r.batch_id), render: r => h('div', {}, batchName(r.batch_id), h('span', { class: 'secondary' }, r.periode)), nowrap: true },
+    { key: 'mata_kuliah', label: 'Mata kuliah', main: true, render: r => h('div', {}, h('span', { class: 'primary' }, r.mata_kuliah), r.tipe && r.tipe !== 'Kuliah' ? h('span', { class: 'pill gold', style: { marginLeft: '6px' } }, r.tipe) : null, h('span', { class: 'secondary' }, [r.kode, r.sks ? `${r.sks} SKS` : ''].filter(Boolean).join(' · '))) },
+    { key: 'hari', label: 'Hari & jam', value: r => `${hariIdx(r)}${r.jam_mulai || ''}`, render: r => h('div', {}, h('span', { class: 'primary' }, r.hari || 'Tanpa hari tetap'), h('span', { class: 'secondary num' }, timeLabel(r))), exportValue: r => r.hari, nowrap: true },
+    { key: 'batch_id', label: 'Batch', value: r => `${String(batchRank(r.batch_id)).padStart(4, '0')}${r.semester || ''}`, render: r => h('div', {}, batchName(r.batch_id), h('span', { class: 'secondary' }, [r.semester ? `Semester ${r.semester}` : '', r.periode].filter(Boolean).join(' · '))), nowrap: true },
     { key: 'dosen', label: 'Dosen', render: r => h('div', {}, r.dosen || '–', h('span', { class: 'secondary' }, jenisDosen(r))) },
     { key: 'ruang', label: 'Ruang', render: r => h('div', {}, r.ruang || '–', r.mode && r.mode !== 'Onsite' ? h('span', { class: 'secondary' }, r.mode) : null) },
     { key: 'status', label: 'Status', render: r => r.status ? badge(r.status, r.status === 'Confirmed' ? 'ok' : 'warn') : null },
@@ -295,6 +296,7 @@ const slotView = crudView({
   filters: [
     { key: 'periode', label: 'Periode', options: periodeOptions },
     { key: 'batch_id', label: 'Batch', options: () => batchOptions() },
+    { key: 'semester', label: 'Semester', options: () => uniq(store.all('schedules').map(r => String(r.semester || ''))).sort((a, b) => a - b).map(s => ({ value: s, label: `Semester ${s}` })), match: (r, v) => String(r.semester) === v },
     { key: 'hari', label: 'Hari', options: [...HARI, { value: '__none', label: 'Tanpa hari tetap' }], match: (r, v) => v === '__none' ? !HARI.includes(r.hari) : r.hari === v },
     { key: 'jenis', label: 'Jenis dosen', all: 'Semua jenis dosen', options: ['Dosen External', 'Dosen Internal', 'Ikut Fakultas'], match: (r, v) => jenisDosen(r) === v },
   ],
@@ -303,7 +305,7 @@ const slotView = crudView({
   defaults: () => ({ periode: currentPeriode(), tipe: 'Kuliah', mode: 'Onsite', jumlah_pertemuan: store.setting('akademik').target_pertemuan }),
   aliases: { mata_kuliah: ['Subject in English', 'Subject', 'Matkul', 'Mata Kuliah'], dosen: ['Lectures', 'Lecturer', 'Pengajar', 'Dosen'], hari: ['Day'], ruang: ['ROOM', 'Room'], batch_id: ['BATCH'], jam_mulai: ['Time', 'Jam'] },
   importNote: 'Format sheet jadwal (Subject in English, Lectures, BATCH, ROOM, Day, Time) dikenali secara otomatis. Kolom “Time” dengan isi seperti “09.30 - 12.00” akan dipisahkan menjadi jam mulai dan jam selesai. Nama hari dalam bahasa Inggris (Monday, dst.) juga dikenali.',
-  emptyTitle: 'Belum ada slot jadwal',
+  emptyTitle: 'Belum ada jadwal', unit: 'kelas',
 });
 
 /* =================== TAB 5 — KALENDER AKADEMIK =================== */
@@ -363,22 +365,12 @@ export function openSlot(rec) {
 }
 
 const TABS = [
-  { id: 'full', label: 'Jadwal Full', fn: jadwalFull },
-  { id: 'weekly', label: 'Weekly', fn: weekly },
-  { id: 'daily', label: 'Daily', fn: daily },
-  { id: 'slot', label: 'Slot jadwal', fn: slotView },
-  { id: 'kalender', label: 'Kalender akademik', fn: kalenderView },
+  { id: 'full', label: 'Jadwal Full', fn: (b) => jadwalFull(b) },
+  { id: 'weekly', label: 'Weekly', fn: (b) => weekly(b) },
+  { id: 'daily', label: 'Daily', fn: (b) => daily(b) },
+  { id: 'slot', label: 'List Jadwal', fn: (b) => slotView(b) },
+  { id: 'kalender', label: 'Kalender akademik', fn: (b) => kalenderView(b) },
 ];
 export default {
-  mount(root) {
-    let tab = pref.get('tab_jadwal2', 'full'); let inner = null; const body = h('div');
-    const draw = () => {
-      inner && inner.destroy && inner.destroy(); clear(root);
-      root.appendChild(tabs(TABS, tab, (t) => { tab = t; pref.set('tab_jadwal2', t); draw(); }));
-      clear(body); root.appendChild(body);
-      inner = (TABS.find(x => x.id === tab) || TABS[0]).fn(body);
-    };
-    draw();
-    return { destroy: () => inner && inner.destroy && inner.destroy() };
-  },
+  mount(root) { return tabPage(root, TABS, { eyebrow: 'Akademik', title: 'Jadwal Kuliah', key: 'tab_jadwal2', def: 'full' }); },
 };

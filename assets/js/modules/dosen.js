@@ -3,7 +3,7 @@
    Klik baris → profil (termasuk mata kuliah, RPS, dan materi PPT yang terkait).
    Impor langsung dari CSV/Excel Google Form "Data Dosen IBM".
    ========================================================================= */
-import { h, icon, badge, docLink, initials, fmtDateLong, uniq, openDrawer, hasAttachment } from '../ui.js';
+import { h, icon, badge, docLink, avatar, fmtDateLong, uniq, openDrawer, hasAttachment } from '../ui.js';
 import { crudView } from '../crud.js';
 import { store } from '../store.js';
 
@@ -49,7 +49,7 @@ const sections = [
 ];
 
 const columns = [
-  { key: 'nama', label: 'Nama', main: true, render: r => h('div', { style: { display: 'flex', gap: '10px', alignItems: 'center' } }, h('span', { class: 'avatar sm', 'aria-hidden': 'true' }, initials(r.nama)), h('div', {}, h('span', { class: 'primary' }, r.nama), h('span', { class: 'secondary' }, [r.jabatan, r.instansi].filter(Boolean).join(' · ') || '—'))) },
+  { key: 'nama', label: 'Nama', main: true, render: r => h('div', { class: 'name-cell' }, avatar(r.nama, r.foto_link, { size: 'sm' }), h('div', {}, h('span', { class: 'primary' }, r.nama), h('span', { class: 'secondary' }, [r.jabatan, r.instansi].filter(Boolean).join(' · ') || '—'))) },
   { key: 'tipe', label: 'Tipe', render: r => h('span', { class: `pill ${r.tipe === 'Dosen External' ? 'gold' : ''}` }, r.tipe || '–') },
   { key: 'mata_kuliah', label: 'Mata kuliah', render: r => r.mata_kuliah ? h('span', { style: { fontSize: '13px' } }, r.mata_kuliah.split(';').map(s => s.trim()).filter(Boolean).slice(0, 3).join(' · ')) : null },
   { key: 'pendidikan', label: 'Pendidikan', value: r => r.s3 ? 'S3' : r.s2 ? 'S2' : r.s1 ? 'S1' : '', render: r => (r.s3 || r.s2 || r.s1) ? h('span', { title: [r.s1, r.s2, r.s3].filter(Boolean).join(' · ') }, r.s3 && !/progress|berjalan/i.test(r.s3) ? 'S3' : r.s2 ? 'S2' : 'S1') : null },
@@ -68,8 +68,8 @@ function profile(r, ctx) {
   const edit = h('button', { class: 'btn btn-primary', type: 'button' }, icon('edit', 'sm'), 'Ubah biodata');
   const d = openDrawer({
     title: 'Profil dosen', body: h('div', { class: 'stack' },
-      h('div', { class: 'profile' }, h('div', { class: 'avatar' }, initials(r.nama)),
-        h('div', {}, h('h2', { style: { fontSize: '19px' } }, r.nama), h('p', { class: 'muted', style: { margin: '4px 0 8px' } }, [r.jabatan, r.instansi].filter(Boolean).join(' · ') || '—'),
+      h('div', { class: 'profile' }, avatar(r.nama, r.foto_link),
+        h('div', {}, h('h2', { 'data-raw': '' }, r.nama), h('p', { class: 'muted', style: { margin: '4px 0 8px' } }, [r.jabatan, r.instansi].filter(Boolean).join(' · ') || '—'),
           h('div', { class: 'actions' }, h('span', { class: `pill ${r.tipe === 'Dosen External' ? 'gold' : ''}` }, r.tipe || '–'), badge(r.status),
             r.foto_link ? docLink({ link: r.foto_link, label: 'Foto' }) : null, r.cv_link ? docLink({ link: r.cv_link, label: 'CV' }) : null, hasAttachment(r.dokumen) ? docLink(r.dokumen) : null))),
       h('div', { class: 'card card-pad' }, h('h3', { style: { fontSize: '14px', marginBottom: '10px' } }, 'Mengajar di IBM'),

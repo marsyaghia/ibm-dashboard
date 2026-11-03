@@ -23,7 +23,7 @@ function reminders() {
   if (!info) add('bad', 'Kalender akademik belum diisi', `Periode ${periode} belum memiliki kegiatan Perkuliahan/UTS/UAS sehingga tanggal pertemuan belum dapat dihitung.`, 'jadwal', 1);
   else if (info.events.some(e => /perkiraan/i.test(e.catatan || ''))) add('warn', 'Kalender akademik masih bersifat perkiraan', `Silakan impor kalender akademik resmi ${periode} dari dokumen PDF Bagian Akademik.`, 'jadwal', 1);
   const slots = slotsOf(periode);
-  add('warn', 'Slot jadwal belum lengkap', `${periode}: terdapat kelas yang belum memiliki dosen atau masih berstatus TBC.`, 'jadwal', slots.filter(s => !s.dosen || s.status === 'TBC').length);
+  add('warn', 'List Jadwal belum lengkap', `${periode}: terdapat kelas yang belum memiliki dosen atau masih berstatus TBC.`, 'jadwal', slots.filter(s => !s.dosen || s.status === 'TBC').length);
 
   // Absensi Dosen External
   const lb = slots.filter(s => HARI.includes(s.hari) && isLB(s));

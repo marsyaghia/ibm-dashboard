@@ -1,7 +1,7 @@
 /* =========================================================================
    1. KEUANGAN — PENGELUARAN DIVISI IBM (+ laporan)
    ========================================================================= */
-import { h, icon, clear, fmtIDR, fmtDate, fmtNum, sum, groupBy, uniq, badge, docLink, batchName, batchOptions, tabs, pref, today, parseDate, monthName, toast } from '../ui.js';
+import { h, icon, clear, fmtIDR, fmtDate, fmtNum, sum, groupBy, uniq, badge, docLink, batchName, batchOptions, tabPage, pref, today, parseDate, monthName, toast } from '../ui.js';
 import { crudView, kpiRow } from '../crud.js';
 import { hbars } from '../charts.js';
 import { dataTable } from '../table.js';
@@ -163,15 +163,9 @@ function exportLaporan(periode, lines, byKat, byMonth, byBatch, total) {
 
 export default {
   mount(root) {
-    let tab = pref.get('tab_exp', 'transaksi'); let inner = null;
-    const body = h('div');
-    const draw = () => {
-      inner && inner.destroy && inner.destroy(); clear(root);
-      root.appendChild(tabs([{ id: 'transaksi', label: 'Transaksi' }, { id: 'laporan', label: 'Laporan' }], tab, (t) => { tab = t; pref.set('tab_exp', t); draw(); }));
-      clear(body); root.appendChild(body);
-      inner = tab === 'laporan' ? laporan(body) : transaksi(body);
-    };
-    draw();
-    return { destroy: () => inner && inner.destroy && inner.destroy() };
+    return tabPage(root, [
+      { id: 'transaksi', label: 'Transaksi', fn: (b) => transaksi(b) },
+      { id: 'laporan', label: 'Laporan', fn: (b) => laporan(b) },
+    ], { eyebrow: 'Keuangan', title: 'Pengeluaran Divisi', key: 'tab_exp', def: 'transaksi' });
   },
 };

@@ -285,7 +285,7 @@ export const EN = {
 
   // ---------- Pengaturan ----------
   'Daftar pilihan': 'Option lists', 'Kurikulum': 'Curriculum', 'Akun superadmin': 'Superadmin accounts', 'Data & impor': 'Data & import', 'Pengaturan umum': 'General settings', 'Identitas divisi dan parameter operasional yang digunakan di seluruh menu.': 'Division identity and operating parameters used across all menus.',
-  'Profil divisi': 'Division profile', 'Digunakan pada sapaan Beranda, kop laporan, dan formulir cetak (tanda tangan Rektor dan Koordinator IBM).': 'Used in the home greeting, report headers, and printed forms (signatures of the Rector & IBM Coordinator).', 'Nama divisi': 'Division name',
+  'Profil divisi': 'Division profile', 'Digunakan pada sapaan Dashboard, kop laporan, dan formulir cetak (tanda tangan Rektor dan Koordinator IBM).': 'Used in the home greeting, report headers, and printed forms (signatures of the Rector & IBM Coordinator).', 'Nama divisi': 'Division name',
   'Koordinator IBM (nama & gelar)': 'IBM Coordinator (name & titles)', 'Rektor (nama & gelar)': 'Rector (name & titles)', 'Email divisi': 'Division email', 'Telepon / WA divisi': 'Division phone / WhatsApp', 'Parameter akademik & Trent': 'Academic & Trent parameters',
   'Nilai bawaan yang digunakan saat membuat slot jadwal baru dan menghitung tagihan Trent. Tanggal UTS/UAS yang pasti tetap mengacu pada Kalender akademik.': 'Defaults when creating new schedule slots and calculating Trent invoices. Exact midterm/final dates still come from the Academic calendar.',
   'Jumlah pertemuan per semester': 'Sessions per semester', 'Pertemuan UTS (bila kalender kosong)': 'Midterm session (if no calendar)', 'Pertemuan UAS (bila kalender kosong)': 'Final session (if no calendar)', 'Tarif Trent per mahasiswa per mata kuliah': 'Trent fee per student per course', 'GST Trent (%)': 'Trent GST (%)',
@@ -297,7 +297,7 @@ export const EN = {
   'Kode batch': 'Batch code', 'Tidak dapat diubah setelah disimpan.': 'Cannot be changed after saving.', 'Nama batch': 'Batch name', 'Tahun angkatan': 'Intake year', 'Periode studi': 'Study period',
   'Kurikulum IBM (CSPP)': 'IBM Curriculum (CSPP)', 'Daftar mata kuliah per semester yang menjadi acuan menu RPS & OBE, Jadwal Kuliah, dan Trent. MKD Dikti · MKF Fakultas · MKI Institut · MKP Prodi · MKPil Pilihan · MKL Lintas Prodi · MKK Konsentrasi.': 'Courses per semester — the reference for RPS & OBE, Class Schedule, and Trent. MKD Ministry · MKF Faculty · MKI Institute · MKP Program · MKPil Elective · MKL Cross-program · MKK Concentration.',
   'Nama mata kuliah (EN)': 'Course name (EN)', 'Nama mata kuliah (ID)': 'Course name (ID)', '— Bukan Trent —': '— Not Trent —', 'Jenis pengampu': 'Lecturer type', 'Mitra / asal': 'Partner / origin', 'Menggunakan penilaian OBE': 'Uses OBE assessment', 'Diampu Dosen External': 'Taught by externals',
-  'Hanya email yang terdaftar pada tabel admin_pengguna (Supabase) yang dapat masuk. Sapaan di Beranda mengikuti kolom “sapaan”.': 'Only emails listed in the admin_pengguna table (Supabase) can sign in. The home greeting follows the “sapaan” column.',
+  'Hanya email yang terdaftar pada tabel admin_pengguna (Supabase) yang dapat masuk. Sapaan di Dashboard mengikuti kolom “sapaan”.': 'Only emails listed in the admin_pengguna table (Supabase) can sign in. The home greeting follows the “sapaan” column.',
   'Akun yang memiliki akses': 'Accounts with access', 'Dikelola di Supabase, bukan dari dashboard': 'Managed in Supabase, not from the dashboard', 'Memuat daftar akun…': 'Loading accounts…', 'Menambah / mencabut akses:': 'Adding / removing access:', 'buka Supabase → SQL Editor, kemudian jalankan': 'open Supabase → SQL Editor, then run', 'atau': 'or',
   'Akun Anda': 'Your account', 'Kata sandi baru': 'New password', 'Ulangi kata sandi baru': 'Repeat new password', 'Ganti kata sandi': 'Change password', 'Tidak tersedia di mode demo.': 'Not available in demo mode.', 'Kata sandi minimal 8 karakter.': 'Password must be at least 8 characters.', 'Konfirmasi kata sandi tidak sama.': 'Password confirmation does not match.', 'Sedang masuk': 'Signed in',
   'Data dapat diimpor per menu langsung melalui Supabase (Table Editor → tabel → Insert → Import data from CSV) menggunakan template di bawah, atau melalui tombol “Impor” pada setiap menu dashboard.': 'Import data per menu directly in Supabase (Table Editor → table → Insert → Import data from CSV) using the templates below, or via the “Import” button in each dashboard menu.',
@@ -323,10 +323,39 @@ export const EN = {
   'Opsional, contohnya daftar perusahaan yang pernah dilamar.': 'Optional, e.g. a list of companies applied to.',
   'Merekomendasikan kepada mahasiswa angkatan berikutnya?': 'Recommend to future students?',
   'Langkah membuat tautan bit.ly:': 'Steps to create the bit.ly link: ',
+
+  // ---------- Revisi tampilan (Nov 2026) ----------
+  'Dashboard': 'Dashboard', 'Data Mahasiswa': 'Student Data',
+  'Tabungan dan arus kas program immersion. Pilih batch untuk menampilkan datanya di semua tab.': 'Immersion programme savings and cash flow. Choose a batch to show its data in every tab.',
+  'Penempatan magang mahasiswa dan penilaian tempat magang. Pilih batch untuk menampilkan datanya di semua tab.': 'Student internship placements and workplace ratings. Choose a batch to show its data in every tab.',
+  // Jadwal: Slot jadwal → List Jadwal
+  'List Jadwal': 'Schedule List', 'List Jadwal belum lengkap': 'Schedule list incomplete', 'Tambah jadwal': 'Add schedule', 'Belum ada jadwal': 'No schedules yet', 'Semester belum diisi': 'Semester not set',
+  'Daftar seluruh kelas mingguan per batch dan periode, diurutkan berdasarkan batch, semester, hari, dan jam. Jadwal Full, Weekly, Daily, serta Absensi Dosen External disusun dari data ini. Kosongkan kolom hari untuk kelas tanpa hari/jam tetap.': 'All weekly classes per batch and period, sorted by batch, semester, day, and time. The Full, Weekly, and Daily schedules and External Lecturer Attendance are built from this data. Leave the day empty for classes without a fixed day/time.',
+  'Tambahkan kelas, impor jadwal melalui tab “List Jadwal”, atau pilih periode/batch lain.': 'Add a class, import schedules in the “Schedule List” tab, or choose another period/batch.',
+  // Absensi
+  'Periode/batch ini tidak memiliki kelas Dosen External dengan hari tetap. Jenis dosen dapat diatur melalui Jadwal Kuliah → List Jadwal atau Biodata Dosen.': 'This period/batch has no external-lecturer classes with a fixed day. Lecturer type is set in Class Schedule → Schedule List or Lecturer Profiles.',
+  'Silakan pilih periode/batch lain atau lengkapi hari, jam, dan jenis dosen melalui Jadwal Kuliah → List Jadwal.': 'Choose another period/batch, or complete the day, time, and lecturer type in Class Schedule → Schedule List.',
+  'Pilih periode, batch, dan kelas, lalu isi status kehadiran dosen pada setiap pertemuan. Perubahan tersimpan otomatis.': 'Choose the period, batch, and class, then fill in the lecturer’s attendance for each session. Changes are saved automatically.',
+  'Memilih dosen pengganti otomatis mengubah status menjadi “Diganti dosen lain”.': 'Choosing a substitute lecturer automatically sets the status to “Substituted by another lecturer”.',
+  'belum ditentukan': 'not set yet',
+  'Seluruh catatan kehadiran Dosen External yang telah diisi oleh Tim IBM, diurutkan dari yang terbaru. Untuk menambahkan catatan, gunakan tab Lembar Absensi atau menu Jadwal Kuliah → Daily.': 'All external-lecturer attendance records entered by the IBM team, newest first. To add records, use the Attendance Sheet tab or Class Schedule → Daily.',
+  // Biodata mahasiswa & profil
+  'Biodata lengkap mahasiswa IBM sesuai Formulir Pendataan Mahasiswa, diurutkan per batch lalu abjad. Pilih nama mahasiswa untuk melihat profil dan rekap datanya.': 'Complete IBM student profiles following the Student Data Form, sorted by batch then alphabetically. Select a student’s name to view their profile and data summary.',
+  'Foto profil': 'Profile photo', 'Unggah foto (JPG/PNG, maks. 5 MB, rasio 1:1 atau 3:4) atau tempel tautan Google Drive dengan akses “Siapa saja yang memiliki link”.': 'Upload a photo (JPG/PNG, max. 5 MB, 1:1 or 3:4 ratio) or paste a Google Drive link shared with “Anyone with the link”.',
+  'Atau tempel tautan foto (Google Drive)…': 'Or paste a photo link (Google Drive)…', 'Unggah foto': 'Upload photo', 'Ganti foto': 'Replace photo', 'Hapus foto': 'Remove photo',
+  'Berkas foto harus berupa gambar (JPG/PNG).': 'The photo must be an image (JPG/PNG).', 'Ukuran foto maksimal 5 MB.': 'Maximum photo size is 5 MB.',
+  'Profil mahasiswa': 'Student profile', 'Rekap seluruh data mahasiswa': 'Summary of all student data', 'Kelengkapan biodata': 'Profile completeness', 'Batch · Angkatan': 'Batch · Intake',
+  'Kontak & alamat': 'Contact & address', 'Orang tua / wali': 'Parents / guardian', 'Rekap data terkait': 'Related data summary', 'Formulir bertanda tangan': 'Signed form', 'Status belum diisi': 'Status not set',
+  'Tempat, tanggal lahir': 'Place, date of birth', 'Alamat (KTP)': 'Address (ID card)', 'Telp ayah': 'Father’s phone', 'Telp ibu': 'Mother’s phone', 'Penghasilan ayah': 'Father’s income', 'Penghasilan ibu': 'Mother’s income',
+  'Wali': 'Guardian', 'Instansi': 'Organisation', 'Berkas': 'File', 'Tabungan immersion': 'Immersion savings', 'NIM': 'Student ID', 'NIK': 'National ID (NIK)', 'Skill': 'Skills', 'Softskill': 'Soft skills',
+  'Hardskill 1': 'Hard skill 1', 'Hardskill 2': 'Hard skill 2', 'Hardskill 3': 'Hard skill 3', 'Pembayaran per Batch': 'Payments per Batch',
 };
 
 /* Teks dinamis: [pola, pengganti]. Dicoba berurutan; yang pertama cocok dipakai. */
 export const EN_PATTERNS = [
+  [/^(\d+) dari (\d+) kelas$/, '$1 of $2 classes'], [/^NIM (.+)$/, 'Student ID $1'], [/^(\d+) terbit dari (\d+)$/, '$1 issued of $2'],
+  [/^(.+) · (\d+) setoran terverifikasi$/, '$1 · $2 verified deposits'], [/^Semester (\d+) · (.+)$/, 'Semester $1 · $2'],
+  [/^(.+) · Semester (\d+)$/, '$1 · Semester $2'], [/^(.+) · Semester belum diisi$/, '$1 · Semester not set'],
   [/^(\d+) dari (\d+) mahasiswa \(berjalan\/selesai\) sudah mengisi$/, '$1 of $2 students (ongoing/finished) have responded'], [/^(\d+) mahasiswa belum mengisi$/, '$1 students have not responded'],
   [/^Salin pengingat \((\d+) belum\)$/, 'Copy reminder ($1 pending)'], [/^Form penilaian · (.+)$/, 'Rating form · $1'], [/^Matriks cicilan · (.+)$/, 'Instalment matrix · $1'], [/^Ke-(\d+)$/, 'No. $1'],
   [/^(\d+) ulasan mahasiswa$/, '$1 student reviews'], [/^(\d+) ulasan$/, '$1 reviews'], [/^(\d+) ulasan dihitung$/, '$1 reviews counted'], [/^Skala 1–5 · (\d+) ulasan$/, 'Scale 1–5 · $1 reviews'], [/^(\d+) perusahaan$/, '$1 companies'],

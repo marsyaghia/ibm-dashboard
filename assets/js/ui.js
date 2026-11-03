@@ -5,6 +5,26 @@ import { store } from './store.js';
 import { lang } from './i18n.js';
 import { CONFIG } from './config.js';
 
+/* ---------- Huruf judul (Title Case) ----------
+   Judul memakai huruf besar di awal setiap kata, kecuali kata tugas
+   (dan, di, ke, per, …) yang bukan kata pertama. Singkatan/nama yang sudah
+   memakai huruf besar (OBE, RPS, bit.ly, s.d.) tidak diubah. */
+const SMALL_WORDS = new Set(['dan', 'atau', 'di', 'ke', 'dari', 'untuk', 'yang', 'per', 'pada', 'dengan', 'dalam', 'oleh', 'serta', 'bagi', 'tentang', 'tanpa', 'terhadap', 'hingga', 'vs',
+  'a', 'an', 'the', 'and', 'or', 'of', 'to', 'for', 'in', 'on', 'at', 'by', 'with', 'from', 'as', 'into', 'nor', 'but']);
+export function tc(s) {
+  if (typeof s !== 'string' || !s.trim()) return s;
+  let first = true;
+  return s.replace(/[^\s/()–—-]+/g, (w, i) => {
+    const isFirst = first; first = false;
+    if (w !== w.toLowerCase()) return w;            // sudah ada huruf besar (OBE, Dosen External)
+    if (/\.|@|^\d|^[^\p{L}]*$/u.test(w)) return w;  // bit.ly, s.d., angka, simbol
+    const core = w.replace(/^[^\p{L}]+|[^\p{L}]+$/gu, '');
+    if (!isFirst && s[i - 1] !== '/' && SMALL_WORDS.has(core)) return w;
+    return w.replace(/\p{L}/u, (c) => c.toUpperCase());
+  });
+}
+const TITLE_TAGS = new Set(['H1', 'H2', 'H3']);
+
 /* ---------- DOM ---------- */
 export function h(tag, attrs = {}, ...kids) {
   const el = document.createElement(tag);
@@ -18,7 +38,8 @@ export function h(tag, attrs = {}, ...kids) {
     else if (v === true) el.setAttribute(k, '');
     else el.setAttribute(k, v);
   }
-  append(el, kids);
+  // Semua judul (h1–h3) otomatis Title Case, kecuali ditandai data-raw (mis. nama orang/perusahaan)
+  append(el, TITLE_TAGS.has(el.tagName) && !(attrs && attrs['data-raw'] !== undefined) ? kids.flat(Infinity).map(k => (typeof k === 'string' ? tc(k) : k)) : kids);
   return el;
 }
 function append(el, kids) {
@@ -141,9 +162,41 @@ export const uniq = (arr) => [...new Set(arr.filter(v => v !== '' && v !== null 
 export const pct = (a, b) => b ? Math.round((a / b) * 100) : 0;
 
 /* ---------- Lookup data master ---------- */
-export const batches = () => [...store.all('batches')].sort((a, b) => (a.angkatan || 0) - (b.angkatan || 0));
+const cmpText = (a, b) => String(a ?? '').localeCompare(String(b ?? ''), 'id', { numeric: true, sensitivity: 'base' });
+/** Urutan batch: Batch 1, Batch 2, … (angkatan lalu nama) */
+export const batches = () => [...store.all('batches')].sort((a, b) => (Number(a.angkatan) || 9999) - (Number(b.angkatan) || 9999) || cmpText(a.nama, b.nama));
 export const batchName = (id) => id === 'all' ? 'Semua batch' : ((store.get('batches', id) || {}).nama || '–');
 export const batchOptions = (withAll = false) => [...(withAll ? [{ value: 'all', label: 'Semua batch' }] : []), ...batches().map(b => ({ value: b.id, label: `${b.nama} · ${b.angkatan}` }))];
+/** Posisi batch di urutan (data tanpa batch ditaruh paling akhir) */
+export function batchRank(id) { const i = batches().findIndex(b => b.id === id); return i < 0 ? 9999 : i; }
+/** Pembanding baku: urut abjad/angka ala Indonesia ("Batch 2" < "Batch 10") */
+export const byText = (f) => (a, b) => cmpText(f(a), f(b));
+/** Gabungkan beberapa pembanding: urut batch → lalu pembanding berikutnya */
+export const chain = (...fns) => (a, b) => { for (const f of fns) { const r = f(a, b); if (r) return r; } return 0; };
+export const byBatch = (f = (r) => r.batch_id) => (a, b) => batchRank(f(a)) - batchRank(f(b));
+/** Batch bawaan saat belum ada pilihan: Batch 1 */
+export const firstBatch = () => (batches()[0] || {}).id || '';
+
+/** Dropdown batch yang seragam di semua menu. withAll: tambahkan "Semua batch" (value 'all' atau ''). */
+export function batchSelect({ value, onChange, withAll = false, allValue = '', label = 'Batch', compact = false } = {}) {
+  const sel = h('select', { class: 'select', 'aria-label': label },
+    withAll ? h('option', { value: allValue }, 'Semua batch') : null,
+    batchOptions().map(o => h('option', { value: o.value }, o.label)));
+  sel.value = value ?? '';
+  if (sel.value !== String(value ?? '')) sel.value = withAll ? allValue : firstBatch();
+  sel.addEventListener('change', () => onChange && onChange(sel.value));
+  return compact ? sel : picker(label, sel);
+}
+/** Bungkus <select> dengan label kecil di kiri (gaya pemilih yang seragam) */
+export const picker = (label, sel, cls = '') => h('label', { class: `picker ${cls}`.trim() }, h('span', { class: 'picker-label' }, label), sel);
+/** Dropdown sederhana dari daftar opsi [{value,label}] atau string */
+export function selectEl(options, value, onChange, { label = '', cls = '' } = {}) {
+  const sel = h('select', { class: `select ${cls}`.trim(), 'aria-label': label || null },
+    options.map(o => typeof o === 'object' ? h('option', { value: o.value }, o.label) : h('option', { value: o }, o)));
+  sel.value = value ?? '';
+  sel.addEventListener('change', () => onChange && onChange(sel.value));
+  return sel;
+}
 export const studentName = (id) => (store.get('students', id) || {}).nama || '–';
 /** Cari mahasiswa dari student_id, lalu NIM, lalu nama (untuk data hasil impor CSV) */
 export function findStudent(r) {
@@ -192,7 +245,10 @@ function makeDialog({ title, subtitle, body, footer, onClose, size = 'md' }) {
   dlg.addEventListener('close', () => { dlg.remove(); onClose && onClose(); });
   dlg.addEventListener('mousedown', (e) => { if (e.target === dlg) dlg._down = true; });
   dlg.addEventListener('click', (e) => { if (e.target === dlg && dlg._down && size === 'sm') close(); dlg._down = false; });
+  dlg.tabIndex = -1;
   document.body.appendChild(dlg); dlg.showModal();
+  // Fokus awal pada popup itu sendiri (bukan tombol Tutup) agar tidak muncul cincin fokus
+  dlg.focus({ preventScroll: true });
   return { dlg, close };
 }
 /** Formulir / detail data (ukuran besar) */
@@ -256,8 +312,71 @@ export const emptyState = (title, text, action) => h('div', { class: 'empty' }, 
 /* ---------- Tab ---------- */
 export function tabs(items, active, onChange) {
   const bar = h('div', { class: 'tabs', role: 'tablist' });
-  items.forEach(it => bar.appendChild(h('button', { type: 'button', role: 'tab', 'aria-selected': String(it.id === active), onclick: () => onChange(it.id) }, it.label)));
+  items.forEach(it => bar.appendChild(h('button', { type: 'button', role: 'tab', 'aria-selected': String(it.id === active), onclick: () => onChange(it.id) }, tc(it.label))));
   return bar;
+}
+
+/** Judul halaman menu (dipakai di atas tab) */
+export function moduleHead({ eyebrow, title, description, actions } = {}) {
+  return h('div', { class: 'module-head' },
+    h('div', { class: 'module-title' }, eyebrow ? h('span', { class: 'eyebrow' }, eyebrow) : null, h('h1', {}, title), description ? h('p', {}, description) : null),
+    actions && [].concat(actions).filter(Boolean).length ? h('div', { class: 'actions no-print' }, actions) : null);
+}
+
+/**
+ * Halaman menu bertab yang seragam: judul menu → (pemilih, mis. batch) → tab → isi tab.
+ * items: [{ id, label, fn(body, ctx) → { destroy? } }]
+ * opts: { eyebrow, title, description, key (pref tab), def, remember (default true), actions(ctx) → Node[] }
+ */
+export function tabPage(root, items, opts = {}) {
+  const key = opts.key; const remember = opts.remember !== false;
+  let tab = (remember && key ? pref.get(key, opts.def) : opts.def) || items[0].id;
+  if (!items.some(x => x.id === tab)) tab = opts.def || items[0].id;
+  let inner = null; const body = h('div', { class: 'tab-body' });
+  const ctx = {
+    get tab() { return tab; },
+    go(id) { tab = id; if (remember && key) pref.set(key, id); draw(); window.scrollTo(0, 0); return inner; },
+    redraw: () => draw(),
+  };
+  function draw() {
+    inner && inner.destroy && inner.destroy(); clear(root);
+    root.append(moduleHead({ eyebrow: opts.eyebrow, title: opts.title, description: opts.description, actions: opts.actions ? opts.actions(ctx) : null }),
+      tabs(items, tab, (id) => ctx.go(id)));
+    clear(body); root.appendChild(body);
+    inner = (items.find(x => x.id === tab) || items[0]).fn(body, ctx) || null;
+  }
+  draw();
+  return { destroy: () => inner && inner.destroy && inner.destroy(), ctx };
+}
+
+/* ---------- Foto profil ----------
+   Mendukung tautan Google Drive (diubah ke thumbnail), tautan gambar langsung,
+   atau berkas unggahan (lampiran). Bila gagal dimuat, kembali ke inisial. */
+export function photoSrc(p) {
+  if (!p) return null;
+  if (typeof p === 'object') { if (p.file) return { file: p.file }; p = p.link; }
+  if (!p) return null;
+  const m = /drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([\w-]{20,})/.exec(p) || /[?&]id=([\w-]{20,})/.exec(/drive\.google\.com/.test(p) ? p : '');
+  return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w400` : p;
+}
+const photoCache = new Map();   // berkas unggahan → URL sementara (± 25 menit)
+function fileUrlCached(file) {
+  const key = file.path || file.id; const hit = photoCache.get(key);
+  if (hit && hit.until > Date.now()) return hit.p;
+  const p = store.fileUrl(file); photoCache.set(key, { p, until: Date.now() + 25 * 60e3 }); return p;
+}
+export function avatar(name, photo, { size = '' } = {}) {
+  const el = h('span', { class: `avatar ${size}`.trim(), 'aria-hidden': 'true' }, initials(name));
+  const src = photoSrc(photo);
+  if (!src) return el;
+  const show = (url) => {
+    if (!url) return;
+    const img = h('img', { alt: '', decoding: 'async', referrerpolicy: 'no-referrer' });
+    img.src = url;
+    img.addEventListener('load', () => { clear(el); el.appendChild(img); el.classList.add('has-photo'); });
+  };
+  if (typeof src === 'string') show(src); else fileUrlCached(src.file).then(show).catch(() => { });
+  return el;
 }
 
 /* ---------- Penyimpanan preferensi per-pengguna (filter, tab) ---------- */

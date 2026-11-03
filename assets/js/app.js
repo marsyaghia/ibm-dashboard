@@ -22,7 +22,7 @@ import dosen from './modules/dosen.js';
 import pengaturan from './modules/pengaturan.js';
 
 const NAV = [
-  { group: 'Ringkasan', items: [{ id: 'beranda', label: 'Beranda', icon: 'dashboard', mod: beranda }] },
+  { group: '', items: [{ id: 'beranda', label: 'Dashboard', icon: 'dashboard', mod: beranda }] },
   { group: 'Keuangan', items: [
     { id: 'pengeluaran', label: 'Pengeluaran Divisi', icon: 'expense', mod: pengeluaran, count: () => store.all('expenses').length },
     { id: 'pemasukan', label: 'Perolehan Mahasiswa', icon: 'income', mod: pemasukan, count: () => store.all('incomes').length },
@@ -56,7 +56,7 @@ function shell() {
   const root = document.getElementById('root'); clear(root);
   const nav = h('nav', { class: 'nav', 'aria-label': 'Menu utama' });
   NAV.forEach(g => {
-    const grp = h('div', { class: 'nav-group' }, h('span', {}, g.group));
+    const grp = h('div', { class: `nav-group ${g.group ? '' : 'no-label'}` }, g.group ? h('span', {}, g.group) : null);
     g.items.forEach(i => { const c = h('span', { class: 'count' }); i._count = c; grp.appendChild(h('a', { href: `#/${i.id}`, dataset: { route: i.id } }, icon(i.icon), h('span', {}, i.label), c)); });
     nav.appendChild(grp);
   });
@@ -115,7 +115,8 @@ function route() {
   clear(els.page);
   els.sidebar.querySelectorAll('a[data-route]').forEach(a => a.toggleAttribute('aria-current', false));
   const link = els.sidebar.querySelector(`a[data-route="${r.id}"]`); if (link) link.setAttribute('aria-current', 'page');
-  clear(els.crumb); els.crumb.append(r.group, ' / ', h('b', {}, r.label));
+  clear(els.crumb); if (r.group) els.crumb.append(h('span', { class: 'grp' }, r.group), h('span', { class: 'sep', 'aria-hidden': 'true' }, '/')); els.crumb.append(h('b', {}, r.label));
+  els.page.dataset.route = r.id;
   document.title = `${t(r.label)} · ${CONFIG.app.name}`;
   try { current = r.mod.mount(els.page) || null; }
   catch (e) { console.error(e); els.page.appendChild(h('div', { class: 'note warn' }, icon('alert'), h('div', {}, 'Halaman gagal dimuat: ' + e.message))); }

@@ -2,7 +2,7 @@
    7. BIODATA MAHASISWA — mengikuti "FORMULIR PENDATAAN MAHASISWA" IBM
    Bisa dicetak kembali ke format formulir (isi maupun kosong).
    ========================================================================= */
-import { h, icon, badge, batchName, batchOptions, pct, uniq, esc, fmtDateLong, today, toast } from '../ui.js';
+import { h, icon, badge, batchName, batchOptions, pct, uniq, esc, fmtDate, fmtDateLong, fmtIDR, sum, today, toast, avatar, docLink, hasAttachment, openDrawer, chain, byBatch, byText } from '../ui.js';
 import { crudView } from '../crud.js';
 import { store } from '../store.js';
 import { CONFIG } from '../config.js';
@@ -14,6 +14,7 @@ const DOK_MAGANG = ['CV', 'Surat Permohonan', 'Transkrip Nilai', 'Lainnya'];
 
 export const sections = [
   { title: 'Data pribadi', fields: [
+    { key: 'foto', label: 'Foto profil', type: 'photo', accept: 'image/*', help: 'Unggah foto (JPG/PNG, maks. 5 MB, rasio 1:1 atau 3:4) atau tempel tautan Google Drive dengan akses “Siapa saja yang memiliki link”.' },
     { key: 'nama', label: 'Nama lengkap', type: 'text', required: true },
     { key: 'nim', label: 'NIM', type: 'text', col: 'half' },
     { key: 'nik', label: 'NIK', type: 'text', col: 'half', placeholder: '16 digit sesuai KTP' },
@@ -84,14 +85,14 @@ const magangStatus = (r) => {
 };
 
 const columns = [
-  { key: 'nama', label: 'Nama', main: true, render: r => h('div', {}, h('span', { class: 'primary' }, r.nama), h('span', { class: 'secondary' }, r.nim || 'NIM belum diisi')) },
+  { key: 'nama', label: 'Nama', main: true, render: r => h('div', { class: 'name-cell' }, avatar(r.nama, r.foto, { size: 'sm' }), h('div', {}, h('span', { class: 'primary' }, r.nama), h('span', { class: 'secondary' }, r.nim || 'NIM belum diisi'))) },
   { key: 'batch_id', label: 'Batch', value: r => batchName(r.batch_id), render: r => h('div', {}, batchName(r.batch_id), r.angkatan ? h('span', { class: 'secondary' }, `Angkatan ${r.angkatan}`) : null), nowrap: true },
   { key: 'kontak', label: 'Kontak', value: r => r.telp || r.email || '', render: r => (r.telp || r.email) ? h('div', {}, r.telp || '', r.email ? h('span', { class: 'secondary' }, r.email) : null) : null },
   { key: 'magang_instansi', label: 'Magang', render: r => r.magang_instansi ? h('div', {}, r.magang_instansi, h('span', { class: 'secondary' }, magangStatus(r))) : null },
   { key: 'lengkap', label: 'Biodata', value: completeness, render: r => { const p = completeness(r); return h('div', { class: 'progress-cell' }, h('small', {}, `${p}% lengkap`), h('div', { class: `meter ${p >= 100 ? 'ok' : 'warn'}` }, h('i', { style: { width: `${p}%` } }))); } },
   { key: 'status_mhs', label: 'Status', render: r => badge(r.status_mhs) },
 ];
-const allFields = sections.flatMap(s => s.fields).filter(f => f.type !== 'attachment');
+const allFields = sections.flatMap(s => s.fields).filter(f => f.type !== 'attachment' && f.type !== 'photo');
 const exportCols = allFields.map(f => ({
   key: f.key, label: f.label,
   value: f.key === 'batch_id' ? (r => batchName(r.batch_id)) : f.key === 'jk' ? (r => ({ L: 'Laki-laki', P: 'Perempuan' }[r.jk] || '')) : f.type === 'checkbox' ? (r => r[f.key] ? 'Ya' : '') : undefined,
@@ -165,10 +166,74 @@ ${row('Dokumen Pendukung', `<div class="opts">${DOK_MAGANG.map(d => `<div>${box(
   setTimeout(() => { try { w.focus(); w.print(); } catch (e) { /* abaikan */ } }, 600);
 }
 
+/* ---------- Profil mahasiswa (popup saat nama dipilih) ---------- */
+const same = (r, s) => r.student_id === s.id || (!!r.nim && !!s.nim && String(r.nim) === String(s.nim));
+function profile(r, ctx) {
+  const p = completeness(r); const mg = magangStatus(r);
+  const certs = store.all('certificates').filter(c => same(c, r)).sort(byText(c => c.nama_sertifikat));
+  const places = store.all('internships').filter(m => same(m, r));
+  const tabungan = store.all('immersionSavings').filter(x => same(x, r) && (x.status || 'Terverifikasi') === 'Terverifikasi');
+  const v = (x) => (x === undefined || x === null || String(x).trim() === '') ? null : x;
+  const kv = (pairs) => h('dl', { class: 'kv' }, pairs.filter(Boolean).flatMap(([label, val]) => [h('dt', {}, label), v(val) === null ? h('dd', { class: 'empty-val' }, '–') : h('dd', {}, val)]));
+  const card = (title, ic, body, cls = '') => h('section', { class: `info-card ${cls}`.trim() }, h('h3', {}, icon(ic), title), body);
+  const ttl = [r.tempat_lahir, r.tanggal_lahir ? fmtDateLong(r.tanggal_lahir) : ''].filter(Boolean).join(', ');
+  const docs = Array.isArray(r.dokumen_magang) ? r.dokumen_magang : [];
+
+  const edit = h('button', { class: 'btn btn-primary', type: 'button' }, icon('edit', 'sm'), 'Ubah biodata');
+  const d = openDrawer({
+    title: 'Profil mahasiswa', subtitle: 'Rekap seluruh data mahasiswa', size: 'lg',
+    body: h('div', { class: 'stack' },
+      h('div', { class: 'profile-hero' }, avatar(r.nama, r.foto, { size: 'xl' }),
+        h('div', { class: 'who' },
+          h('h2', { 'data-raw': '' }, r.nama || '–'),
+          h('p', { class: 'sub' }, [r.nim ? `NIM ${r.nim}` : 'NIM belum diisi', batchName(r.batch_id), r.prodi].filter(Boolean).join(' · ')),
+          h('div', { class: 'tags' }, badge(r.status_mhs || 'Status belum diisi'), mg ? h('span', { class: 'pill' }, mg) : null,
+            hasAttachment(r.formulir) ? docLink({ ...r.formulir, label: r.formulir.label || 'Formulir bertanda tangan' }) : null))),
+      h('div', { class: 'profile-stats' },
+        h('div', {}, h('small', {}, 'Kelengkapan biodata'), h('b', {}, `${p}%`), h('div', { class: `meter ${p >= 100 ? 'ok' : 'warn'}` }, h('i', { style: { width: `${p}%` } }))),
+        h('div', {}, h('small', {}, 'Batch · Angkatan'), h('b', {}, [batchName(r.batch_id), r.angkatan].filter(x => x && x !== '–').join(' · ') || '–')),
+        h('div', {}, h('small', {}, 'Sertifikat'), h('b', {}, certs.length ? `${certs.filter(c => c.status === 'Sudah Terbit').length} terbit dari ${certs.length}` : 'Belum ada'))),
+      h('div', { class: 'info-grid' },
+        card('Data pribadi', 'users', kv([
+          ['Nama lengkap', r.nama], ['NIM', r.nim], ['NIK', r.nik], ['Tempat, tanggal lahir', ttl],
+          ['Jenis kelamin', { L: 'Laki-laki', P: 'Perempuan' }[r.jk]], ['Agama', r.agama], ['Kewarganegaraan', r.kewarganegaraan],
+        ])),
+        card('Kontak & alamat', 'message', kv([
+          ['No. Telp (WA)', r.telp], ['Email', r.email], ['Alamat (KTP)', r.alamat_ktp], ['Kota', r.kota], ['Kode pos', r.kode_pos],
+        ])),
+        card('Data akademik', 'book', kv([
+          ['Program studi', r.prodi], ['Fakultas', r.fakultas], ['Batch', batchName(r.batch_id) !== '–' ? batchName(r.batch_id) : ''], ['Angkatan', r.angkatan], ['Status', r.status_mhs],
+        ])),
+        card('Orang tua / wali', 'teacher', kv([
+          ['Nama ayah', r.nama_ayah], ['Telp ayah', r.telp_ayah], ['Pekerjaan ayah', r.pekerjaan_ayah], ['Penghasilan ayah', r.penghasilan_ayah],
+          ['Nama ibu', r.nama_ibu], ['Telp ibu', r.telp_ibu], ['Pekerjaan ibu', r.pekerjaan_ibu], ['Penghasilan ibu', r.penghasilan_ibu],
+          r.wali_nama ? ['Wali', [r.wali_nama, r.wali_hubungan, r.wali_telp].filter(Boolean).join(' · ')] : null,
+        ])),
+        card('Skill', 'award', kv([['Hardskill 1', r.hardskill_1], ['Hardskill 2', r.hardskill_2], ['Hardskill 3', r.hardskill_3], ['Softskill', r.softskill]])),
+        card('Data magang', 'briefcase', kv([
+          ['Instansi', r.magang_instansi || (places[0] && places[0].perusahaan)], ['Posisi', r.magang_posisi || (places[0] && places[0].posisi)],
+          ['Periode', [r.magang_mulai ? fmtDate(r.magang_mulai) : '', r.magang_selesai ? fmtDate(r.magang_selesai) : ''].filter(Boolean).join(' – ')],
+          ['Pembimbing lapangan', r.pembimbing_lapangan], ['Pembimbing akademik', r.pembimbing_akademik],
+          ['Dokumen pendukung', docs.join(', ')], hasAttachment(r.berkas_magang) ? ['Berkas', docLink(r.berkas_magang)] : null,
+        ])),
+        card('Rekap data terkait', 'layers', kv([
+          ['Sertifikat', certs.length ? h('div', { class: 'badges' }, certs.slice(0, 8).map(c => badge(c.nama_sertifikat, c.status === 'Sudah Terbit' ? 'ok' : c.status === 'Proses' ? 'warn' : 'bad'))) : ''],
+          ['Data Magang', places.length ? places.map(m => `${m.perusahaan || '–'} (${m.status || '–'})`).join('\n') : ''],
+          ['Tabungan immersion', tabungan.length ? `${fmtIDR(sum(tabungan, 'jumlah'))} · ${tabungan.length} setoran terverifikasi` : ''],
+        ]), 'span-2'))),
+    footer: [h('div', { class: 'left' }, h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => printForm(r) }, icon('print', 'sm'), 'Cetak formulir')),
+      h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => d.close() }, 'Tutup'), edit],
+  });
+  edit.addEventListener('click', () => { d.close(); ctx.openForm(r); });
+}
+
 const view = crudView({
   id: 'students', collection: 'students', noun: 'mahasiswa', title: 'Biodata Mahasiswa', eyebrow: 'Data mahasiswa',
-  description: 'Biodata lengkap mahasiswa IBM sesuai Formulir Pendataan Mahasiswa. Setiap data dapat dicetak kembali dalam format formulir untuk ditandatangani.',
-  sections, columns, exportColumns: exportCols, exportName: 'Biodata_Mahasiswa_IBM', sort: { key: 'nama', dir: 'asc' }, unit: 'mahasiswa',
+  description: 'Biodata lengkap mahasiswa IBM sesuai Formulir Pendataan Mahasiswa, diurutkan per batch lalu abjad. Pilih nama mahasiswa untuk melihat profil dan rekap datanya.',
+  sections, columns, exportColumns: exportCols, exportName: 'Biodata_Mahasiswa_IBM', unit: 'mahasiswa',
+  // Selalu urut Batch 1, 2, … lalu abjad nama — tetap berlaku setelah data diperbarui
+  order: chain(byBatch(), byText(r => r.nama)),
+  onRowClick: profile,
   searchPlaceholder: 'Cari nama, NIM, email, instansi magang…',
   search: r => [r.nama, r.nim, r.email, r.telp, r.kota, r.magang_instansi, r.nik].join(' '),
   filters: [

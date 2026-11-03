@@ -6,7 +6,7 @@
      (tabel penilaian_obe). Yang wajib diisi tim IBM hanya mata kuliah yang
      diajar Dosen External; dosen internal Asia mengisi sendiri.
    ========================================================================= */
-import { h, icon, clear, badge, docLink, hasAttachment, batchName, batchOptions, uniq, pct, toast, tabs, pref, openDrawer, confirmDialog, fmtDate, today } from '../ui.js';
+import { h, icon, clear, badge, docLink, hasAttachment, batchName, batchOptions, uniq, pct, toast, tabPage, pref, openDrawer, confirmDialog, fmtDate, today } from '../ui.js';
 import { kpiRow, flatFields } from '../crud.js';
 import { dataTable } from '../table.js';
 import { buildForm } from '../form.js';
@@ -255,14 +255,9 @@ function penilaianTab(root) {
 
 export default {
   mount(root) {
-    let tab = pref.get('tab_rps', 'template'); let inner = null; const body = h('div');
-    const draw = () => {
-      inner && inner.destroy && inner.destroy(); clear(root);
-      root.appendChild(tabs([{ id: 'template', label: 'Template RPS & OBE' }, { id: 'penilaian', label: 'Penilaian OBE' }], tab, (t) => { tab = t; pref.set('tab_rps', t); draw(); }));
-      clear(body); root.appendChild(body);
-      inner = tab === 'penilaian' ? penilaianTab(body) : templateTab(body);
-    };
-    draw();
-    return { destroy: () => inner && inner.destroy && inner.destroy() };
+    return tabPage(root, [
+      { id: 'template', label: 'Template RPS & OBE', fn: (b) => templateTab(b) },
+      { id: 'penilaian', label: 'Penilaian OBE', fn: (b) => penilaianTab(b) },
+    ], { eyebrow: 'Akademik', title: 'RPS & OBE', key: 'tab_rps', def: 'template' });
   },
 };

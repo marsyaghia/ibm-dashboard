@@ -10,7 +10,13 @@ Panduan singkat untuk revisi lewat ekstensi Claude di VS Code.
   - teks dengan angka/nama → `EN_PATTERNS`.
 - Warna hanya dari token di `assets/css/tokens.css`. Mode gelap ditulis di blok `:root[data-theme="dark"]`. Kunci localStorage: `ibm_theme` (tema) dan `ibm_lang` (bahasa).
 - Tabel harus memakai `dataTable()` (`assets/js/table.js`). Di layar ≤ 960px tabel otomatis menjadi kartu, jadi tidak ada geser ke samping. Tandai kolom judul kartu dengan `main: true`.
+- Urutan bawaan tabel memakai `order` (pembanding), bukan `sort`: data ber-batch → `chain(byBatch(), byText(r => r.nama))` (Batch 1 dulu, lalu abjad). Log/transaksi boleh `sort: { key: 'tanggal', dir: 'desc' }` (terbaru dulu). `groupBy` hanya tampil saat urutan bawaan.
 - Popup: `openDrawer` (formulir, lebar sedang) dan `openModal` (`size: 'sm'|'md'|'lg'`, atau `wide: true`). Keduanya tampil di tengah layar.
+- Menu bertab memakai `tabPage(root, items, { eyebrow, title, key, def, actions })` dari `ui.js`: judul menu → (pemilih) → tab → isi tab. Judul isi tab otomatis tampil sebagai judul bagian.
+- Pemilih batch/periode selalu `batchSelect()` / `picker(label, selectEl(...))` agar seragam. Batch bawaan = `firstBatch()` (Batch 1).
+- Huruf judul: `h1`–`h3` otomatis Title Case (`tc()` di `ui.js`, aturan PUEBI: kata tugas tetap kecil). Tulis teks sumber dengan huruf biasa; kamus EN tetap cocok karena pencarian tidak membedakan besar/kecil. Nama orang/data di judul: tambahkan atribut `'data-raw': ''`.
+- Ukuran huruf & tinggi kontrol dari token (`--fs-*`, `--ctl-h`) di `tokens.css`.
+- Foto profil: field `type: 'photo'` (`form.js`), tampil dengan `avatar(nama, foto)` (`ui.js`; mendukung link Google Drive & unggahan).
 - Waktu selalu WIB (`nowWIB()`, `today()` di `ui.js`).
 
 ## Alur data
@@ -28,17 +34,17 @@ Panduan singkat untuk revisi lewat ekstensi Claude di VS Code.
 
 | File | Menu |
 |---|---|
-| `beranda.js` | Beranda: sapaan, jam WIB, kalender, pengingat, rekap menu |
+| `beranda.js` | Dashboard (dulu Beranda): sapaan, jam WIB, kalender, pengingat, rekap menu |
 | `pengeluaran.js` | Pengeluaran + Laporan |
 | `pemasukan.js` | Perolehan Mahasiswa + Rekapitulasi (grafik) |
 | `rps.js` | Template RPS & OBE, Penilaian OBE |
 | `materi.js` | Materi & PPT |
-| `jadwal.js` | Jadwal Full / Weekly / Daily / Slot jadwal / Kalender akademik (logika tanggal di `jadwal-lib.js`) |
-| `absensi.js` | Absensi Dosen External |
+| `jadwal.js` | Jadwal Full / Weekly / Daily / List Jadwal (id tab `slot`) / Kalender akademik (logika tanggal di `jadwal-lib.js`) |
+| `absensi.js` | Absensi Dosen External: Lembar absensi (selalu dibuka pertama) / Log / Rekap |
 | `trent.js` | Trent Global College |
 | `immersion.js` | Immersion per batch: rekap, matriks cicilan, log setoran, kas & pengeluaran (valas, rencana/realisasi), target |
 | `magang.js` | Data Magang per batch: penempatan, penilaian per perusahaan, respon form, link form/bit.ly |
-| `sertifikat.js`, `mahasiswa.js`, `dosen.js` | Data mahasiswa & dosen |
+| `sertifikat.js`, `mahasiswa.js`, `dosen.js` | Data mahasiswa & dosen (klik nama → popup profil; mahasiswa punya kolom `foto`, migrasi di `supabase/sql/migrasi-foto-mahasiswa.sql`) |
 | `pengaturan.js` | Pengaturan |
 
 Sebagian besar menu daftar memakai `crudView(cfg)` dari `crud.js`, sehingga cukup mengubah konfigurasinya: `sections` (formulir), `columns`, `filters`, `kpis`, `aliases` (nama kolom impor).

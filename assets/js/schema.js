@@ -80,6 +80,7 @@ export const SCHEMA = {
     ['hardskill_1'], ['hardskill_2'], ['hardskill_3'], ['softskill'],
     ['magang_instansi'], ['magang_alamat'], ['magang_posisi'], ['magang_mulai', 'date'], ['magang_selesai', 'date'], ['pembimbing_lapangan'], ['pembimbing_akademik'],
     ['dokumen_magang', 'list', 'CV, Surat Permohonan, Transkrip Nilai, Lainnya'], ['berkas_magang', 'att'], ['pernyataan', 'bool'], ['tempat_ttd'], ['tanggal_ttd', 'date'], ['formulir', 'att'],
+    ['foto', 'att', 'foto profil: link Google Drive (foto_link) atau unggahan (foto_file)'],
   ]),
   lecturers: T('dosen', 'Biodata Dosen', 'Biodata dosen internal & Dosen External (format Google Form Data Dosen).', [
     ['nama'], ['tipe', 'text', 'Dosen Internal / Dosen External'], ['status', 'text', 'Aktif / Tidak aktif'], ['nidn'], ['instansi'], ['jabatan'], ['email'], ['telp'], ['tanggal_lahir', 'date'], ['alamat'],

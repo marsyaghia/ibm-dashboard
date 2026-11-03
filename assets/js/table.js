@@ -9,16 +9,23 @@ import { h, icon, clear } from './ui.js';
 
 export function cellValue(col, row) { return col.value ? col.value(row) : row[col.key]; }
 
-export function dataTable({ columns, rows, onRowClick, rowActions, pageSize = 25, sort, footer, emptyNode, compact, groupBy, className = '' }) {
+/**
+ * order: pembanding urutan bawaan (mis. batch → nama). Bila ada, klik judul kolom
+ * berputar: naik → turun → kembali ke urutan bawaan. groupBy hanya dipakai saat
+ * tabel memakai urutan bawaan, agar baris kelompok tidak terpecah.
+ */
+export function dataTable({ columns, rows, onRowClick, rowActions, pageSize = 25, sort, order, footer, emptyNode, compact, groupBy, className = '' }) {
+  columns = columns.filter(Boolean);
   const state = { sort: sort || null, page: 0 };
   const wrap = h('div', { class: 'dt' });
   const mainIdx = Math.max(0, columns.findIndex(c => c.main));
 
   function sorted() {
-    if (!state.sort) return rows;
-    const col = columns.find(c => c.key === state.sort.key); if (!col) return rows;
+    const base = order ? [...rows].sort(order) : rows;
+    if (!state.sort) return base;
+    const col = columns.find(c => c.key === state.sort.key); if (!col) return base;
     const dir = state.sort.dir === 'desc' ? -1 : 1;
-    return [...rows].sort((a, b) => {
+    return [...base].sort((a, b) => {
       const x = cellValue(col, a), y = cellValue(col, b);
       if (x === undefined || x === null || x === '') return 1; if (y === undefined || y === null || y === '') return -1;
       if (typeof x === 'number' && typeof y === 'number') return (x - y) * dir;
@@ -40,14 +47,20 @@ export function dataTable({ columns, rows, onRowClick, rowActions, pageSize = 25
         const th = h('th', { class: [c.align || '', sortable ? 'sortable' : '', isSorted ? 'sorted' : ''].join(' '), scope: 'col', style: c.width ? { width: c.width } : null,
           'aria-sort': isSorted ? (state.sort.dir === 'asc' ? 'ascending' : 'descending') : null },
         c.label, sortable ? h('span', { class: 'arrow', 'aria-hidden': 'true' }, isSorted && state.sort.dir === 'desc' ? '▼' : '▲') : null);
-        if (sortable) th.addEventListener('click', () => { state.sort = isSorted ? { key: c.key, dir: state.sort.dir === 'asc' ? 'desc' : 'asc' } : { key: c.key, dir: 'asc' }; render(); });
+        if (sortable) th.addEventListener('click', () => {
+          if (!isSorted) state.sort = { key: c.key, dir: 'asc' };
+          else if (state.sort.dir === 'asc') state.sort = { key: c.key, dir: 'desc' };
+          else state.sort = order ? null : { key: c.key, dir: 'asc' };
+          render();
+        });
         return th;
       }),
       rowActions ? h('th', { class: 'actions-cell' }, h('span', { class: 'sr-only' }, 'Aksi')) : null));
 
     const tbody = h('tbody'); let lastGroup = null;
+    const grouping = groupBy && (!state.sort || (sort && state.sort.key === sort.key && state.sort.dir === sort.dir));
     slice.forEach(r => {
-      if (groupBy) { const g = groupBy(r); if (g !== lastGroup) { tbody.appendChild(h('tr', { class: 'group-row' }, h('td', { colspan: columns.length + (rowActions ? 1 : 0) }, g))); lastGroup = g; } }
+      if (grouping) { const g = groupBy(r); if (g !== lastGroup) { tbody.appendChild(h('tr', { class: 'group-row' }, h('td', { colspan: columns.length + (rowActions ? 1 : 0) }, g))); lastGroup = g; } }
       const tr = h('tr', { class: onRowClick ? 'clickable' : '' },
         columns.map((c, i) => {
           const v = c.render ? c.render(r) : cellValue(c, r);

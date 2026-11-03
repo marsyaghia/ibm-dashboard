@@ -1,7 +1,7 @@
 /* =========================================================================
    6. PENDATAAN SERTIFIKAT MAHASISWA — per batch
    ========================================================================= */
-import { h, icon, clear, badge, docLink, fmtDate, batchName, batchOptions, batches, studentOf, tabs, pref, toast, openDrawer, openModal, uniq, pct } from '../ui.js';
+import { h, icon, clear, badge, docLink, fmtDate, batchName, batchOptions, batchSelect, firstBatch, studentOf, tabPage, toast, openDrawer, openModal, uniq, pct, chain, byBatch, byText } from '../ui.js';
 import { crudView, kpiRow } from '../crud.js';
 import { buildForm } from '../form.js';
 import { exportWorkbook } from '../io.js';
@@ -68,7 +68,9 @@ function bulkDialog(defBatch) {
 const daftar = crudView({
   id: 'certificates', collection: 'certificates', noun: 'sertifikat', title: 'Sertifikat Mahasiswa', eyebrow: 'Data mahasiswa',
   description: 'Pendataan sertifikat setiap mahasiswa per batch, meliputi Trent, English Score, Public Speaking, Immersion, magang, dan lainnya.',
-  sections, columns, exportColumns: exportCols, exportName: 'Sertifikat_Mahasiswa_IBM', sort: { key: 'student_id', dir: 'asc' },
+  sections, columns, exportColumns: exportCols, exportName: 'Sertifikat_Mahasiswa_IBM',
+  // Urutan bawaan: Batch 1 → nama mahasiswa (abjad) → nama sertifikat
+  order: chain(byBatch(), byText(r => studentOf(r)), byText(r => r.nama_sertifikat)),
   searchPlaceholder: 'Cari mahasiswa, sertifikat, nomor…',
   search: r => [studentOf(r), r.nim, r.nama_sertifikat, r.jenis, r.penerbit, r.nomor].join(' '),
   filters: [
@@ -93,7 +95,8 @@ const daftar = crudView({
 
 /* ---------- Rekap matriks per batch ---------- */
 function rekap(root) {
-  let bid = pref.get('cert_batch', (batches()[0] || {}).id);
+  // Bawaan Batch 1; pilihan batch hanya diingat selama halaman belum dimuat ulang
+  let bid = store.get('batches', rekapBatch) ? rekapBatch : firstBatch();
   const box = h('div');
   function openCert(rec) {
     const form = buildForm(sections, rec);
@@ -103,11 +106,10 @@ function rekap(root) {
   }
   function render() {
     clear(box);
-    const studs = store.all('students').filter(s => s.batch_id === bid).sort((a, b) => a.nama.localeCompare(b.nama));
+    const studs = store.all('students').filter(s => s.batch_id === bid).sort(byText(s => s.nama));
     const certs = store.all('certificates').filter(c => c.batch_id === bid);
-    const types = uniq([...certs.map(c => c.nama_sertifikat)]).sort();
-    const sel = h('select', { class: 'select', style: { width: 'auto' }, 'aria-label': 'Pilih batch' }, batchOptions().map(o => h('option', { value: o.value }, o.label)));
-    sel.value = bid || ''; sel.addEventListener('change', () => { bid = sel.value; pref.set('cert_batch', bid); render(); });
+    const types = uniq([...certs.map(c => c.nama_sertifikat)]).sort((a, b) => a.localeCompare(b, 'id', { numeric: true }));
+    const sel = batchSelect({ value: bid, onChange: (v) => { bid = v; rekapBatch = v; render(); } });
     const cell = (s, t) => certs.find(c => (c.student_id === s.id || (c.nim && c.nim === s.nim)) && c.nama_sertifikat === t);
     const done = certs.filter(c => c.status === 'Sudah Terbit').length;
 
@@ -137,16 +139,13 @@ function rekap(root) {
   return { destroy: store.subscribe(render) };
 }
 
+let rekapBatch = '';
+
 export default {
   mount(root) {
-    let tab = pref.get('tab_cert', 'rekap'); let inner = null; const body = h('div');
-    const draw = () => {
-      inner && inner.destroy && inner.destroy(); clear(root);
-      root.appendChild(tabs([{ id: 'rekap', label: 'Rekap per batch' }, { id: 'daftar', label: 'Daftar sertifikat' }], tab, (t) => { tab = t; pref.set('tab_cert', t); draw(); }));
-      clear(body); root.appendChild(body);
-      inner = tab === 'daftar' ? daftar(body) : rekap(body);
-    };
-    draw();
-    return { destroy: () => inner && inner.destroy && inner.destroy() };
+    return tabPage(root, [
+      { id: 'rekap', label: 'Rekap per batch', fn: (b) => rekap(b) },
+      { id: 'daftar', label: 'Daftar sertifikat', fn: (b) => daftar(b) },
+    ], { eyebrow: 'Data Mahasiswa', title: 'Sertifikat Mahasiswa', key: 'tab_cert', def: 'rekap' });
   },
 };

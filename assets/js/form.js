@@ -3,9 +3,10 @@
    Field: { key, label, type, options, required, col: 'half'|'third', help,
             placeholder, default, accept, batchKey, min, max, step }
    type: text | email | tel | url | number | money | decimal | date | select |
-         textarea | checkbox | checks | radio | rating (bintang 1–5) | attachment | batch | student | readonly
+         textarea | checkbox | checks | radio | rating (bintang 1–5) | attachment |
+         photo (foto profil + pratinjau; data sama dengan attachment) | batch | student | readonly
    ========================================================================= */
-import { h, icon, toNumber, fmtNum, batchOptions, toast, findStudent } from './ui.js';
+import { h, icon, clear, avatar, toNumber, fmtNum, batchOptions, toast, findStudent } from './ui.js';
 import { store } from './store.js';
 
 const optList = (o, rec) => (typeof o === 'function' ? o(rec) : o || []).map(x => typeof x === 'object' ? x : { value: x, label: x });
@@ -130,6 +131,40 @@ export function buildForm(sections, record = {}, { onChange } = {}) {
               const o = { label: labelIn.value.trim(), link: linkIn.value.trim(), file: fileMeta || null };
               return (o.label || o.link || o.file || pendingFiles[f.key]) ? o : null;
             },
+            set: () => { }, setFile: (m) => { fileMeta = m; },
+          };
+          wrap.append(h('span', { class: 'flabel' }, f.label), box);
+          if (f.help) wrap.appendChild(h('div', { class: 'help' }, f.help));
+          grid.appendChild(wrap); controls[f.key] = { ...ctrl, field: f, wrap }; continue;
+        }
+        case 'photo': {
+          // Foto profil: pratinjau + unggah berkas atau tempel tautan (data sama dengan lampiran: { label, link, file })
+          const att = val && typeof val === 'object' ? { ...val } : {};
+          let fileMeta = att.file || null;
+          const linkIn = h('input', { class: 'input', type: 'url', placeholder: 'Atau tempel tautan foto (Google Drive)…', value: att.link || '', 'data-nofocus': '' });
+          const fileIn = h('input', { type: 'file', class: 'hidden', accept: f.accept || 'image/*' });
+          const prevBox = h('div', { class: 'photo-prev' });
+          const btns = h('div', { class: 'attach-row' });
+          const paint = () => {
+            clear(prevBox); clear(btns);
+            const pend = pendingFiles[f.key];
+            prevBox.appendChild(pend ? h('span', { class: 'avatar lg has-photo' }, h('img', { src: URL.createObjectURL(pend), alt: '' }))
+              : avatar(record.nama, fileMeta ? { file: fileMeta } : linkIn.value.trim(), { size: 'lg' }));
+            btns.appendChild(h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => fileIn.click() }, icon('upload', 'sm'), (pend || fileMeta) ? 'Ganti foto' : 'Unggah foto'));
+            if (pend || fileMeta || linkIn.value.trim()) btns.appendChild(h('button', { type: 'button', class: 'btn btn-danger btn-sm', onclick: () => { delete pendingFiles[f.key]; fileMeta = null; fileIn.value = ''; linkIn.value = ''; paint(); changed(); } }, icon('trash', 'sm'), 'Hapus foto'));
+          };
+          fileIn.addEventListener('change', () => {
+            const file = fileIn.files[0]; if (!file) return;
+            if (!/^image\//.test(file.type)) { toast('Berkas foto harus berupa gambar (JPG/PNG).', 'bad'); fileIn.value = ''; return; }
+            if (file.size > 5 * 1024 * 1024) { toast('Ukuran foto maksimal 5 MB.', 'bad'); fileIn.value = ''; return; }
+            pendingFiles[f.key] = file; paint(); changed();
+          });
+          linkIn.addEventListener('change', () => { if (linkIn.value.trim()) { fileMeta = null; delete pendingFiles[f.key]; } paint(); changed(); });
+          paint();
+          const box = h('div', { class: 'photo-field' }, prevBox, h('div', { class: 'photo-ctl' }, btns, linkIn, fileIn));
+          ctrl = {
+            el: box,
+            get: () => { const o = { label: att.label || '', link: linkIn.value.trim(), file: fileMeta || null }; return (o.link || o.file || pendingFiles[f.key]) ? o : null; },
             set: () => { }, setFile: (m) => { fileMeta = m; },
           };
           wrap.append(h('span', { class: 'flabel' }, f.label), box);

@@ -8,7 +8,7 @@
    Form publik untuk mahasiswa: penilaian-magang.html?batch=B2 (tanpa login,
    disimpan lewat fungsi Supabase "kirim_penilaian_magang").
    ========================================================================= */
-import { h, icon, clear, fmtDate, fmtDateLong, sum, uniq, pct, badge, batchName, batches, studentOf, withStudent, today, tabs, pref, toast, openModal, docLink } from '../ui.js';
+import { h, icon, clear, fmtDate, fmtDateLong, sum, uniq, pct, badge, batchName, batches, studentOf, withStudent, today, tabPage, batchSelect, firstBatch, pref, toast, openModal, docLink, chain, byBatch, byText } from '../ui.js';
 import { crudView, kpiRow } from '../crud.js';
 import { dataTable } from '../table.js';
 import { hbars } from '../charts.js';
@@ -39,12 +39,11 @@ export function stars(value, { size = '', label = true } = {}) {
     label ? h('b', {}, v ? fmt1(v) : '–') : null);
 }
 
-/* ---------- Batch aktif ---------- */
+/* ---------- Batch aktif — bawaan Batch 1 bila belum dipilih ---------- */
 const hasData = (b) => store.all('internships').some(r => r.batch_id === b) || store.all('internshipReviews').some(r => r.batch_id === b);
 function currentBatch() {
-  let bid = pref.get('mg_batch', '');
-  if (bid !== 'all' && !store.get('batches', bid)) bid = ([...batches()].reverse().find(b => hasData(b.id)) || {}).id || 'all';
-  return bid;
+  const bid = pref.get('mg_batch2', '');
+  return bid === 'all' || store.get('batches', bid) ? bid : (firstBatch() || 'all');
 }
 const inBatch = (bid) => (r) => bid === 'all' || r.batch_id === bid;
 const reviewsOf = (m) => store.all('internshipReviews').filter(r => r.magang_id === m.id || (!r.magang_id && r.nim && m.nim && String(r.nim) === String(m.nim) && (!r.perusahaan || !m.perusahaan || norm(r.perusahaan) === norm(m.perusahaan))));
@@ -160,7 +159,8 @@ const penempatanCfg = (bid) => ({
     { key: 'form_pkl', label: 'Form PKL', value: r => r.form_pkl ? 'Sudah' : 'Belum' }, { key: 'pembimbing_lapangan', label: 'Pembimbing Lapangan' }, { key: 'pembimbing_akademik', label: 'Pembimbing Akademik' },
     { key: 'rating', label: 'Rating Penilaian', value: r => { const x = reviewsOf(r)[0]; return x ? x.rating_keseluruhan : ''; } }, { key: 'catatan', label: 'Catatan' },
   ],
-  exportName: `Data_Magang_${batchName(bid)}`, sort: { key: 'mhs', dir: 'asc' },
+  exportName: `Data_Magang_${batchName(bid)}`, order: chain(byBatch(), byText(r => studentOf(r))),
+  groupBy: bid === 'all' ? (r => batchName(r.batch_id)) : null,
   searchPlaceholder: 'Cari mahasiswa, perusahaan, posisi…', search: r => [studentOf(r), r.nim, r.perusahaan, r.kandidat, r.posisi, r.kota, r.catatan].join(' '),
   filters: [
     { key: 'status', label: 'Status', options: STATUS },
@@ -382,25 +382,16 @@ function linkForm(root, go, bid) {
 
 export default {
   mount(root) {
-    let tab = pref.get('tab_mg', 'penempatan'); let bid = currentBatch(); let inner = null; const body = h('div');
-    const TABS = [{ id: 'penempatan', label: 'Penempatan' }, { id: 'penilaian', label: 'Penilaian tempat magang' }, { id: 'respon', label: 'Respon penilaian' }, { id: 'link', label: 'Link form (bit.ly)' }];
-    if (!TABS.some(t => t.id === tab)) tab = 'penempatan';
-    const go = (t, preset) => { tab = t; pref.set('tab_mg', t); bid = currentBatch(); draw(); if (preset && inner && inner.ctx) setTimeout(() => inner.ctx.openForm(preset), 30); };
-    const batchBar = () => {
-      const list = batches(); const show = list.filter(b => hasData(b.id) || b.id === bid);
-      const opts = [...(show.length ? show : list), { id: 'all', nama: 'Semua batch' }];
-      return h('div', { class: 'imm-batchbar no-print' }, h('span', { class: 'flabel' }, 'Batch'),
-        h('div', { class: 'seg', role: 'group', 'aria-label': 'Pilih batch' }, opts.map(b => h('button', { type: 'button', 'aria-pressed': String(b.id === bid), onclick: () => { pref.set('mg_batch', b.id); go(tab); } }, b.nama))),
-        list.length > show.length ? h('select', { class: 'select', 'aria-label': 'Batch lain', onchange: (e) => { if (e.target.value) { pref.set('mg_batch', e.target.value); go(tab); } } },
-          h('option', { value: '' }, 'Batch lain…'), list.filter(b => !show.includes(b)).map(b => h('option', { value: b.id }, `${b.nama} · ${b.angkatan}`))) : null);
-    };
-    const draw = () => {
-      inner && inner.destroy && inner.destroy(); clear(root);
-      root.append(batchBar(), tabs(TABS, tab, (t) => go(t)));
-      clear(body); root.appendChild(body);
-      inner = tab === 'penilaian' ? penilaian(body, go, bid) : tab === 'respon' ? crudView(responCfg(bid))(body) : tab === 'link' ? linkForm(body, go, bid) : crudView(penempatanCfg(bid))(body);
-    };
-    draw();
-    return { destroy: () => inner && inner.destroy && inner.destroy() };
+    const goWith = (ctx) => (t, preset) => { const inner = ctx.go(t); if (preset && inner && inner.ctx) setTimeout(() => inner.ctx.openForm(preset), 30); };
+    return tabPage(root, [
+      { id: 'penempatan', label: 'Penempatan', fn: (b) => crudView(penempatanCfg(currentBatch()))(b) },
+      { id: 'penilaian', label: 'Penilaian tempat magang', fn: (b, ctx) => penilaian(b, goWith(ctx), currentBatch()) },
+      { id: 'respon', label: 'Respon penilaian', fn: (b) => crudView(responCfg(currentBatch()))(b) },
+      { id: 'link', label: 'Link form (bit.ly)', fn: (b, ctx) => linkForm(b, goWith(ctx), currentBatch()) },
+    ], {
+      eyebrow: 'Program', title: 'Data Magang', key: 'tab_mg', def: 'penempatan',
+      description: 'Penempatan magang mahasiswa dan penilaian tempat magang. Pilih batch untuk menampilkan datanya di semua tab.',
+      actions: (ctx) => [batchSelect({ value: currentBatch(), withAll: true, allValue: 'all', onChange: (v) => { pref.set('mg_batch2', v); ctx.redraw(); } })],
+    });
   },
 };

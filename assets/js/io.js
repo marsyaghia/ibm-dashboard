@@ -55,7 +55,7 @@ function hint(f) {
     case 'select': case 'radio': return 'Salah satu: ' + (typeof f.options === 'function' ? '' : (f.options || []).map(o => o.label || o).join(' / '));
     case 'checks': return 'Pisahkan dengan koma';
     case 'checkbox': return 'Ya / Tidak';
-    case 'attachment': return 'Link Google Drive (opsional)';
+    case 'attachment': case 'photo': return 'Link Google Drive (opsional)';
     default: return f.required ? 'Wajib diisi' : '';
   }
 }
@@ -71,7 +71,7 @@ function convert(f, v) {
     case 'date': return typeof v === 'number' ? (excelDate(v) || '') : (parseTanggalID(v) || isoDate(v) || '');
     case 'checkbox': return typeof v === 'boolean' ? v : /^(ya|y|yes|true|1|v|✓|x)$/i.test(String(v));
     case 'checks': return String(v).split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
-    case 'attachment': { const s = String(v); const m = s.match(/https?:\/\/\S+/); return s ? { label: m ? s.replace(m[0], '').replace(/[—-]\s*$/, '').trim() : s, link: m ? m[0] : '' } : null; }
+    case 'attachment': case 'photo': { const s = String(v); const m = s.match(/https?:\/\/\S+/); return s ? { label: m ? s.replace(m[0], '').replace(/[—-]\s*$/, '').trim() : s, link: m ? m[0] : '' } : null; }
     case 'batch': {
       const s = String(v).toLowerCase(); if (!s) return '';
       if (/semua|all/.test(s)) return 'all';
@@ -126,7 +126,7 @@ export function importDialog({ title, fields, aliases = {}, onImport, note, sect
     mapping = headers.map(hd => {
       const n = norm(hd); if (!n) return '';
       const f = flat.find(f => norm(f.label) === n || norm(f.key) === n || (aliases[f.key] || []).some(a => norm(a) === n))
-        || flat.find(f => f.type === 'attachment' && n === norm(`${f.key}_link`))
+        || flat.find(f => (f.type === 'attachment' || f.type === 'photo') && n === norm(`${f.key}_link`))
         || flat.find(f => n.length > 3 && (norm(f.label).startsWith(n) || n.startsWith(norm(f.label))));
       return f ? f.key : '';
     });

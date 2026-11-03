@@ -2,7 +2,7 @@
    CRUD — halaman daftar generik: header, KPI, filter, tabel, tambah/ubah/hapus,
    ekspor CSV/Excel, impor. Setiap modul cukup memberi konfigurasi.
    ========================================================================= */
-import { h, icon, clear, openDrawer, confirmDialog, toast, dropdown, pref } from './ui.js';
+import { h, icon, clear, openDrawer, confirmDialog, toast, dropdown, pref, tc } from './ui.js';
 import { dataTable } from './table.js';
 import { buildForm } from './form.js';
 import { exportRows, importDialog } from './io.js';
@@ -86,12 +86,12 @@ export function crudView(cfg) {
       if (del) del.addEventListener('click', async () => {
         if (await confirmDialog(`Hapus ${cfg.noun || 'data'} ini? Tindakan ini tidak dapat dibatalkan.`)) { await removeRow(data); d.close(); }
       });
-      setTimeout(() => { const first = form.el.querySelector('input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea'); first && first.focus(); }, 60);
+      setTimeout(() => { const first = form.el.querySelector('input:not([type=checkbox]):not([type=radio]):not([type=file]):not([data-nofocus]), select, textarea'); first && first.focus(); }, 60);
     }
 
     async function removeRow(r) {
       try {
-        for (const f of fields.filter(f => f.type === 'attachment')) if (r[f.key] && r[f.key].file) store.deleteFile(r[f.key].file).catch(() => { });
+        for (const f of fields.filter(f => f.type === 'attachment' || f.type === 'photo')) if (r[f.key] && r[f.key].file) store.deleteFile(r[f.key].file).catch(() => { });
         await store.remove(cfg.collection, r.id); toast(`${cap(cfg.noun || 'Data')} dihapus.`, 'ok');
       } catch (e) { toast(e.message, 'bad'); }
     }
@@ -150,7 +150,7 @@ export function crudView(cfg) {
       h('button', { class: 'btn btn-icon danger', type: 'button', title: 'Hapus', 'aria-label': 'Hapus', onclick: async () => { if (await confirmDialog(`Hapus ${cfg.noun || 'data'} ini?`)) removeRow(r); } }, icon('trash', 'sm')));
 
     const table = dataTable({
-      columns: cfg.columns, rows: [], sort: cfg.sort, onRowClick: cfg.onRowClick ? (r) => cfg.onRowClick(r, ctx) : openForm, rowActions,
+      columns: cfg.columns, rows: [], sort: cfg.sort, order: cfg.order, onRowClick: cfg.onRowClick ? (r) => cfg.onRowClick(r, ctx) : openForm, rowActions,
       pageSize: cfg.pageSize || 25, footer: cfg.footer, groupBy: cfg.groupBy,
       emptyNode: h('div', { class: 'empty' }, icon('layers'), h('h3', {}, cfg.emptyTitle || 'Belum ada data'), h('p', {}, cfg.emptyText || 'Tambahkan data baru atau impor dari Excel/CSV.'),
         cfg.addable === false ? null : h('button', { class: 'btn btn-primary', type: 'button', onclick: () => openForm(null) }, icon('plus'), cfg.addLabel || `Tambah ${cfg.noun || ''}`.trim())),
@@ -175,7 +175,7 @@ export function crudView(cfg) {
 
 export function kpiRow(items) {
   return h('div', { class: 'kpis' }, items.filter(Boolean).map(k => h('div', { class: `kpi ${k.accent ? 'accent' : ''}` },
-    h('div', { class: 'label' }, k.icon ? icon(k.icon) : null, k.label),
+    h('div', { class: 'label' }, k.icon ? h('span', { class: 'kpi-ico' }, icon(k.icon)) : null, h('span', {}, tc(k.label))),
     h('div', { class: `value ${k.small ? 'small' : ''}` }, k.value),
     k.sub ? h('div', { class: 'sub' }, k.sub) : null,
     k.meter !== undefined ? h('div', { class: `meter ${k.meterTone || ''}`, role: 'meter', 'aria-valuenow': k.meter, 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-label': k.label }, h('i', { style: { width: `${Math.max(0, Math.min(100, k.meter))}%` } })) : null,
