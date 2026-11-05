@@ -133,14 +133,13 @@ function stepForm(nim, info) {
     info.sudah_mengisi ? h('div', { class: 'note', style: 'margin-top:12px' }, icon('info'), h('div', {}, `Anda telah mengisi formulir ini${info.terakhir_diisi ? ` pada ${fmtTgl(info.terakhir_diisi)}` : ''}. Pengiriman ulang untuk perusahaan yang sama akan memperbarui jawaban sebelumnya.`)) : null,
     h('div', { class: 'form-grid' },
       add(text('perusahaan', 'Perusahaan tempat magang', { required: true, value: info.perusahaan || '', col: 'half', max: 200 })),
-      add(text('kota', 'Kota', { value: info.kota || '', col: 'half', max: 100 })),
-      add(text('posisi', 'Posisi / jabatan magang', { value: info.posisi || '', col: 'half', max: 150 })),
-      add(text('divisi', 'Divisi / departemen', { value: info.divisi || '', col: 'half', max: 150 })),
-      add(text('mulai', 'Tanggal mulai', { type: 'date', value: info.mulai || '', col: 'third' })),
-      add(text('selesai', 'Tanggal selesai', { type: 'date', value: info.selesai || '', col: 'third' })),
-      add(text('durasi', 'Durasi', { value: info.durasi || '', placeholder: 'mis. 6 bulan', col: 'third', max: 60 })),
-      add(chips('mode_kerja', 'Mode kerja', ['WFO', 'Hybrid', 'WFH'])),
-      add(text('email', 'Email (opsional)', { type: 'email', placeholder: 'nama@email.com', help: 'Hanya digunakan oleh Tim IBM apabila diperlukan konfirmasi.', max: 150 })),
+      add(text('kota', 'Kota', { required: true, value: info.kota || '', col: 'half', max: 100 })),
+      add(text('posisi', 'Posisi / jabatan magang', { required: true, value: info.posisi || '', col: 'half', max: 150 })),
+      add(text('divisi', 'Divisi / departemen', { required: true, value: info.divisi || '', col: 'half', max: 150 })),
+      add(text('mulai', 'Tanggal mulai', { required: true, type: 'date', value: info.mulai || '', col: 'third' })),
+      add(text('selesai', 'Tanggal selesai', { required: true, type: 'date', value: info.selesai || '', col: 'third' })),
+      add(text('durasi', 'Durasi', { required: true, value: info.durasi || '', placeholder: 'mis. 6 bulan', col: 'third', max: 60 })),
+      add(chips('mode_kerja', 'Mode kerja', ['WFO', 'Hybrid', 'WFH'], { required: true })),
     ));
 
   const R = [
@@ -159,27 +158,25 @@ function stepForm(nim, info) {
     h('div', { class: 'form-grid' },
       add(chips('jobdesk_sesuai', 'Apakah jobdesk sesuai dengan posisi/bidang studi Anda?', ['Ya', 'Sebagian', 'Tidak'], { required: true })),
       add(chips('lingkungan_cocok', 'Apakah lingkungan kerja sesuai dengan Anda?', ['Ya', 'Cukup', 'Tidak'], { required: true })),
-      add(chips('kompensasi_diterima', 'Kompensasi yang Anda terima (dapat memilih lebih dari satu)', ['Uang saku', 'Uang makan', 'Transport', 'Tidak ada'], { multi: true })),
+      add(chips('kompensasi_diterima', 'Kompensasi yang Anda terima (dapat memilih lebih dari satu)', ['Uang saku', 'Uang makan', 'Transport', 'Tidak ada'], { required: true, multi: true })),
       add(chips('kompensasi_sepadan', 'Apakah kompensasi sepadan dengan beban kerja?', ['Ya', 'Cukup', 'Tidak'], { required: true })),
-      add(chips('beban_kerja', 'Beban kerja', ['Ringan', 'Sesuai', 'Berat'])),
-      add(text('jam_kerja', 'Jam kerja', { placeholder: 'mis. Senin–Jumat 08.00–17.00', max: 150 })),
-      add(chips('tawaran_kerja', 'Apakah Anda mendapatkan tawaran kerja setelah magang?', ['Ya', 'Belum', 'Tidak'])),
+      add(chips('beban_kerja', 'Beban kerja', ['Ringan', 'Sesuai', 'Berat'], { required: true })),
+      add(text('jam_kerja', 'Jam kerja', { required: true, placeholder: 'mis. Senin–Jumat 08.00–17.00', max: 150 })),
+      add(chips('tawaran_kerja', 'Apakah Anda mendapatkan tawaran kerja setelah magang?', ['Ya', 'Belum', 'Tidak'], { required: true })),
       add(chips('rekomendasi', 'Apakah Anda merekomendasikan tempat ini kepada mahasiswa angkatan berikutnya?', ['Ya', 'Mungkin', 'Tidak'], { required: true })),
     ));
 
-  const anon = h('input', { type: 'checkbox', id: 'anon' });
   const sec4 = h('section', { class: 'pf-card' },
     h('h2', {}, h('span', { class: 'stepno' }, '4'), 'Pengalaman magang'),
     h('div', { class: 'form-grid' },
-      add(text('kelebihan', 'Kelebihan tempat magang', { area: true, placeholder: 'Hal apa yang paling Anda apresiasi?' })),
-      add(text('kekurangan', 'Kekurangan / hal yang perlu diperhatikan', { area: true, placeholder: 'Hal apa yang perlu diketahui oleh calon peserta magang?' })),
-      add(text('skill_didapat', 'Keterampilan yang Anda peroleh', { area: true, rows: 2, placeholder: 'mis. negosiasi, Canva, Excel, handling tamu' })),
-      add(text('saran', 'Saran untuk prodi IBM', { area: true, rows: 2 })),
-      h('div', { class: 'field' }, h('label', { class: 'check', for: 'anon' }, anon, 'Tampilkan ulasan saya secara anonim')),
+      add(text('kelebihan', 'Kelebihan tempat magang', { required: true, area: true, placeholder: 'Hal apa yang paling Anda apresiasi?' })),
+      add(text('kekurangan', 'Kekurangan / hal yang perlu diperhatikan', { required: true, area: true, placeholder: 'Hal apa yang perlu diketahui oleh calon peserta magang?' })),
+      add(text('skill_didapat', 'Keterampilan yang Anda peroleh', { required: true, area: true, rows: 2, placeholder: 'mis. negosiasi, Canva, Excel, handling tamu' })),
+      add(text('saran', 'Saran untuk prodi IBM', { required: true, area: true, rows: 2 })),
     ));
 
   const send = h('button', { class: 'btn btn-primary', type: 'button' }, icon('check'), 'Kirim penilaian');
-  const actions = h('div', { class: 'pf-actions' }, h('span', { class: 'muted' }, 'Kolom bertanda * wajib diisi.'), send);
+  const actions = h('div', { class: 'pf-actions' }, h('span', { class: 'muted' }, 'Semua kolom wajib diisi.'), send);
   body.append(sec1, sec2, sec3, sec4, actions);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -189,9 +186,8 @@ function stepForm(nim, info) {
       c.wrap.classList.remove('invalid'); const old = c.wrap.querySelector(':scope > .err'); if (old) old.remove();
       if (c.required && !c.get()) { c.wrap.classList.add('invalid'); if (!c.wrap.classList.contains('rate-row')) c.wrap.appendChild(h('div', { class: 'err' }, 'Wajib diisi')); first = first || c.wrap; }
     }
-    const em = F.find(c => c.key === 'email'); if (em && em.get() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em.get())) { em.wrap.classList.add('invalid'); em.wrap.appendChild(h('div', { class: 'err' }, 'Format email tidak valid')); first = first || em.wrap; }
     if (first) { first.scrollIntoView({ block: 'center', behavior: 'smooth' }); toast('Mohon lengkapi kolom yang ditandai.', 'bad'); return; }
-    const payload = { nim, nama_lengkap: info.nama || '', tampilkan_anonim: anon.checked };
+    const payload = { nim, nama_lengkap: info.nama || '' };
     F.forEach(c => { payload[c.key] = c.get(); });
     send.disabled = true; send.replaceChildren('Mengirim…');
     try {
