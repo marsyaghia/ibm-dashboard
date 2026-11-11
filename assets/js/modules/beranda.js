@@ -25,10 +25,10 @@ function reminders() {
   const slots = slotsOf(periode);
   add('warn', 'List Jadwal belum lengkap', `${periode}: terdapat kelas yang belum memiliki dosen atau masih berstatus TBC.`, 'jadwal', slots.filter(s => !s.dosen || s.status === 'TBC').length);
 
-  // Absensi Dosen External
+  // Absensi Dosen Eksternal
   const lb = slots.filter(s => HARI.includes(s.hari) && isLB(s));
   const belum = sum(lb, s => attendanceSummary(s, t).belum);
-  add('bad', 'Absensi Dosen External belum dicatat', `${belum} pertemuan yang telah berlangsung pada ${periode} belum dicatat.`, 'absensi', belum);
+  add('bad', 'Absensi Dosen Eksternal belum dicatat', `${belum} pertemuan yang telah berlangsung pada ${periode} belum dicatat.`, 'absensi', belum);
 
   // RPS & OBE
   const tpl = store.all('rpsTemplates'); const courses = store.all('courses');
@@ -73,7 +73,7 @@ function reminders() {
 /* ---------- Kalender bulan (WIB) ---------- */
 function calendarCard(onPick) {
   const now = nowWIB(); let ym = { y: now.getFullYear(), m: now.getMonth() }; let sel = today();
-  const el = h('div', { class: 'card' }); const agenda = h('div');
+  const el = h('div', { class: 'card cal-card' }); const agenda = h('div', { class: 'cal-agenda' });
   const evAll = () => store.all('calendar').map(k => ({ ...k, kat: kategoriOf(k), a: k.mulai, b: k.selesai || k.mulai }));
   function draw() {
     clear(el);
@@ -88,7 +88,8 @@ function calendarCard(onPick) {
           h('button', { class: 'btn btn-ghost btn-icon', type: 'button', 'aria-label': 'Bulan sebelumnya', onclick: () => move(-1) }, '‹'),
           h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => { ym = { y: now.getFullYear(), m: now.getMonth() }; sel = t; draw(); onPick(sel); } }, 'Hari ini'),
           h('button', { class: 'btn btn-ghost btn-icon', type: 'button', 'aria-label': 'Bulan berikutnya', onclick: () => move(1) }, '›'))),
-      h('div', { class: 'card-body' },
+      // Lebar: kalender bulan | jadwal tanggal terpilih (berdampingan). Sempit: bertumpuk.
+      h('div', { class: 'card-body cal-split' }, h('div', { class: 'cal-month' },
         h('div', { class: 'cal-grid' }, dow.map(d => h('div', { class: 'dow' }, d)),
           days.map(d => {
             const iso = isoDate(d); const on = evs.filter(e => iso >= e.a && iso <= e.b);
@@ -97,7 +98,7 @@ function calendarCard(onPick) {
               onclick: () => { sel = iso; draw(); onPick(iso); } },
             h('span', {}, d.getDate()), kats.length ? h('span', { class: 'dots' }, kats.map(k => h('i', { class: DOT[k] || '' }))) : null);
           })),
-        h('div', { class: 'cal-legend' }, [['kuliah', 'Masa perkuliahan'], ['uts', 'UTS / UAS'], ['libur', 'Libur'], ['lain', 'Kegiatan lain']].map(([c, l]) => h('span', {}, h('i', { class: c }), l))),
+        h('div', { class: 'cal-legend' }, [['kuliah', 'Masa perkuliahan'], ['uts', 'UTS / UAS'], ['libur', 'Libur'], ['lain', 'Kegiatan lain']].map(([c, l]) => h('span', {}, h('i', { class: c }), l)))),
         agenda));
   }
   draw();
@@ -111,15 +112,41 @@ function dayAgenda(box, iso) {
   const evs = store.all('calendar').filter(k => iso >= k.mulai && iso <= (k.selesai || k.mulai));
   const sess = slotsOf(periode).filter(s => HARI.includes(s.hari)).flatMap(s => sessionsOf(s, info)).filter(x => x.tanggal === iso)
     .sort((a, b) => String(a.slot.jam_mulai || '99').localeCompare(String(b.slot.jam_mulai || '99')));
-  box.append(h('div', { class: 'cal-agenda' },
+  box.append(h('div', {},
+    h('span', { class: 'agenda-kicker' }, iso === today() ? 'Jadwal hari ini' : 'Jadwal tanggal terpilih'),
     h('h4', {}, fmtDayDate(iso), weekNo(info, d) ? h('small', {}, ` · ${periode} · minggu ke-${weekNo(info, d)}`) : null),
     evs.length ? h('div', { class: 'actions', style: { margin: '6px 0' } }, evs.map(e => badge(e.kegiatan, { UTS: 'warn', UAS: 'warn', Libur: 'ok', Perkuliahan: 'info' }[kategoriOf(e)] || ''))) : null,
     sess.length ? h('ul', { class: 'list compact' }, sess.slice(0, 8).map(x => h('li', {},
       h('div', { class: 'time-cell', style: { minWidth: '48px' } }, h('b', {}, x.slot.jam_mulai || '–'), h('span', {}, x.slot.jam_selesai || '')),
-      h('div', {}, h('strong', {}, x.slot.mata_kuliah), h('span', {}, `${batchName(x.slot.batch_id)} · ${x.slot.dosen || '–'} · P${x.no}${x.jenis !== 'Kuliah' ? ' · ' + x.jenis : ''}`)),
-      h('div', { class: 'more' }, isLB(x.slot) ? (x.absen && x.absen.status ? badge(x.absen.status, toneAbsen(x.absen.status)) : h('span', { class: 'muted' }, 'Dosen External')) : null)))) :
+      h('div', {}, h('strong', {}, x.slot.mata_kuliah), h('span', {}, `${batchName(x.slot.batch_id)} · ${x.slot.dosen || '–'} · P${x.no}${x.jenis !== 'Kuliah' ? ' · ' + x.jenis : ''}`),
+        // status absensi di bawah teks (bukan kolom kanan) agar nama mata kuliah tidak terhimpit
+        isLB(x.slot) ? h('div', { class: 'agenda-st' }, x.absen && x.absen.status ? badge(x.absen.status, toneAbsen(x.absen.status)) : h('span', { class: 'pill lb' }, 'Dosen External')) : null)))) :
       h('p', { class: 'muted', style: { margin: '6px 0 0', fontSize: '13px' } }, d && d.getDay() === 0 ? 'Hari Minggu — tidak ada perkuliahan.' : 'Tidak ada kelas terjadwal.'),
     sess.length > 8 ? h('a', { href: '#/jadwal', class: 'doc-link' }, `+${sess.length - 8} kelas lainnya di Jadwal Kuliah`) : null));
+}
+
+/* ---------- Kartu pengingat ringkas: 5 paling mendesak, sisanya lewat "Tampilkan lainnya" ---------- */
+const TOP_REMINDERS = 5;
+const TONE_LABEL = { bad: 'Mendesak', warn: 'Perlu dilengkapi', info: 'Info' };
+const MENU_LABEL = { jadwal: 'Jadwal Kuliah', absensi: 'Absensi Dosen Eksternal', rps: 'RPS & OBE', materi: 'Materi & PPT', pengeluaran: 'Pengeluaran Divisi', trent: 'Trent Global College', immersion: 'Immersion', mahasiswa: 'Biodata Mahasiswa', sertifikat: 'Sertifikat Mahasiswa', dosen: 'Biodata Dosen' };
+
+function reminderCard(rem, showAll, onToggle) {
+  const item = (r) => h('li', {}, h('a', { href: `#/${r.route}`, title: r.text },
+    h('span', { class: `ico ${r.tone}` }, icon(r.tone === 'bad' ? 'alert' : r.tone === 'warn' ? 'bell' : 'info', 'sm')),
+    h('span', { class: 'txt' }, h('strong', {}, r.title),
+      h('span', { class: 'sub' }, h('b', { class: r.tone }, TONE_LABEL[r.tone]), h('span', { 'aria-hidden': 'true' }, ' · '), h('span', {}, MENU_LABEL[r.route] || ''))),
+    h('span', { class: `badge ${r.tone === 'info' ? '' : r.tone}` }, String(r.n)),
+    icon('arrow', 'sm go')));
+  const rest = rem.length - TOP_REMINDERS;
+  return h('div', { class: 'card rem-card' },
+    h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, icon('bell', 'sm'), ' Pengingat data'),
+      h('p', {}, rem.length ? `${rem.length} hal perlu ditindaklanjuti` : 'Seluruh data utama telah lengkap'))),
+    rem.length ? h('ul', { class: 'rem-list' },
+      rem.slice(0, TOP_REMINDERS).map(item),
+      showAll && rest > 0 ? [h('li', { class: 'rem-sep', 'aria-hidden': 'true' }, 'Lainnya'), ...rem.slice(TOP_REMINDERS).map(item)] : null)
+      : h('div', { class: 'empty' }, icon('check'), h('h3', {}, 'Tidak ada pengingat'), h('p', {}, 'Tidak ada data yang perlu ditindaklanjuti.')),
+    rest > 0 ? h('button', { class: 'rem-more', type: 'button', 'aria-expanded': String(showAll), onclick: onToggle },
+      showAll ? 'Sembunyikan' : `Tampilkan ${rest} lainnya`, icon('chevron', 'sm')) : null);
 }
 
 /* ---------- Rekap tiap menu ---------- */
@@ -147,7 +174,7 @@ function moduleCards() {
     card('rps', 'book', 'RPS & OBE', `${tplOk} / ${courses.length}`, 'template RPS tersedia', pct(tplOk, courses.length)),
     card('materi', 'slides', 'Materi & PPT', `${pct(matOk, mats.length)}%`, `${matOk} dari ${mats.length} materi lengkap`, pct(matOk, mats.length)),
     card('jadwal', 'calendar', 'Jadwal Kuliah', `${fixed.length} kelas`, `${periode} · ${slots.length - fixed.length} tanpa hari tetap`),
-    card('absensi', 'clipboard', 'Absensi Dosen External', cnt ? `${Math.round(hadir / cnt * 100)}% hadir` : '–', `${rec} / ${due} pertemuan tercatat`, pct(rec, due)),
+    card('absensi', 'clipboard', 'Absensi Dosen Eksternal', cnt ? `${Math.round(hadir / cnt * 100)}% hadir` : '–', `${rec} / ${due} pertemuan tercatat`, pct(rec, due)),
     card('trent', 'handshake', 'Trent Global College', `${tpOk} / ${tp.length}`, 'tagihan lunas', pct(tpOk, tp.length)),
     card('immersion', 'plane', 'Immersion', immTarget ? `${pct(immTot, immTarget)}%` : fmtIDRShort(sum(store.all('immersionSavings').filter(r => (r.status || 'Terverifikasi') === 'Terverifikasi'), 'jumlah')), immTarget ? `${fmtIDRShort(immTot)} dari ${fmtIDRShort(immTarget)}` : 'target tabungan belum diatur', immTarget ? pct(immTot, immTarget) : undefined),
     (() => { const mg = store.all('internships'); const rv = store.all('internshipReviews').filter(r => r.status_review !== 'Disembunyikan'); const avg = rv.length ? (sum(rv, 'rating_keseluruhan') / rv.length).toFixed(1).replace('.', ',') : null;
@@ -161,7 +188,7 @@ function moduleCards() {
 export default {
   mount(root) {
     const p = store.profile || {}; const prof = store.setting('profil');
-    const box = h('div'); let timer = null;
+    const box = h('div'); let timer = null; let showAll = false;
     const clockBig = h('span', { class: 'big', 'aria-live': 'off' }); const clockSub = h('small');
     const tick = () => { const d = nowWIB(); clockBig.textContent = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`; clockSub.textContent = `${HARI_P[lang()][d.getDay()]}, ${fmtDate(d)} · ${store.setting('profil').kota || 'Malang'} (WIB)`; };
     function render() {
@@ -175,15 +202,7 @@ export default {
           h('div', {}, h('span', { class: 'eyebrow' }, prof.nama_divisi || 'Divisi IBM'), h('h1', {}, greet),
             h('p', {}, info && wk ? `${periode} sedang berjalan — minggu perkuliahan ke-${wk}. Berikut ringkasan seluruh menu dan data yang perlu dilengkapi.` : `${periode}. Berikut ringkasan seluruh menu dan data yang perlu dilengkapi.`)),
           h('div', { class: 'clock-card' }, icon('clock'), h('div', {}, clockBig, clockSub))),
-        h('div', { class: 'grid grid-main' },
-          h('div', { class: 'card' },
-            h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, icon('bell', 'sm'), ' Pengingat data'), h('p', {}, rem.length ? `${rem.length} hal perlu ditindaklanjuti` : 'Seluruh data utama telah lengkap'))),
-            rem.length ? h('ul', { class: 'list' }, rem.map(r => h('li', {},
-              h('span', { class: `ico ${r.tone}` }, icon(r.tone === 'bad' ? 'alert' : r.tone === 'warn' ? 'bell' : 'info')),
-              h('div', {}, h('strong', {}, r.title, ' ', h('span', { class: `badge ${r.tone === 'info' ? '' : r.tone}` }, String(r.n))), h('span', {}, r.text)),
-              h('a', { class: 'more doc-link', href: `#/${r.route}` }, h('span', {}, 'Buka'), icon('arrow', 'sm')))))
-              : h('div', { class: 'empty' }, icon('check'), h('h3', {}, 'Tidak ada pengingat'), h('p', {}, 'Tidak ada data yang perlu ditindaklanjuti.'))),
-          cal.el),
+        h('div', { class: 'grid grid-main dash-main' }, cal.el, reminderCard(rem, showAll, () => { showAll = !showAll; render(); })),
         h('h2', { class: 'section-title' }, icon('dashboard', 'sm'), 'Rekap tiap menu'),
         moduleCards());
     }

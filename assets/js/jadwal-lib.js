@@ -1,5 +1,5 @@
 /* =========================================================================
-   JADWAL — logika bersama Jadwal Kuliah, Absensi Dosen External, dan Beranda.
+   JADWAL — logika bersama Jadwal Kuliah, Absensi Dosen Eksternal, dan Beranda.
    Tanggal pertemuan dihitung dari slot mingguan (hari + jam) dan
    kalender akademik (format PDF akademik: semester, tahun ajaran, kegiatan,
    tanggal mulai s.d. selesai).

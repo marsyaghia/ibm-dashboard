@@ -90,7 +90,7 @@ function rekap(root, goSheet) {
 
     box.append(...[
       h('div', { class: 'page-head' },
-        h('div', {}, h('span', { class: 'eyebrow' }, 'Akademik · Absensi Dosen External'), h('h1', {}, 'Rekap Kehadiran Dosen External'), h('p', {}, `${state.periode} · ${state.batch ? batchName(state.batch) : 'semua batch'}. Dihitung berdasarkan pertemuan yang telah berlangsung (s.d. ${fmtDate(t)}); status “Dijadwal ulang” dan “Libur” tidak diperhitungkan.`)),
+        h('div', {}, h('span', { class: 'eyebrow' }, 'Akademik · Absensi Dosen Eksternal'), h('h1', {}, 'Rekap Kehadiran Dosen External'), h('p', {}, `${state.periode} · ${state.batch ? batchName(state.batch) : 'semua batch'}. Dihitung berdasarkan pertemuan yang telah berlangsung (s.d. ${fmtDate(t)}); status “Dijadwal ulang” dan “Libur” tidak diperhitungkan.`)),
         h('div', { class: 'actions no-print' }, per, bat, modeSel, h('button', { class: 'btn btn-ghost', type: 'button', onclick: exportAll }, icon('sheet'), 'Ekspor Excel'))),
       kpiRow([
         { label: 'Kehadiran Dosen External', value: tot.cnt ? `${Math.round(tot.hadir / tot.cnt * 100)}%` : '–', sub: `${tot.hadir} hadir dari ${tot.cnt} pertemuan tercatat`, meter: tot.cnt ? Math.round(tot.hadir / tot.cnt * 100) : 0, meterTone: 'ok', icon: 'teacher', accent: true },
@@ -116,7 +116,7 @@ function lembar(root) {
     const slot = store.get('schedules', state.slot);
     const pickBar = h('div', { class: 'sheet-picker no-print' }, ...sels);
     const head = (...actions) => h('div', { class: 'page-head' },
-      h('div', {}, h('span', { class: 'eyebrow' }, 'Akademik · Absensi Dosen External'), h('h1', {}, 'Lembar Absensi Dosen External'),
+      h('div', {}, h('span', { class: 'eyebrow' }, 'Akademik · Absensi Dosen Eksternal'), h('h1', {}, 'Lembar Absensi Dosen Eksternal'),
         h('p', {}, 'Pilih periode, batch, dan kelas, lalu isi status kehadiran dosen pada setiap pertemuan. Perubahan tersimpan otomatis.')),
       actions.length ? h('div', { class: 'actions no-print' }, ...actions) : null);
     if (!slot) { box.append(head(), h('div', { class: 'card' }, pickBar, h('div', { class: 'empty' }, icon('teacher'), h('h3', {}, 'Tidak ada kelas Dosen External dengan hari tetap'), h('p', {}, 'Silakan pilih periode/batch lain atau lengkapi hari, jam, dan jenis dosen melalui Jadwal Kuliah → List Jadwal.')))); return; }
@@ -127,7 +127,7 @@ function lembar(root) {
       try { x.absen = await saveAbsen(x, patch); rowEl.classList.add('saved'); setTimeout(() => rowEl.classList.remove('saved'), 900); }
       catch (e) { toast(e.message, 'bad'); } finally { muted = false; }
     };
-    const exportSheet = () => exportWorkbook(`Absensi_${slot.mata_kuliah}_${batchName(slot.batch_id)}_${slot.periode}`.replace(/\W+/g, '_'), [{ name: 'Absensi Dosen External', rows: [
+    const exportSheet = () => exportWorkbook(`Absensi_${slot.mata_kuliah}_${batchName(slot.batch_id)}_${slot.periode}`.replace(/\W+/g, '_'), [{ name: 'Absensi Dosen Eksternal', rows: [
       ['Mata Kuliah', slot.mata_kuliah], ['Batch', batchName(slot.batch_id)], ['Periode', slot.periode], ['Dosen', slot.dosen], ['Jadwal', `${slot.hari} ${timeLabel(slot)} · ${slot.ruang || ''}`], [],
       ['Pertemuan', 'Tanggal', 'Jenis', 'Status', 'Dosen Mengajar', 'Jam Masuk', 'Jam Keluar', 'Catatan'].map(v => ({ v, bold: true })),
       ...sessions.map(x => { const a = x.absen || {}; return [x.no, x.tanggal, x.jenis, a.status || '', a.dosen_hadir || '', a.jam_masuk || '', a.jam_keluar || '', a.catatan || '']; }),
@@ -177,7 +177,7 @@ function lembar(root) {
 
 /* =================== Log absensi =================== */
 const logView = crudView({
-  id: 'attendance', collection: 'attendance', noun: 'catatan absensi', title: 'Log Absensi Dosen External', eyebrow: 'Akademik · Absensi Dosen External',
+  id: 'attendance', collection: 'attendance', noun: 'catatan absensi', title: 'Log Absensi Dosen Eksternal', eyebrow: 'Akademik · Absensi Dosen Eksternal',
   description: 'Seluruh catatan kehadiran Dosen External yang telah diisi oleh Tim IBM, diurutkan dari yang terbaru. Untuk menambahkan catatan, gunakan tab Lembar Absensi atau menu Jadwal Kuliah → Daily.',
   addable: false, exportName: 'Log_Absensi_Dosen_LB', sort: { key: 'tanggal', dir: 'desc' }, pageSize: 50,
   sections: [{ fields: [
@@ -225,6 +225,6 @@ export default {
       { id: 'lembar', label: 'Lembar absensi', fn: (body) => lembar(body) },
       { id: 'log', label: 'Log absensi', fn: (body) => logView(body) },
       { id: 'rekap', label: 'Rekap kehadiran', fn: (body, ctx) => rekap(body, (s) => { pref.set('abs_slot', s.id); pref.set('abs_batch', s.batch_id); pref.set('abs_periode', s.periode); ctx.go('lembar'); }) },
-    ], { eyebrow: 'Akademik', title: 'Absensi Dosen External', def: 'lembar', remember: false });
+    ], { eyebrow: 'Akademik', title: 'Absensi Dosen Eksternal', def: 'lembar', remember: false });
   },
 };

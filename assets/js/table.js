@@ -61,13 +61,20 @@ export function dataTable({ columns, rows, onRowClick, rowActions, pageSize = 25
     const grouping = groupBy && (!state.sort || (sort && state.sort.key === sort.key && state.sort.dir === sort.dir));
     slice.forEach(r => {
       if (grouping) { const g = groupBy(r); if (g !== lastGroup) { tbody.appendChild(h('tr', { class: 'group-row' }, h('td', { colspan: columns.length + (rowActions ? 1 : 0) }, g))); lastGroup = g; } }
-      const tr = h('tr', { class: onRowClick ? 'clickable' : '' },
+      // Mode kartu (HP/tablet): tombol ikon saja → pojok kanan atas kartu; tombol berteks tetap di baris bawah
+      const acts = rowActions ? rowActions(r) : null;
+      const nBtn = acts ? acts.querySelectorAll('.btn').length : 0;
+      const iconOnly = nBtn > 0 && !acts.querySelector('.btn:not(.btn-icon)');
+      const tr = h('tr', { class: [onRowClick ? 'clickable' : '', iconOnly ? 'icon-actions' : ''].join(' ').trim() },
         columns.map((c, i) => {
           const v = c.render ? c.render(r) : cellValue(c, r);
-          return h('td', { class: [c.align || '', i === mainIdx ? 'cell-main' : '', c.nowrap ? 'nowrap' : ''].join(' '), 'data-label': i === mainIdx ? '' : c.label },
-            v === undefined || v === null || v === '' ? h('span', { class: 'muted' }, '–') : v);
+          const empty = v === undefined || v === null || v === '';
+          // is-empty: kolom kosong disembunyikan saat tampil sebagai kartu agar tidak penuh tanda "–"
+          return h('td', { class: [c.align || '', i === mainIdx ? 'cell-main' : '', c.nowrap ? 'nowrap' : '', empty && i !== mainIdx ? 'is-empty' : ''].join(' '), 'data-label': i === mainIdx ? '' : c.label },
+            empty ? h('span', { class: 'muted' }, '–') : v);
         }),
-        rowActions ? h('td', { class: 'actions-cell' }, rowActions(r)) : null);
+        acts ? h('td', { class: 'actions-cell' }, acts) : null);
+      if (iconOnly) tr.style.setProperty('--act-n', nBtn);
       if (onRowClick) {
         tr.tabIndex = 0;
         tr.addEventListener('click', (e) => { if (e.target.closest('button, a, input, select, label')) return; onRowClick(r); });

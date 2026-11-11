@@ -1,7 +1,7 @@
 /* =========================================================================
    APP — kerangka (sidebar, topbar), router, tema, bahasa, login superadmin.
    ========================================================================= */
-import { h, icon, clear, toast, greeting, nowWIB, HARI_P, fmtDateLong, openModal } from './ui.js';
+import { h, icon, clear, toast, greeting, nowWIB, openModal } from './ui.js';
 import { store } from './store.js';
 import { CONFIG } from './config.js';
 import { lang, setLang, startI18n, t } from './i18n.js';
@@ -21,34 +21,51 @@ import mahasiswa from './modules/mahasiswa.js';
 import dosen from './modules/dosen.js';
 import pengaturan from './modules/pengaturan.js';
 
+/* short = label pendek untuk rel ikon (tablet) dan navigasi bawah (HP) */
 const NAV = [
-  { group: '', items: [{ id: 'beranda', label: 'Dashboard', icon: 'dashboard', mod: beranda }] },
+  { group: '', items: [{ id: 'beranda', label: 'Dashboard', short: 'Dashboard', icon: 'dashboard', mod: beranda }] },
   { group: 'Keuangan', items: [
-    { id: 'pengeluaran', label: 'Pengeluaran Divisi', icon: 'expense', mod: pengeluaran, count: () => store.all('expenses').length },
-    { id: 'pemasukan', label: 'Perolehan Mahasiswa', icon: 'income', mod: pemasukan, count: () => store.all('incomes').length },
+    { id: 'pengeluaran', label: 'Pengeluaran Divisi', short: 'Pengeluaran', icon: 'expense', mod: pengeluaran, count: () => store.all('expenses').length },
+    { id: 'pemasukan', label: 'Perolehan Mahasiswa', short: 'Perolehan', icon: 'income', mod: pemasukan, count: () => store.all('incomes').length },
   ] },
   { group: 'Akademik', items: [
-    { id: 'rps', label: 'RPS & OBE', icon: 'book', mod: rps, count: () => store.all('rpsTemplates').length },
-    { id: 'materi', label: 'Materi & PPT Dosen', icon: 'slides', mod: materi, count: () => store.all('materials').length },
-    { id: 'jadwal', label: 'Jadwal Kuliah', icon: 'calendar', mod: jadwal },
-    { id: 'absensi', label: 'Absensi Dosen External', icon: 'clipboard', mod: absensi },
+    { id: 'rps', label: 'RPS & OBE', short: 'RPS & OBE', icon: 'book', mod: rps, count: () => store.all('rpsTemplates').length },
+    { id: 'materi', label: 'Materi & PPT Dosen', short: 'Materi', icon: 'slides', mod: materi, count: () => store.all('materials').length },
+    { id: 'jadwal', label: 'Jadwal Kuliah', short: 'Jadwal', icon: 'calendar', mod: jadwal },
+    { id: 'absensi', label: 'Absensi Dosen Eksternal', short: 'Absensi', icon: 'clipboard', mod: absensi },
   ] },
   { group: 'Program', items: [
-    { id: 'trent', label: 'Trent Global College', icon: 'handshake', mod: trent },
-    { id: 'immersion', label: 'Immersion', icon: 'plane', mod: immersion },
-    { id: 'magang', label: 'Data Magang', icon: 'briefcase', mod: magang, count: () => store.all('internships').length },
+    { id: 'trent', label: 'Trent Global College', short: 'Trent', icon: 'handshake', mod: trent },
+    { id: 'immersion', label: 'Immersion', short: 'Immersion', icon: 'plane', mod: immersion },
+    { id: 'magang', label: 'Data Magang', short: 'Magang', icon: 'briefcase', mod: magang, count: () => store.all('internships').length },
   ] },
   { group: 'Data', items: [
-    { id: 'sertifikat', label: 'Sertifikat Mahasiswa', icon: 'award', mod: sertifikat, count: () => store.all('certificates').length },
-    { id: 'mahasiswa', label: 'Biodata Mahasiswa', icon: 'users', mod: mahasiswa, count: () => store.all('students').length },
-    { id: 'dosen', label: 'Biodata Dosen', icon: 'teacher', mod: dosen, count: () => store.all('lecturers').length },
+    { id: 'sertifikat', label: 'Sertifikat Mahasiswa', short: 'Sertifikat', icon: 'award', mod: sertifikat, count: () => store.all('certificates').length },
+    { id: 'mahasiswa', label: 'Biodata Mahasiswa', short: 'Mahasiswa', icon: 'users', mod: mahasiswa, count: () => store.all('students').length },
+    { id: 'dosen', label: 'Biodata Dosen', short: 'Dosen', icon: 'teacher', mod: dosen, count: () => store.all('lecturers').length },
   ] },
-  { group: 'Sistem', items: [{ id: 'pengaturan', label: 'Pengaturan', icon: 'settings', mod: pengaturan }] },
+  { group: 'Sistem', items: [{ id: 'pengaturan', label: 'Pengaturan', short: 'Pengaturan', icon: 'settings', mod: pengaturan }] },
 ];
 const ROUTES = Object.fromEntries(NAV.flatMap(g => g.items.map(i => [i.id, { ...i, group: g.group }])));
+/* Navigasi bawah di HP: 4 menu tersering + tombol "Menu" untuk membuka semua menu */
+const QUICK = ['beranda', 'jadwal', 'absensi', 'pengeluaran'];
 
 const getTheme = () => document.documentElement.getAttribute('data-theme') || 'light';
 function setTheme(v) { document.documentElement.setAttribute('data-theme', v); try { localStorage.setItem('ibm_theme', v); } catch (e) { /* abaikan */ } }
+
+/* Sakelar tema terang/gelap — bentuknya sama dengan sakelar bahasa ID/EN */
+function themeSwitch() {
+  const modes = [['light', 'sun', 'Mode terang'], ['dark', 'moon', 'Mode gelap']];
+  const btns = modes.map(([v, ic, label]) => h('button', { type: 'button', title: label, 'aria-label': label, onclick: () => { setTheme(v); sync(); } }, icon(ic)));
+  const sync = () => btns.forEach((b, i) => b.setAttribute('aria-pressed', String(getTheme() === modes[i][0])));
+  sync();
+  const el = h('div', { class: 'lang-switch theme-switch', role: 'group', 'aria-label': 'Tema' }, btns);
+  el.sync = sync;
+  return el;
+}
+
+/* Footer hak cipta di bawah setiap halaman */
+const footer = () => h('footer', { class: 'app-footer' }, h('p', {}, `© ${nowWIB().getFullYear()} IBM Institut Asia Malang. Hak cipta dilindungi undang-undang.`));
 
 let current = null; const els = {};
 
@@ -57,7 +74,7 @@ function shell() {
   const nav = h('nav', { class: 'nav', 'aria-label': 'Menu utama' });
   NAV.forEach(g => {
     const grp = h('div', { class: `nav-group ${g.group ? '' : 'no-label'}` }, g.group ? h('span', {}, g.group) : null);
-    g.items.forEach(i => { const c = h('span', { class: 'count' }); i._count = c; grp.appendChild(h('a', { href: `#/${i.id}`, dataset: { route: i.id } }, icon(i.icon), h('span', {}, i.label), c)); });
+    g.items.forEach(i => { const c = h('span', { class: 'count' }); i._count = c; grp.appendChild(h('a', { href: `#/${i.id}`, dataset: { route: i.id } }, icon(i.icon), h('span', { class: 'lbl' }, i.label), h('span', { class: 'short' }, i.short || i.label), c)); });
     nav.appendChild(grp);
   });
   const p = store.profile || {};
@@ -70,13 +87,7 @@ function shell() {
       h('span', {}, `${p.nama || ''} · ${p.peran || 'superadmin'}`)));
 
   els.crumb = h('div', { class: 'crumb' });
-  els.clock = h('span', { class: 'clock', 'aria-live': 'off' });
-  const tick = () => { const d = nowWIB(); els.clock.textContent = `${HARI_P[lang()][d.getDay()]}, ${fmtDateLong(d)} · ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} WIB`; };
-  tick(); clearInterval(els.timer); els.timer = setInterval(tick, 15000);
-
-  const themeBtn = h('button', { class: 'btn btn-icon', type: 'button', 'aria-label': 'Ganti tema terang/gelap', title: 'Ganti tema terang/gelap' });
-  const paintTheme = () => { clear(themeBtn); themeBtn.appendChild(icon(getTheme() === 'dark' ? 'sun' : 'moon')); };
-  paintTheme(); themeBtn.addEventListener('click', () => { setTheme(getTheme() === 'dark' ? 'light' : 'dark'); paintTheme(); });
+  const themeSw = themeSwitch();
 
   const langSw = h('div', { class: 'lang-switch', role: 'group', 'aria-label': 'Bahasa', 'data-no-i18n': '' },
     ['id', 'en'].map(l => h('button', { type: 'button', 'aria-pressed': String(lang() === l), title: l === 'id' ? 'Bahasa Indonesia' : 'English', onclick: () => { if (lang() !== l) { setLang(l); shell(); route(); startI18n(); } } }, l.toUpperCase())));
@@ -87,12 +98,40 @@ function shell() {
     h('span', { class: 'who' }, h('b', {}, p.sapaan || p.nama || ''), h('small', {}, p.email || '')),
     h('button', { class: 'btn btn-icon', type: 'button', title: 'Keluar', 'aria-label': 'Keluar', onclick: logout }, icon('logout')));
 
+  // HP: bahasa, tema, muat ulang, dan keluar dikumpulkan di satu menu (avatar) agar bilah atas lega
+  const moreList = h('div', { class: 'menu-list hidden', role: 'menu' });
+  const moreBtn = h('button', { class: 'avatar sm more-btn', type: 'button', 'aria-label': 'Menu lainnya', 'aria-haspopup': 'true', 'aria-expanded': 'false' },
+    (p.sapaan || p.nama || '?').replace(/^(Pak|Bu|Ibu)\s+/i, '').charAt(0).toUpperCase());
+  const moreItem = (label, ic, fn) => h('button', { type: 'button', role: 'menuitem', onclick: () => { moreList.classList.add('hidden'); moreBtn.setAttribute('aria-expanded', 'false'); fn(); } }, icon(ic), label);
+  const paintMore = () => {
+    clear(moreList);
+    moreList.append(
+      h('div', { class: 'menu-who' }, h('b', {}, p.sapaan || p.nama || ''), h('small', {}, p.email || '')), h('hr'),
+      h('span', { 'data-no-i18n': '' }, moreItem(lang() === 'en' ? 'Bahasa Indonesia' : 'English', 'languages', () => { setLang(lang() === 'en' ? 'id' : 'en'); shell(); route(); startI18n(); })),
+      moreItem(getTheme() === 'dark' ? 'Mode terang' : 'Mode gelap', getTheme() === 'dark' ? 'sun' : 'moon', () => { setTheme(getTheme() === 'dark' ? 'light' : 'dark'); themeSw.sync(); }),
+      moreItem('Muat ulang data', 'refresh', () => refresh.click()), h('hr'),
+      moreItem('Keluar', 'logout', logout));
+  };
+  moreBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); const show = moreList.classList.contains('hidden');
+    document.querySelectorAll('.menu-list').forEach(m => m.classList.add('hidden'));
+    if (show) { paintMore(); moreList.classList.remove('hidden'); }
+    moreBtn.setAttribute('aria-expanded', String(show));
+  });
+
+  // HP: navigasi bawah
+  els.menuTab = h('button', { type: 'button', 'aria-controls': 'sidebar', 'aria-expanded': 'false', onclick: () => toggleSide(true) }, h('i', {}, icon('menu')), h('span', {}, 'Menu'));
+  els.bottom = h('nav', { class: 'bottom-nav', 'aria-label': 'Navigasi cepat' },
+    QUICK.map(id => h('a', { href: `#/${id}`, dataset: { route: id } }, h('i', {}, icon(ROUTES[id].icon)), h('span', {}, ROUTES[id].short))), els.menuTab);
+
   els.page = h('main', { class: 'page', id: 'main', tabindex: '-1' });
-  const main = h('div', { class: 'main' }, h('header', { class: 'topbar' }, menuBtn, els.crumb, h('div', { class: 'spacer' }), els.clock, langSw, refresh, themeBtn, userChip), els.page);
-  root.appendChild(h('div', { class: 'app' }, els.sidebar, main));
+  // Urutan bilah atas: bahasa → tema → muat ulang → akun & keluar
+  const main = h('div', { class: 'main' }, h('header', { class: 'topbar' }, menuBtn, els.crumb, h('div', { class: 'spacer' }), langSw, themeSw, refresh, userChip,
+    h('div', { class: 'menu more-menu' }, moreBtn, moreList)), els.page, footer());
+  root.appendChild(h('div', { class: 'app' }, els.sidebar, main, els.bottom));
 
   function toggleSide(open) {
-    els.sidebar.classList.toggle('open', open); menuBtn.setAttribute('aria-expanded', String(open));
+    els.sidebar.classList.toggle('open', open); menuBtn.setAttribute('aria-expanded', String(open)); els.menuTab.setAttribute('aria-expanded', String(open));
     if (open) { els.scrim = h('div', { class: 'scrim', onclick: () => toggleSide(false) }); document.body.appendChild(els.scrim); }
     else if (els.scrim) { els.scrim.remove(); els.scrim = null; }
   }
@@ -115,9 +154,11 @@ function route() {
   clear(els.page);
   els.sidebar.querySelectorAll('a[data-route]').forEach(a => a.toggleAttribute('aria-current', false));
   const link = els.sidebar.querySelector(`a[data-route="${r.id}"]`); if (link) link.setAttribute('aria-current', 'page');
+  els.bottom.querySelectorAll('a[data-route]').forEach(a => { if (a.dataset.route === r.id) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  els.menuTab.classList.toggle('on', !QUICK.includes(r.id));
   clear(els.crumb); if (r.group) els.crumb.append(h('span', { class: 'grp' }, r.group), h('span', { class: 'sep', 'aria-hidden': 'true' }, '/')); els.crumb.append(h('b', {}, r.label));
   els.page.dataset.route = r.id;
-  document.title = `${t(r.label)} · ${CONFIG.app.name}`;
+  document.title = `${t(r.label)} · ${t(CONFIG.app.name)}`;
   try { current = r.mod.mount(els.page) || null; }
   catch (e) { console.error(e); els.page.appendChild(h('div', { class: 'note warn' }, icon('alert'), h('div', {}, 'Halaman gagal dimuat: ' + e.message))); }
   els.closeSide && els.closeSide(); window.scrollTo(0, 0);
@@ -125,12 +166,9 @@ function route() {
 
 /* ---------- Layar login ---------- */
 function gateTools() {
-  const themeBtn = h('button', { class: 'btn btn-icon', type: 'button', 'aria-label': 'Ganti tema terang/gelap', title: 'Ganti tema terang/gelap' });
-  const paint = () => { clear(themeBtn); themeBtn.appendChild(icon(getTheme() === 'dark' ? 'sun' : 'moon')); };
-  paint(); themeBtn.addEventListener('click', () => { setTheme(getTheme() === 'dark' ? 'light' : 'dark'); paint(); });
   const sw = h('div', { class: 'lang-switch', role: 'group', 'aria-label': 'Bahasa', 'data-no-i18n': '' },
     ['id', 'en'].map(l => h('button', { type: 'button', 'aria-pressed': String(lang() === l), title: l === 'id' ? 'Bahasa Indonesia' : 'English', onclick: () => { if (lang() !== l) { setLang(l); location.reload(); } } }, l.toUpperCase())));
-  return h('div', { class: 'gate-tools' }, sw, themeBtn);
+  return h('div', { class: 'gate-tools' }, sw, themeSwitch());
 }
 function loginScreen(message) {
   return new Promise((resolve) => {

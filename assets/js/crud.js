@@ -127,7 +127,12 @@ export function crudView(cfg) {
       ));
 
     // Filter bar
-    const toolbar = h('div', { class: 'toolbar' }, h('div', { class: 'search' }, icon('search'), searchIn));
+    // Di HP, pilihan filter dilipat di balik tombol "Filter" (angka = filter yang aktif)
+    const hasFilters = (cfg.filters || []).length > 0;
+    const filterN = h('span', { class: 'filter-n hidden' });
+    const filterBtn = hasFilters ? h('button', { class: 'btn btn-ghost filter-toggle', type: 'button', 'aria-expanded': 'false',
+      onclick: () => { const open = toolbar.classList.toggle('filters-open'); filterBtn.setAttribute('aria-expanded', String(open)); } }, icon('filter', 'sm'), 'Filter', filterN) : null;
+    const toolbar = h('div', { class: `toolbar ${hasFilters ? 'has-filters' : ''}`.trim() }, h('div', { class: 'search' }, icon('search'), searchIn), filterBtn);
     (cfg.filters || []).forEach(f => {
       const sel = h('select', { class: 'select', 'aria-label': f.label });
       const fill = () => {
@@ -161,6 +166,8 @@ export function crudView(cfg) {
       (cfg.filters || []).forEach(f => f._fill && f._fill());
       const rows = filtered(); const allRows = all();
       countEl.textContent = `${rows.length} dari ${allRows.length} ${cfg.unit || 'baris'}`;
+      const nActive = (cfg.filters || []).filter(f => state.f[f.key] !== undefined && state.f[f.key] !== '').length;
+      filterN.textContent = String(nActive); filterN.classList.toggle('hidden', !nActive);
       clear(kpiBox); if (cfg.kpis) kpiBox.appendChild(kpiRow(cfg.kpis(rows, allRows)));
       clear(aboveBox); if (cfg.above) { const n = cfg.above(rows, allRows, ctx); if (n) aboveBox.appendChild(n); }
       table.update(rows);

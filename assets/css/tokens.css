@@ -63,6 +63,8 @@
   /* ---------- Tambahan dashboard ---------- */
   --topbar-h: 60px;
   --sidebar-w: 256px;
+  --rail-w: 84px;       /* sidebar ikon di tablet (641–1024px) */
+  --bottom-h: 62px;     /* navigasi bawah di HP (≤ 640px) */
   --page-max: 1560px;
 
   /* Huruf antarmuka: Inter untuk seluruh teks & judul kartu, Plus Jakarta Sans

@@ -18,6 +18,13 @@ Panduan singkat untuk revisi lewat ekstensi Claude di VS Code.
 - Ukuran huruf & tinggi kontrol dari token (`--fs-*`, `--ctl-h`) di `tokens.css`.
 - Foto profil: field `type: 'photo'` (`form.js`), tampil dengan `avatar(nama, foto)` (`ui.js`; mendukung link Google Drive & unggahan).
 - Waktu selalu WIB (`nowWIB()`, `today()` di `ui.js`).
+- Bilah atas (`shell()` di `app.js`): sakelar bahasa ID/EN → sakelar tema (`themeSwitch()`, bentuk sama dengan sakelar bahasa) → muat ulang → akun & keluar. Tidak ada jam di bilah atas (jam ada di Dashboard).
+- Footer hak cipta (`footer()` di `app.js`, kelas `.app-footer`) tampil di bawah setiap halaman, warnanya mengikuti sidebar (`--side-bg`) dengan garis emas.
+- Tampilan per perangkat (`app.css` bagian 15):
+  - desktop (> 1024px): sidebar penuh;
+  - tablet (641–1024px): sidebar menjadi rel ikon dengan label pendek (`short` di `NAV`, `app.js`); KPI jadi satu kartu 2 kolom; tabel-kartu 3 kolom;
+  - HP (≤ 640px): navigasi bawah (`QUICK` di `app.js` = 4 menu + tombol Menu), bilah atas hanya judul + menu avatar (bahasa, tema, muat ulang, keluar), KPI jadi satu kartu berpetak, filter `crudView` dilipat di balik tombol "Filter".
+  - Tabel-kartu: tombol ikon saja pindah ke pojok kanan atas; kolom kosong (`is-empty`) disembunyikan.
 
 ## Alur data
 
@@ -34,13 +41,13 @@ Panduan singkat untuk revisi lewat ekstensi Claude di VS Code.
 
 | File | Menu |
 |---|---|
-| `beranda.js` | Dashboard (dulu Beranda): sapaan, jam WIB, kalender, pengingat, rekap menu |
+| `beranda.js` | Dashboard (dulu Beranda): sapaan, jam WIB, kalender + jadwal harian (kolom lebar), pengingat 5 teratas + "Tampilkan lainnya" (kolom kecil), rekap menu |
 | `pengeluaran.js` | Pengeluaran + Laporan |
 | `pemasukan.js` | Perolehan Mahasiswa + Rekapitulasi (grafik) |
 | `rps.js` | Template RPS & OBE, Penilaian OBE |
 | `materi.js` | Materi & PPT |
 | `jadwal.js` | Jadwal Full / Weekly / Daily / List Jadwal (id tab `slot`) / Kalender akademik (logika tanggal di `jadwal-lib.js`) |
-| `absensi.js` | Absensi Dosen External: Lembar absensi (selalu dibuka pertama) / Log / Rekap |
+| `absensi.js` | Absensi Dosen Eksternal: Lembar absensi (selalu dibuka pertama) / Log / Rekap |
 | `trent.js` | Trent Global College |
 | `immersion.js` | Immersion per batch: rekap, matriks cicilan, log setoran, kas & pengeluaran (valas, rencana/realisasi), target |
 | `magang.js` | Data Magang per batch: penempatan, penilaian per perusahaan, respon form, link form/bit.ly |
@@ -61,4 +68,5 @@ Buka `index.html?demo=1` lewat Live Server. Lalu cek:
 
 - mode terang/gelap;
 - ID/EN;
-- lebar layar 390px, yaitu ukuran HP (tidak boleh ada geser horizontal di halaman).
+- lebar layar 390px, yaitu ukuran HP (tidak boleh ada geser horizontal di halaman);
+- lebar layar 820px, yaitu ukuran tablet.

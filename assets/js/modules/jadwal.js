@@ -78,7 +78,7 @@ function jadwalFull(root) {
       return `Minggu ${w} · ${fmtDate(a)} – ${fmtDate(b)}${ev.length ? ' · ' + ev.join(', ') : ''}`;
     };
     const [per, bat] = pickers(st, render);
-    const rowsXls = [['Minggu', 'Tanggal', 'Hari', 'Jam', 'Mata Kuliah', 'Batch', 'Dosen', 'Jenis Dosen', 'Ruang', 'Pertemuan', 'Keterangan', 'Absensi Dosen External'],
+    const rowsXls = [['Minggu', 'Tanggal', 'Hari', 'Jam', 'Mata Kuliah', 'Batch', 'Dosen', 'Jenis Dosen', 'Ruang', 'Pertemuan', 'Keterangan', 'Absensi Dosen Eksternal'],
       ...all.map(x => [weekNo(info, x.tanggal) || '', x.tanggal, x.slot.hari, timeLabel(x.slot), x.slot.mata_kuliah, batchName(x.slot.batch_id), x.slot.dosen, jenisDosen(x.slot), x.slot.ruang, x.no, x.jenis !== 'Kuliah' ? x.jenis : '', (x.absen && x.absen.status) || '']),
       ...loose.map(s => ['', '', '(tanpa hari tetap)', '', s.mata_kuliah, batchName(s.batch_id), s.dosen, jenisDosen(s), s.ruang, '', s.mode || s.catatan || '', ''])];
 
@@ -93,7 +93,7 @@ function jadwalFull(root) {
       kpiRow([
         { label: 'Total pertemuan', value: all.length, sub: `${fixed.length} kelas mingguan${info ? ` · ${weekCount(info)} minggu` : ''}`, icon: 'calendar', accent: true },
         { label: 'Sudah berlangsung', value: `${past.length} / ${all.length}`, sub: `s.d. ${fmtDate(t)}`, meter: pct(past.length, all.length), icon: 'clock' },
-        { label: 'Absensi Dosen External', value: `${lbRec.length} / ${lbPast.length}`, sub: 'pertemuan yang telah berlangsung', meter: pct(lbRec.length, lbPast.length), meterTone: 'ok', icon: 'clipboard' },
+        { label: 'Absensi Dosen Eksternal', value: `${lbRec.length} / ${lbPast.length}`, sub: 'pertemuan yang telah berlangsung', meter: pct(lbRec.length, lbPast.length), meterTone: 'ok', icon: 'clipboard' },
         { label: 'Tanpa hari/jam tetap', value: loose.length, sub: 'rincian pada tabel di bawah', icon: 'layers' },
       ]),
       h('div', { class: 'card' }, dataTable({
@@ -208,7 +208,7 @@ function daily(root) {
     box.append(...[
       h('div', { class: 'page-head' },
         h('div', {}, h('span', { class: 'eyebrow' }, 'Jadwal Kuliah · Daily'), h('h1', {}, fmtDayDate(st.date)),
-          h('p', {}, info && wk ? `${periode} · minggu ke-${wk}. Absensi Dosen External dapat dicatat langsung melalui tabel ini.` : 'Tanggal ini berada di luar periode perkuliahan yang terdaftar pada Kalender akademik.')),
+          h('p', {}, info && wk ? `${periode} · minggu ke-${wk}. Absensi Dosen Eksternal dapat dicatat langsung melalui tabel ini.` : 'Tanggal ini berada di luar periode perkuliahan yang terdaftar pada Kalender akademik.')),
         h('div', { class: 'actions no-print' },
           h('div', { class: 'btn-group' }, h('button', { class: 'btn btn-ghost btn-icon', type: 'button', 'aria-label': 'Hari sebelumnya', onclick: () => shift(-1) }, '‹'), dateIn, h('button', { class: 'btn btn-ghost btn-icon', type: 'button', 'aria-label': 'Hari berikutnya', onclick: () => shift(1) }, '›')),
           h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => { st.date = today(); render(); } }, 'Hari ini'), bat)),
@@ -246,7 +246,7 @@ export const slotSections = [
     { key: 'kode', label: 'Kode', type: 'text', col: 'third' },
     { key: 'sks', label: 'SKS', type: 'number', col: 'third', min: 0, max: 12 },
     { key: 'dosen', label: 'Dosen pengampu', type: 'select', options: lecturerOpts, col: 'half', placeholder: '— Pilih dosen —', help: 'Daftar bersumber dari Biodata Dosen.' },
-    { key: 'jenis_dosen', label: 'Jenis dosen', type: 'select', options: ['Dosen External', 'Dosen Internal', 'Ikut Fakultas'], col: 'half', placeholder: '— Otomatis dari Biodata Dosen —', help: 'Hanya kelas yang diampu Dosen External yang tercatat di Absensi Dosen External.' },
+    { key: 'jenis_dosen', label: 'Jenis dosen', type: 'select', options: ['Dosen External', 'Dosen Internal', 'Ikut Fakultas'], col: 'half', placeholder: '— Otomatis dari Biodata Dosen —', help: 'Hanya kelas yang diampu Dosen External yang tercatat di Absensi Dosen Eksternal.' },
   ] },
   { title: 'Waktu & tempat', fields: [
     { key: 'hari', label: 'Hari', type: 'select', options: HARI, col: 'third', placeholder: '— Tanpa hari tetap —' },
@@ -276,7 +276,7 @@ const hariIdx = (r) => { const i = HARI.indexOf(r.hari); return i < 0 ? 9 : i; }
 const slotOrder = chain(byBatch(), (a, b) => (Number(a.semester) || 99) - (Number(b.semester) || 99), (a, b) => hariIdx(a) - hariIdx(b), byText(r => r.jam_mulai || '99'), byText(r => r.mata_kuliah));
 const slotView = crudView({
   id: 'schedules', collection: 'schedules', noun: 'jadwal', title: 'List Jadwal', eyebrow: 'Jadwal Kuliah · Data dasar',
-  description: 'Daftar seluruh kelas mingguan per batch dan periode, diurutkan berdasarkan batch, semester, hari, dan jam. Jadwal Full, Weekly, Daily, serta Absensi Dosen External disusun dari data ini. Kosongkan kolom hari untuk kelas tanpa hari/jam tetap.',
+  description: 'Daftar seluruh kelas mingguan per batch dan periode, diurutkan berdasarkan batch, semester, hari, dan jam. Jadwal Full, Weekly, Daily, serta Absensi Dosen Eksternal disusun dari data ini. Kosongkan kolom hari untuk kelas tanpa hari/jam tetap.',
   sections: slotSections, beforeSave: slotBeforeSave, exportName: 'List_Jadwal_IBM', order: slotOrder, pageSize: 100, addLabel: 'Tambah jadwal',
   groupBy: r => [batchName(r.batch_id), r.semester ? `Semester ${r.semester}` : 'Semester belum diisi'].join(' · '),
   columns: [
