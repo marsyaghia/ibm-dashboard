@@ -19,7 +19,7 @@ Panduan singkat untuk revisi lewat ekstensi Claude di VS Code.
 - Foto profil: field `type: 'photo'` (`form.js`), tampil dengan `avatar(nama, foto)` (`ui.js`; mendukung link Google Drive & unggahan).
 - Waktu selalu WIB (`nowWIB()`, `today()` di `ui.js`).
 - Bilah atas (`shell()` di `app.js`): sakelar bahasa ID/EN → sakelar tema (`themeSwitch()`, bentuk sama dengan sakelar bahasa) → muat ulang → akun & keluar. Tidak ada jam di bilah atas (jam ada di Dashboard).
-- Footer hak cipta (`footer()` di `app.js`, kelas `.app-footer`) tampil di bawah setiap halaman, warnanya mengikuti sidebar (`--side-bg`) dengan garis emas.
+- Footer hak cipta (`footer()` di `app.js`, kelas `.app-footer`) tampil di bawah setiap halaman, warnanya mengikuti sidebar (`--side-bg`), tanpa garis aksen.
 - Tampilan per perangkat (`app.css` bagian 15):
   - desktop (> 1024px): sidebar penuh;
   - tablet (641–1024px): sidebar menjadi rel ikon dengan label pendek (`short` di `NAV`, `app.js`); KPI jadi satu kartu 2 kolom; tabel-kartu 3 kolom;
@@ -41,7 +41,7 @@ Panduan singkat untuk revisi lewat ekstensi Claude di VS Code.
 
 | File | Menu |
 |---|---|
-| `beranda.js` | Dashboard (dulu Beranda): sapaan, jam WIB, kalender + jadwal harian (kolom lebar), pengingat 5 teratas + "Tampilkan lainnya" (kolom kecil), rekap menu |
+| `beranda.js` | Dashboard (dulu Beranda): sapaan + kalimat semester otomatis (`periodeLine()`) + keterangan isi halaman (satu baris di layar ≥ 1280px), jam WIB, kalender + jadwal harian dengan "Pertemuan ke-…" (kolom lebar), pengingat 5 teratas + "Tampilkan lainnya" (kolom kecil), rekap menu. Kalender: latar `--brand-50` = masa perkuliahan; titik merah UTS/UAS, hijau libur (termasuk Sabtu/Minggu tanpa jadwal dalam semester), biru = ada kelas (`calendarMarks()`); tanpa tooltip kegiatan |
 | `pengeluaran.js` | Pengeluaran + Laporan |
 | `pemasukan.js` | Perolehan Mahasiswa + Rekapitulasi (grafik) |
 | `rps.js` | Template RPS & OBE, Penilaian OBE |

@@ -354,11 +354,18 @@ export const EN = {
   'Navigasi cepat': 'Quick navigation', 'Menu lainnya': 'More options', 'Mode gelap': 'Dark mode', 'Mode terang': 'Light mode',
   // Header & footer
   'Dashboard IBM': 'IBM’s Dashboard', 'Tema': 'Theme',
+  // Kalender Dashboard
+  'Kegiatan perkuliahan': 'Lecture activities',
+  'Halaman ini menampilkan kalender, jadwal harian, pengingat data, dan rekap seluruh menu.': 'This page shows the calendar, daily schedule, data reminders, and a summary of every menu.',
+  'Termasuk Sabtu/Minggu tanpa jadwal kuliah': 'Includes Saturdays/Sundays with no classes', 'Kalender akademik belum diisi.': 'The academic calendar has not been filled in yet.',
 };
 
 /* Teks dinamis: [pola, pengganti]. Dicoba berurutan; yang pertama cocok dipakai. */
 export const EN_PATTERNS = [
   [/^© (\d{4}) IBM Institut Asia Malang\. Hak cipta dilindungi undang-undang\.$/, '© $1 IBM Institute Asia Malang. All rights reserved.'],
+  [/^Pertemuan ke-(\d+(?: & \d+)*)$/, 'Session $1'],
+  // Kalimat periode di bawah sapaan Dashboard
+  [/^Semester (\S+) (\S+)( sedang berjalan| telah berakhir| akan dimulai pada (.+))?\.$/, (m, s, ta, st, tgl) => `${EN[s] || s} Semester ${ta}${!st ? '' : tgl ? ` starts on ${tgl}` : / sedang/.test(st) ? ' is in progress' : ' has ended'}.`],
   [/^(\d+) dari (\d+) kelas$/, '$1 of $2 classes'], [/^Tampilkan (\d+) lainnya$/, 'Show $1 more'], [/^NIM (.+)$/, 'Student ID $1'], [/^(\d+) terbit dari (\d+)$/, '$1 issued of $2'],
   [/^(.+) · (\d+) setoran terverifikasi$/, '$1 · $2 verified deposits'], [/^Semester (\d+) · (.+)$/, 'Semester $1 · $2'],
   [/^(.+) · Semester (\d+)$/, '$1 · Semester $2'], [/^(.+) · Semester belum diisi$/, '$1 · Semester not set'],

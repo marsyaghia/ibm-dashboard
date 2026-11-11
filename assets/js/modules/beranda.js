@@ -5,14 +5,42 @@
 import { h, icon, clear, fmtIDR, fmtIDRShort, fmtDate, fmtDayDate, sum, uniq, pct, badge, batchName, batches, greeting, nowWIB, today, isoDate, parseDate, monthName, HARI_P, hasAttachment } from '../ui.js';
 import { store } from '../store.js';
 import { lang } from '../i18n.js';
-import { HARI, HADIR, toneAbsen, periodInfo, currentPeriode, sessionsOf, slotsOf, timeLabel, attendanceSummary, isLB, jenisDosen, weekNo, kategoriOf } from '../jadwal-lib.js';
+import { HARI, toneAbsen, periodInfo, periodeOptions, currentPeriode, sessionsOf, slotsOf, attendanceSummary, isLB, kategoriOf } from '../jadwal-lib.js';
 import { completeness } from './mahasiswa.js';
 import { tipeDosen } from './dosen.js';
 import { batchProgress, targetOf } from './immersion.js';
 
 const yearOf = (d) => String(d || '').slice(0, 4);
 const noProof = (r) => !hasAttachment(r.bukti);
-const DOT = { UTS: 'uts', UAS: 'uas', Libur: 'libur', Lainnya: 'lain' };
+
+/* Penanda kalender untuk rentang tanggal [from, to]:
+   - kelas : tanggal yang berisi pertemuan kuliah (dari List Jadwal + kalender akademik) → titik biru
+   - akhirPekan : Sabtu/Minggu di dalam semester yang tidak punya jadwal kuliah sama sekali → titik hijau */
+function calendarMarks(from, to) {
+  const kelas = new Set(); const akhirPekan = new Set();
+  periodeOptions().forEach(p => {
+    const info = periodInfo(p); if (!info || info.end < from || info.start > to) return;
+    const slots = slotsOf(p).filter(s => HARI.includes(s.hari));
+    slots.forEach(s => sessionsOf(s, info).forEach(x => { if (x.jenis === 'Kuliah') kelas.add(x.tanggal); }));
+    const adaSabtu = slots.some(s => s.hari === 'Sabtu');
+    const d = new Date(Math.max(from, info.start)); const end = Math.min(to, info.end);
+    for (; d <= end; d.setDate(d.getDate() + 1)) {
+      if (d.getDay() === 0 || (d.getDay() === 6 && !adaSabtu)) akhirPekan.add(isoDate(d));
+    }
+  });
+  return { kelas, akhirPekan };
+}
+
+/* Kalimat periode di bawah sapaan, otomatis mengikuti kalender akademik */
+function periodeLine() {
+  const periode = currentPeriode(); const info = periodInfo(periode); const t = parseDate(today());
+  if (!periode) return 'Kalender akademik belum diisi.';
+  if (!info) return `Semester ${periode}.`;
+  if (t < info.start) return `Semester ${periode} akan dimulai pada ${fmtDate(info.start)}.`;
+  if (t > info.end) return `Semester ${periode} telah berakhir.`;
+  return `Semester ${periode} sedang berjalan.`;
+}
+const PAGE_INFO = 'Halaman ini menampilkan kalender, jadwal harian, pengingat data, dan rekap seluruh menu.';
 
 /* ---------- Pengingat data yang belum lengkap ---------- */
 function reminders() {
@@ -80,6 +108,7 @@ function calendarCard(onPick) {
     const first = new Date(ym.y, ym.m, 1); const lead = (first.getDay() + 6) % 7; const start = new Date(ym.y, ym.m, 1 - lead);
     const evs = evAll(); const t = today();
     const days = Array.from({ length: 42 }, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return d; });
+    const marks = calendarMarks(days[0], days[41]);
     const dow = lang() === 'en' ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
     const move = (n) => { const d = new Date(ym.y, ym.m + n, 1); ym = { y: d.getFullYear(), m: d.getMonth() }; draw(); };
     el.append(
@@ -93,32 +122,44 @@ function calendarCard(onPick) {
         h('div', { class: 'cal-grid' }, dow.map(d => h('div', { class: 'dow' }, d)),
           days.map(d => {
             const iso = isoDate(d); const on = evs.filter(e => iso >= e.a && iso <= e.b);
-            const kats = uniq(on.map(e => e.kat)).filter(k => k !== 'Perkuliahan');
-            return h('button', { type: 'button', class: ['cal-day', d.getMonth() !== ym.m ? 'out' : '', on.some(e => e.kat === 'Perkuliahan') ? 'kuliah' : '', iso === t ? 'today' : '', iso === sel ? 'sel' : ''].join(' '), 'aria-label': `${fmtDayDate(iso)}${on.length ? ': ' + on.map(e => e.kegiatan).join(', ') : ''}`, title: on.map(e => e.kegiatan).join(' · '),
+            const kats = on.map(e => e.kat); const ujian = kats.includes('UTS') || kats.includes('UAS');
+            const dots = [
+              ujian ? ['ujian', 'UTS / UAS'] : null,
+              !ujian && (kats.includes('Libur') || marks.akhirPekan.has(iso)) ? ['libur', 'Libur'] : null,
+              marks.kelas.has(iso) ? ['kuliah', 'Kegiatan perkuliahan'] : null,
+            ].filter(Boolean);
+            return h('button', { type: 'button', class: ['cal-day', d.getMonth() !== ym.m ? 'out' : '', on.some(e => e.kat === 'Perkuliahan') ? 'kuliah' : '', iso === t ? 'today' : '', iso === sel ? 'sel' : ''].join(' '), 'aria-label': fmtDayDate(iso),
               onclick: () => { sel = iso; draw(); onPick(iso); } },
-            h('span', {}, d.getDate()), kats.length ? h('span', { class: 'dots' }, kats.map(k => h('i', { class: DOT[k] || '' }))) : null);
+            h('span', {}, d.getDate()), dots.length ? h('span', { class: 'dots', 'aria-hidden': 'true' }, dots.map(([c]) => h('i', { class: `dot ${c}` }))) : null);
           })),
-        h('div', { class: 'cal-legend' }, [['kuliah', 'Masa perkuliahan'], ['uts', 'UTS / UAS'], ['libur', 'Libur'], ['lain', 'Kegiatan lain']].map(([c, l]) => h('span', {}, h('i', { class: c }), l)))),
+        h('div', { class: 'cal-legend' },
+          h('span', {}, h('i', { class: 'kuliah-box' }), 'Masa perkuliahan'),
+          h('span', {}, h('i', { class: 'dot ujian' }), 'UTS / UAS'),
+          h('span', { title: 'Termasuk Sabtu/Minggu tanpa jadwal kuliah' }, h('i', { class: 'dot libur' }), 'Libur'),
+          h('span', {}, h('i', { class: 'dot kuliah' }), 'Kegiatan perkuliahan'))),
         agenda));
   }
   draw();
   return { el, agenda };
 }
 
+/* Nama dosen tanpa keterangan jabatan/instansi dalam kurung, mis. "Andien Paramitha (CEO Ngalup)" → "Andien Paramitha" */
+const namaDosen = (s) => String(s || '').replace(/\s*\([^)]*\)/g, '').replace(/[\s,·-]+$/, '').trim() || '–';
+
 /* ---------- Agenda satu tanggal (kegiatan kalender + kelas) ---------- */
 function dayAgenda(box, iso) {
   clear(box);
   const periode = currentPeriode(iso); const info = periodInfo(periode); const d = parseDate(iso);
-  const evs = store.all('calendar').filter(k => iso >= k.mulai && iso <= (k.selesai || k.mulai));
   const sess = slotsOf(periode).filter(s => HARI.includes(s.hari)).flatMap(s => sessionsOf(s, info)).filter(x => x.tanggal === iso)
     .sort((a, b) => String(a.slot.jam_mulai || '99').localeCompare(String(b.slot.jam_mulai || '99')));
   box.append(h('div', {},
     h('span', { class: 'agenda-kicker' }, iso === today() ? 'Jadwal hari ini' : 'Jadwal tanggal terpilih'),
-    h('h4', {}, fmtDayDate(iso), weekNo(info, d) ? h('small', {}, ` · ${periode} · minggu ke-${weekNo(info, d)}`) : null),
-    evs.length ? h('div', { class: 'actions', style: { margin: '6px 0' } }, evs.map(e => badge(e.kegiatan, { UTS: 'warn', UAS: 'warn', Libur: 'ok', Perkuliahan: 'info' }[kategoriOf(e)] || ''))) : null,
+    h('h4', {}, fmtDayDate(iso)),
+    // Pertemuan ke-berapa pada tanggal ini (dihitung dari Jadwal Kuliah + kalender akademik)
+    sess.length ? h('p', { class: 'agenda-sub' }, `Pertemuan ke-${uniq(sess.map(x => x.no)).sort((a, b) => a - b).join(' & ')}`) : null,
     sess.length ? h('ul', { class: 'list compact' }, sess.slice(0, 8).map(x => h('li', {},
       h('div', { class: 'time-cell', style: { minWidth: '48px' } }, h('b', {}, x.slot.jam_mulai || '–'), h('span', {}, x.slot.jam_selesai || '')),
-      h('div', {}, h('strong', {}, x.slot.mata_kuliah), h('span', {}, `${batchName(x.slot.batch_id)} · ${x.slot.dosen || '–'} · P${x.no}${x.jenis !== 'Kuliah' ? ' · ' + x.jenis : ''}`),
+      h('div', {}, h('strong', {}, x.slot.mata_kuliah), h('span', {}, `${batchName(x.slot.batch_id)} · ${namaDosen(x.slot.dosen)}${x.jenis !== 'Kuliah' ? ' · ' + x.jenis : ''}`),
         // status absensi di bawah teks (bukan kolom kanan) agar nama mata kuliah tidak terhimpit
         isLB(x.slot) ? h('div', { class: 'agenda-st' }, x.absen && x.absen.status ? badge(x.absen.status, toneAbsen(x.absen.status)) : h('span', { class: 'pill lb' }, 'Dosen External')) : null)))) :
       h('p', { class: 'muted', style: { margin: '6px 0 0', fontSize: '13px' } }, d && d.getDay() === 0 ? 'Hari Minggu — tidak ada perkuliahan.' : 'Tidak ada kelas terjadwal.'),
@@ -193,15 +234,15 @@ export default {
     const tick = () => { const d = nowWIB(); clockBig.textContent = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`; clockSub.textContent = `${HARI_P[lang()][d.getDay()]}, ${fmtDate(d)} · ${store.setting('profil').kota || 'Malang'} (WIB)`; };
     function render() {
       clear(box);
-      const periode = currentPeriode(); const info = periodInfo(periode); const wk = weekNo(info, today());
       const rem = reminders();
       const cal = calendarCard((iso) => dayAgenda(cal.agenda, iso)); dayAgenda(cal.agenda, today());
       const greet = `${greeting()}, ${p.sapaan || p.nama || 'Tim IBM'}`;
       box.append(
         h('section', { class: 'hero' },
-          h('div', {}, h('span', { class: 'eyebrow' }, prof.nama_divisi || 'Divisi IBM'), h('h1', {}, greet),
-            h('p', {}, info && wk ? `${periode} sedang berjalan — minggu perkuliahan ke-${wk}. Berikut ringkasan seluruh menu dan data yang perlu dilengkapi.` : `${periode}. Berikut ringkasan seluruh menu dan data yang perlu dilengkapi.`)),
-          h('div', { class: 'clock-card' }, icon('clock'), h('div', {}, clockBig, clockSub))),
+          h('div', { class: 'hero-title' }, h('span', { class: 'eyebrow' }, prof.nama_divisi || 'Divisi IBM'), h('h1', {}, greet)),
+          h('div', { class: 'clock-card' }, icon('clock'), h('div', {}, clockBig, clockSub)),
+          // dua kalimat dipisah agar masing-masing tetap cocok dengan kamus EN
+          h('p', { class: 'hero-sub' }, h('span', {}, periodeLine()), ' ', h('span', {}, PAGE_INFO))),
         h('div', { class: 'grid grid-main dash-main' }, cal.el, reminderCard(rem, showAll, () => { showAll = !showAll; render(); })),
         h('h2', { class: 'section-title' }, icon('dashboard', 'sm'), 'Rekap tiap menu'),
         moduleCards());
