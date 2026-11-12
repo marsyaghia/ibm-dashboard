@@ -38,9 +38,23 @@ export function h(tag, attrs = {}, ...kids) {
     else if (v === true) el.setAttribute(k, '');
     else el.setAttribute(k, v);
   }
-  // Semua judul (h1–h3) otomatis Title Case, kecuali ditandai data-raw (mis. nama orang/perusahaan)
-  append(el, TITLE_TAGS.has(el.tagName) && !(attrs && attrs['data-raw'] !== undefined) ? kids.flat(Infinity).map(k => (typeof k === 'string' ? tc(k) : k)) : kids);
+  // Semua judul (h1–h3) dan teks tombol (.btn) otomatis Title Case,
+  // kecuali ditandai data-raw (mis. nama orang/perusahaan)
+  const titled = (TITLE_TAGS.has(el.tagName) || el.classList.contains('btn')) && !(attrs && attrs['data-raw'] !== undefined);
+  append(el, titled ? kids.flat(Infinity).map(k => (typeof k === 'string' ? tc(k) : k)) : kids);
+  if (el.classList.contains('page-head')) widenPageDesc(el);
   return el;
+}
+/* Subtitle di bawah judul setiap halaman/tab dibuat selebar halaman (tidak terpotong di tengah):
+   <p> dipindah dari blok judul menjadi baris sendiri di bawah judul + tombol (CSS: .has-desc). */
+function widenPageDesc(head) {
+  const title = head.firstElementChild;
+  if (!title || title.tagName !== 'DIV') return;
+  const ps = [...title.children].filter(c => c.tagName === 'P');
+  if (!ps.length) return;
+  let ref = title;
+  ps.forEach(p => { p.classList.add('page-desc'); ref.after(p); ref = p; });
+  head.classList.add('has-desc');
 }
 function append(el, kids) {
   for (const k of kids.flat(Infinity)) {
@@ -110,7 +124,7 @@ const P = {
 };
 export function icon(name, cls = '') {
   const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('class', `icon ${cls}`.trim()); s.setAttribute('aria-hidden', 'true');
+  s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('class', `icon i-${name} ${cls}`.trim()); s.setAttribute('aria-hidden', 'true');
   s.innerHTML = P[name] || P.file;
   return s;
 }

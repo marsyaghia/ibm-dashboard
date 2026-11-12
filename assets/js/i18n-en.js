@@ -142,19 +142,19 @@ export const EN = {
   'Materi & PPT': 'Materials & Slides', 'template RPS tersedia': 'RPS templates available', 'tagihan lunas': 'invoices paid', 'sertifikat sudah terbit': 'certificates issued', 'target tabungan belum diatur': 'savings target not set', 'Trent Global College': 'Trent Global College',
 
   // ---------- Pengeluaran ----------
-  'Pengeluaran Divisi IBM': 'IBM Division Expenses', 'Pencatatan seluruh pengeluaran program IBM beserta bukti pendukungnya. Data dapat difilter, diekspor ke Excel/CSV, dan direkapitulasi pada tab Laporan.': 'Records of all IBM program expenses with supporting proof. Data can be filtered, exported to Excel/CSV, and summarised in the Report tab.',
+  'Pengeluaran Divisi IBM': 'IBM Division Expenses', 'Pencatatan seluruh pengeluaran divisi IBM beserta bukti pendukung. Data dapat difilter, diekspor, dan direkap.': 'Records of all IBM division expenses with supporting proof. Data can be filtered, exported, and summarised.',
+  'Tambah Pengeluaran': 'Add Expense', 'Ekspor Laporan Excel': 'Export Excel Report', 'Seluruh laporan pengeluaran keuangan divisi IBM.': 'All IBM division financial expense reports.',
   'Transaksi': 'Transactions', 'Uraian / keperluan': 'Description / purpose', 'Penerima / vendor': 'Recipient / vendor', 'Metode pembayaran': 'Payment method', 'Terkait batch': 'Related batch', 'No. kwitansi / invoice': 'Receipt / invoice no.',
   'Bukti & catatan': 'Proof & notes', 'Bukti pembayaran': 'Payment proof', 'Unggah foto/PDF kuitansi atau cantumkan tautan Google Drive.': 'Upload a photo/PDF of the receipt or paste a Google Drive link.', '— Umum (tidak spesifik) —': '— General (not specific) —',
   'Cari uraian, penerima, no. bukti…': 'Search description, recipient, receipt no…', 'Total pengeluaran': 'Total expenses', 'Sudah dibayar': 'Paid', 'Menunggu / reimburse': 'Pending / reimbursement', 'Bulan ini': 'This month',
   'Belum ada pengeluaran tercatat': 'No expenses recorded yet', 'Tambahkan transaksi secara manual atau impor dari berkas Excel pencatatan yang tersedia.': 'Add transactions manually or import them from an existing Excel record file.',
-  'Keuangan · Laporan': 'Finance · Report', 'Laporan Pengeluaran IBM': 'IBM Expense Report', 'Sertakan Trent': 'Include Trent', 'Ekspor laporan Excel': 'Export Excel report', 'Operasional divisi': 'Division operations', 'Pembayaran Trent': 'Trent payments',
+  'Keuangan · Laporan': 'Finance · Report', 'Laporan Pengeluaran IBM': 'IBM Expense Report','Operasional divisi': 'Division operations', 'Pembayaran Trent': 'Trent payments',
   'Kategori terbesar': 'Largest category', 'Per kategori': 'By category', 'Proporsi setiap kategori terhadap total': 'Share of each category in the total', 'Per batch': 'By batch', '“Umum” berarti tidak terkait dengan batch tertentu': '“General” means not tied to a specific batch',
   'Rekap per bulan': 'Monthly summary', 'Belum ada data untuk periode ini': 'No data for this period', 'Silakan pilih tahun lain atau tambahkan transaksi melalui tab Transaksi.': 'Please choose another year or add transactions in the Transactions tab.', 'Tahun laporan': 'Report year',
-  'Tidak disertakan': 'Not included', 'Hanya pengeluaran operasional divisi.': 'Division operating expenses only.', 'Termasuk pembayaran Trent Global College yang telah lunas (diambil secara otomatis dari menu Trent).': 'Includes settled Trent Global College payments (pulled automatically from the Trent menu).',
   'Tanpa tanggal': 'No date', 'Pengeluaran divisi': 'Division expense', 'Modul Trent': 'Trent module',
 
   // ---------- Perolehan mahasiswa ----------
-  'Perolehan dari Mahasiswa': 'Revenue from Students', 'Rincian biaya setiap mahasiswa IBM per batch: DU (Daftar Ulang), DPP, dan UKT per semester.': 'Fee details of each IBM student per batch: DU (re-registration), DPP, and tuition (UKT) per semester.',
+  'Perolehan dari Mahasiswa': 'Revenue from Students', 'Rincian biaya setiap mahasiswa IBM per batch, mulai dari DU, DPP, dan UKT per semester.': 'Fee details of each IBM student per batch, covering DU (re-registration), DPP, and tuition (UKT) per semester.',
   'Data biaya': 'Fee data', 'Biaya': 'Fees', '— Tidak spesifik —': '— Not specific —', 'DU (Daftar Ulang)': 'DU (Re-registration)', 'DU': 'DU (Re-registration)', 'UKT per semester': 'Tuition (UKT) per semester',
   'Total DU': 'Total DU (re-registration)', 'Total DPP': 'Total DPP', 'Total UKT per semester': 'Total tuition (UKT) per semester', 'Cari nama atau NIM…': 'Search name or student ID…',
   'Belum ada data biaya mahasiswa': 'No student fee data yet', 'Tambahkan data mahasiswa secara manual atau impor dari sheet biaya per batch.': 'Add student data manually or import from the per-batch fee sheet.',
@@ -165,15 +165,15 @@ export const EN = {
 
   // ---------- RPS & OBE ----------
   'Template RPS & OBE': 'RPS & OBE templates', 'Penilaian OBE': 'OBE assessment', 'Akademik · RPS & OBE': 'Academic · RPS & OBE', 'Template RPS & OBE per Mata Kuliah': 'RPS & OBE Templates per Course',
-  'Daftar seluruh mata kuliah kurikulum IBM beserta draf/template RPS dan OBE. Pilih baris untuk mengisi atau memperbarui tautan template. Daftar mata kuliah dikelola melalui menu Pengaturan → Kurikulum.': 'All IBM curriculum courses with their RPS and OBE draft templates. Select a row to fill in or update the template link. The course list is managed under Settings → Curriculum.',
+  'Daftar seluruh mata kuliah kurikulum IBM beserta draf/template RPS dan OBE. Daftar mata kuliah dikelola melalui menu Pengaturan → Kurikulum.': 'All IBM curriculum courses with their RPS and OBE draft templates. The course list is managed under Settings → Curriculum.',
   'Mata kuliah kurikulum': 'Curriculum courses', 'Template RPS tersedia': 'RPS templates available', 'Template OBE tersedia': 'OBE templates available', 'Status final': 'Final status', 'template siap dipakai': 'templates ready to use',
   'Template RPS': 'RPS template', 'Template OBE': 'OBE template', 'Cari mata kuliah, kode, dosen…': 'Search course, code, lecturer…', 'Isi template': 'Fill in template', 'Ubah template': 'Edit template', 'Hapus template': 'Delete template',
   'Hapus template RPS & OBE mata kuliah ini?': 'Delete the RPS & OBE template for this course?', 'Template disimpan.': 'Template saved.', 'Versi kurikulum': 'Curriculum version', 'Dosen penyusun': 'Prepared by', 'Status template': 'Template status',
   'Cantumkan tautan Google Docs/Sheets template atau unggah berkasnya (maksimal 15 MB).': 'Paste the Google Docs/Sheets template link, or upload the file (max 15 MB).', 'Template / draft RPS': 'RPS template / draft', 'Template penilaian OBE': 'OBE assessment template',
   'Template OBE ini digunakan sebagai acuan dalam pengisian penilaian OBE per batch.': 'This OBE template is the reference when filling in OBE assessments per batch.', 'Penilaian OBE per Mata Kuliah': 'OBE Assessment per Course',
-  'Daftar mata kuliah bersumber dari Jadwal Kuliah pada periode terpilih. Tim IBM bertanggung jawab mengisi penilaian OBE untuk mata kuliah yang diampu Dosen External, sedangkan Dosen Internal Institut Asia mengisi secara mandiri (statusnya tetap dapat dicatat di sini).': 'Courses are taken from the Class Schedule of the selected period. The IBM team is responsible for OBE assessments of courses taught by external lecturers, while Institut Asia’s internal lecturers complete their own (their status can still be recorded here).',
+  'Daftar penilaian OBE tiap Mata Kuliah. Tim IBM bertanggung jawab mengisi penilaian OBE untuk mata kuliah yang diampu Dosen External, sedangkan Dosen Internal Institut Asia mengisi secara mandiri.': 'OBE assessments for each course. The IBM team is responsible for OBE assessments of courses taught by external lecturers, while Institut Asia’s internal lecturers complete their own.',
   'Mata kuliah periode ini': 'Courses this period', 'Wajib diisi tim IBM (Dosen External)': 'To be filled by the IBM team (external)', 'sudah selesai': 'completed', 'External belum selesai': 'External not finished', 'perlu ditindaklanjuti': 'needs follow-up',
-  'Diisi dosen internal / fakultas': 'Filled by internal lecturers / faculty', 'Diisi oleh': 'Filled by', 'Diisi Oleh': 'Filled By', 'Penilaian': 'Assessment', 'Belum diunggah': 'Not uploaded', 'Isi penilaian': 'Fill in assessment',
+  'Diisi dosen internal / fakultas': 'Filled by internal lecturers / faculty', 'Diisi oleh': 'Filled by', 'Diisi Oleh': 'Filled By', 'Penilaian': 'Assessment', 'Belum diunggah': 'Not uploaded', 'Isi penilaian': 'Fill in assessment', 'Ubah penilaian': 'Edit assessment',
   'Diisi tim IBM (Dosen External)': 'Filled by IBM team (external)', 'Diisi dosen internal': 'Filled by internal lecturers', 'Belum ada mata kuliah untuk filter ini': 'No courses for this filter',
   'Daftar ini bersumber dari Jadwal Kuliah pada periode terpilih. Pastikan slot jadwal untuk periode ini telah diimpor.': 'The list comes from the Class Schedule of the selected period. Make sure this period’s schedule slots have been imported.',
   'Berkas penilaian OBE (Excel / CSV / link Sheets)': 'OBE assessment file (Excel / CSV / Sheets link)', 'Berkas .xlsx/.csv yang diunggah dapat dibuka langsung melalui tombol “Lihat isi”.': 'Uploaded .xlsx/.csv files can be opened directly via “View contents”.',
@@ -185,7 +185,7 @@ export const EN = {
   'Pertemuan tersedia': 'Sessions available', 'Target pertemuan': 'Target sessions', 'Keterangan cakupan': 'Coverage notes', 'Link Google Classroom': 'Google Classroom link', 'Prodi / kelas': 'Program / class', 'Semester / periode': 'Semester / period', 'Batch (opsional)': 'Batch (optional)',
   'Materi': 'Materials', 'Materi PPT': 'Slides', 'Belum ada link': 'No link yet', 'Ada link': 'Has link', 'Link': 'Link', 'Materi lengkap': 'Materials complete', 'materi belum dikumpulkan': 'materials not yet submitted', 'Perlu ditindaklanjuti': 'Needs follow-up',
   'Dosen dengan materi belum lengkap (sesuai filter)': 'Lecturers with incomplete materials (per filter)', 'Tanpa link': 'No link', 'Cari mata kuliah atau dosen…': 'Search course or lecturer…', 'Classroom': 'Classroom',
-  'Daftar materi dan folder PPT setiap mata kuliah dari masing-masing dosen, sehingga kemajuan penyusunan materi dapat dipantau di luar Google Classroom. Data awal bersumber dari sheet “MATKUL DAN LINK PPT” FEB 2025/2026.': 'Materials and slide folders for each course from every lecturer, so progress can be tracked outside Google Classroom. Initial data comes from the “MATKUL DAN LINK PPT” sheet, FEB 2025/2026.',
+  'Daftar materi dan file PPT setiap mata kuliah, sehingga penyusunan materi dapat dipantau di luar Google Classroom.': 'Materials and slide files for each course, so material preparation can be tracked outside Google Classroom.',
 
   // ---------- Jadwal ----------
   'Jadwal Full': 'Full schedule', 'Weekly': 'Weekly', 'Daily': 'Daily', 'Slot jadwal': 'Schedule slots', 'Kalender akademik': 'Academic calendar', 'Jadwal Kuliah · Jadwal Full': 'Class Schedule · Full', 'Jadwal Kuliah · Weekly': 'Class Schedule · Weekly',
@@ -411,13 +411,19 @@ export const EN_PATTERNS = [
   // umum (paling akhir agar tidak menimpa pola yang lebih khusus)
   [/^(Rp.+) dari (Rp.+)$/, '$1 of $2'],
   [/^Digunakan di: (.+)$/, (m, a) => `Used in: ${a.split(', ').map(x => EN[x] || x).join(', ')}`],
-  [/^(Semua tahun|Tahun \d{4})\. (Termasuk pembayaran Trent Global College .+|Hanya pengeluaran operasional divisi\.)$/, (m, a, b) => `${a === 'Semua tahun' ? 'All years' : a.replace('Tahun', 'Year')}. ${EN[b] || b}`],
   [/^Hapus (.+) ini\?( Tindakan ini tidak dapat dibatalkan\.)?$/, (m, n, x) => `Delete this ${NOUN[n] || n}?${x ? ' This cannot be undone.' : ''}`],
   [/^(.+) ditambahkan\.$/, (m, n) => `${cap(NOUN[n.toLowerCase()] || n)} added.`], [/^(.+) dihapus\.$/, (m, n) => `${cap(NOUN[n.toLowerCase()] || n)} deleted.`],
-  [/^Impor (.+)$/, (m, a) => `Import ${EN[a] || a}`], [/^Tambah (.+)$/, (m, a) => `Add ${NOUN[a] || EN[a] || a}`], [/^Ubah (.+)$/, (m, a) => `Edit ${NOUN[a] || EN[a] || a}`], [/^Semua (.+)$/, (m, a) => `All ${NOUN_PL[a] || a}`],
+  [/^Impor (.+)$/, (m, a) => `Import ${ci(EN, a) || a}`], [/^Tambah (.+)$/, (m, a) => `Add ${ci(NOUN, a) || ci(EN, a) || a}`], [/^Ubah (.+)$/, (m, a) => `Edit ${ci(NOUN, a) || ci(EN, a) || a}`], [/^Semua (.+)$/, (m, a) => `All ${ci(NOUN_PL, a) || a}`],
 ];
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-const NOUN = { 'transaksi kas': 'cash entry', 'data magang': 'internship', penilaian: 'rating', setoran: 'deposit', mahasiswa: 'student', dosen: 'lecturer', pengeluaran: 'expense', pemasukan: 'payment', sertifikat: 'certificate', materi: 'material', 'slot jadwal': 'schedule slot', kegiatan: 'activity', batch: 'batch', 'mata kuliah': 'course', target: 'target', 'catatan absensi': 'attendance record', 'pembayaran trent': 'Trent payment', 'pembayaran Trent': 'Trent payment', data: 'data', periode: 'period', kelas: 'class' };
+/* Cari di kamus tanpa membedakan huruf besar/kecil (tombol & judul ditulis Title Case) */
+const LC = new WeakMap();
+function ci(map, a) {
+  if (map[a] !== undefined) return map[a];
+  if (!LC.has(map)) LC.set(map, new Map(Object.entries(map).map(([k, v]) => [k.toLowerCase(), v])));
+  return LC.get(map).get(a.toLowerCase());
+}
+const NOUN = { 'transaksi kas': 'cash entry', 'data magang': 'internship', 'data mahasiswa': 'student data', penilaian: 'rating', setoran: 'deposit', mahasiswa: 'student', dosen: 'lecturer', pengeluaran: 'expense', pemasukan: 'payment', sertifikat: 'certificate', materi: 'material', 'slot jadwal': 'schedule slot', kegiatan: 'activity', batch: 'batch', 'mata kuliah': 'course', target: 'target', 'catatan absensi': 'attendance record', 'pembayaran trent': 'Trent payment', 'pembayaran Trent': 'Trent payment', data: 'data', periode: 'period', kelas: 'class' };
 const NOUN_PL = { kategori: 'categories', status: 'statuses', batch: 'batches', jenis: 'types', tahun: 'years', periode: 'periods', prodi: 'programs', bulan: 'months', hari: 'days', tipe: 'types', rumpun: 'groups', semester: 'semesters', link: 'links', progres: 'progress', 'jenis dosen': 'lecturer types', 'jenis pengampu': 'lecturer types' };
 
 /* Potongan frasa (dipakai bila tidak ada yang cocok di atas) — hanya frasa yang khas antarmuka */

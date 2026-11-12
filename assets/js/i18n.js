@@ -39,11 +39,13 @@ export function t(s) {
   if (current !== 'en' || s === null || s === undefined) return s;
   const str = String(s); const trimmed = str.trim(); if (!trimmed) return str;
   if (EN[trimmed] !== undefined) return str.replace(trimmed, EN[trimmed]);
-  for (const [re, rep] of EN_PATTERNS) { if (re.test(trimmed)) return str.replace(trimmed, trimmed.replace(re, rep)); }
-  // Tidak membedakan huruf besar/kecil (judul Title Case)
+  // Kamus persis tanpa membedakan huruf besar/kecil didahulukan daripada pola,
+  // agar judul & tombol Title Case ("Tambah Data Magang") tetap cocok dengan kamusnya.
   if (!EN_LC) { EN_LC = new Map(Object.entries(EN).map(([k, v]) => [k.toLowerCase(), v])); PAT_I = EN_PATTERNS.map(([re, rep]) => [new RegExp(re.source, re.flags.includes('i') ? re.flags : re.flags + 'i'), rep]); }
+  const titled = isTitled(trimmed);
   const lc = EN_LC.get(trimmed.toLowerCase());
-  if (lc !== undefined) return str.replace(trimmed, isTitled(trimmed) ? titleEN(lc) : lc);
+  if (lc !== undefined) return str.replace(trimmed, titled ? titleEN(lc) : lc);
+  for (const [re, rep] of EN_PATTERNS) { if (re.test(trimmed)) { const o = trimmed.replace(re, rep); return str.replace(trimmed, titled ? titleEN(o) : o); } }
   for (const [re, rep] of PAT_I) { if (re.test(trimmed)) { const o = trimmed.replace(re, rep); return str.replace(trimmed, isTitled(trimmed) ? titleEN(o) : o); } }
   let out = trimmed;
   for (const [re, rep] of EN_PHRASES) out = out.replace(re, rep);

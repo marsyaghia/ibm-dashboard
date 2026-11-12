@@ -69,7 +69,7 @@ function rekapExcel(rows) {
 /* ---------- Tab Data biaya ---------- */
 const data = crudView({
   id: 'incomes', collection: 'incomes', noun: 'data mahasiswa', title: 'Perolehan dari Mahasiswa', eyebrow: 'Keuangan',
-  description: 'Rincian biaya setiap mahasiswa IBM per batch: DU (Daftar Ulang), DPP, dan UKT per semester.',
+  description: 'Rincian biaya setiap mahasiswa IBM per batch, mulai dari DU, DPP, dan UKT per semester.',
   sections, columns, exportColumns: exportCols, exportName: 'Perolehan_Mahasiswa_IBM', unit: 'mahasiswa',
   order: chain(byBatch(), byText(r => r.nama_mahasiswa)),
   searchPlaceholder: 'Cari nama atau NIM…',

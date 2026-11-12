@@ -55,7 +55,8 @@ const exportCols = [
 
 const transaksi = crudView({
   id: 'expenses', collection: 'expenses', noun: 'pengeluaran', title: 'Pengeluaran Divisi IBM', eyebrow: 'Keuangan',
-  description: 'Pencatatan seluruh pengeluaran program IBM beserta bukti pendukungnya. Data dapat difilter, diekspor ke Excel/CSV, dan direkapitulasi pada tab Laporan.',
+  description: 'Pencatatan seluruh pengeluaran divisi IBM beserta bukti pendukung. Data dapat difilter, diekspor, dan direkap.',
+  addLabel: 'Tambah Pengeluaran',
   sections, columns: tableCols, exportColumns: exportCols, exportName: 'Pengeluaran_IBM', sort: { key: 'tanggal', dir: 'desc' },
   searchPlaceholder: 'Cari uraian, penerima, no. bukti…',
   search: r => [r.uraian, r.kategori, r.penerima, r.no_bukti, r.catatan].join(' '),
@@ -81,14 +82,15 @@ const transaksi = crudView({
 
 /* ---------- Laporan ---------- */
 function laporan(root) {
-  const p = pref.get('lap_exp', { tahun: String(new Date().getFullYear()), trent: true });
+  // Pembayaran Trent selalu ikut dihitung (termasuk kategori pengeluaran)
+  const p = pref.get('lap_exp', { tahun: String(new Date().getFullYear()) });
   const box = h('div');
   const allYears = () => uniq([...store.all('expenses').map(r => String(yearOf(r.tanggal))), ...store.all('trentPayments').filter(r => r.tanggal_bayar).map(r => String(yearOf(r.tanggal_bayar))), String(new Date().getFullYear())]).sort().reverse();
 
   function data() {
     const inYear = (d) => p.tahun === 'all' || String(yearOf(d)) === p.tahun;
     const exp = store.all('expenses').filter(r => r.status !== 'Dibatalkan' && inYear(r.tanggal));
-    const trent = p.trent ? store.all('trentPayments').filter(r => r.status_bayar === 'Lunas' && r.tanggal_bayar && inYear(r.tanggal_bayar)) : [];
+    const trent = store.all('trentPayments').filter(r => r.status_bayar === 'Lunas' && r.tanggal_bayar && inYear(r.tanggal_bayar));
     const lines = [
       ...exp.map(r => ({ tanggal: r.tanggal, kategori: r.kategori || 'Lain-lain', uraian: r.uraian, batch: r.batch_id ? batchName(r.batch_id) : 'Umum', jumlah: Number(r.jumlah) || 0, sumber: 'Pengeluaran divisi', status: r.status })),
       ...trent.map(r => ({ tanggal: r.tanggal_bayar, kategori: 'Pembayaran Trent Global College', uraian: `Trent ${r.trent_code} — ${r.subjek}`, batch: batchName(r.batch_id), jumlah: Number(r.total_idr) || 0, sumber: 'Modul Trent', status: 'Lunas' })),
@@ -106,20 +108,19 @@ function laporan(root) {
 
     const yearSel = h('select', { class: 'select', style: { width: 'auto' }, 'aria-label': 'Tahun laporan' }, h('option', { value: 'all' }, 'Semua tahun'), allYears().map(y => h('option', { value: y }, `Tahun ${y}`)));
     yearSel.value = p.tahun; yearSel.addEventListener('change', () => { p.tahun = yearSel.value; pref.set('lap_exp', p); render(); });
-    const trentChk = h('input', { type: 'checkbox' }); trentChk.checked = p.trent;
-    trentChk.addEventListener('change', () => { p.trent = trentChk.checked; pref.set('lap_exp', p); render(); });
     const periodLabel = p.tahun === 'all' ? 'Semua periode' : `Tahun ${p.tahun}`;
 
     box.append(...[
-      h('div', { class: 'page-head' },
-        h('div', {}, h('span', { class: 'eyebrow' }, 'Keuangan · Laporan'), h('h1', {}, `Laporan Pengeluaran IBM`), h('p', {}, `${periodLabel}. ${p.trent ? 'Termasuk pembayaran Trent Global College yang telah lunas (diambil secara otomatis dari menu Trent).' : 'Hanya pengeluaran operasional divisi.'}`)),
-        h('div', { class: 'actions no-print' }, yearSel, h('label', { class: 'check' }, trentChk, 'Sertakan Trent'),
+      h('div', { class: 'page-head has-desc' },
+        h('div', {}, h('span', { class: 'eyebrow' }, 'Keuangan · Laporan'), h('h1', {}, `Laporan Pengeluaran IBM`)),
+        h('p', { class: 'page-desc' }, 'Seluruh laporan pengeluaran keuangan divisi IBM.'),
+        h('div', { class: 'actions no-print' }, yearSel,
           h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => window.print() }, icon('print'), 'Cetak / PDF'),
-          h('button', { class: 'btn btn-primary', type: 'button', onclick: () => exportLaporan(periodLabel, lines, byKat, byMonth, byBatch, total) }, icon('sheet'), 'Ekspor laporan Excel'))),
+          h('button', { class: 'btn btn-primary', type: 'button', onclick: () => exportLaporan(periodLabel, lines, byKat, byMonth, byBatch, total) }, icon('sheet'), 'Ekspor Laporan Excel'))),
       kpiRow([
         { label: 'Total pengeluaran', value: fmtIDR(total), sub: periodLabel, icon: 'expense', accent: true },
         { label: 'Operasional divisi', value: fmtIDR(sum(exp, 'jumlah')), sub: `${exp.length} transaksi`, icon: 'wallet' },
-        { label: 'Pembayaran Trent', value: fmtIDR(sum(trent, 'total_idr')), sub: p.trent ? `${trent.length} pembayaran lunas` : 'Tidak disertakan', icon: 'handshake' },
+        { label: 'Pembayaran Trent', value: fmtIDR(sum(trent, 'total_idr')), sub: `${trent.length} pembayaran lunas`, icon: 'handshake' },
         { label: 'Kategori terbesar', small: true, value: byKat[0] ? byKat[0].label : '–', sub: byKat[0] ? `${fmtIDR(byKat[0].value)} · ${Math.round(byKat[0].value / (total || 1) * 100)}%` : '', icon: 'report' },
       ]),
       lines.length ? h('div', { class: 'grid grid-2' },

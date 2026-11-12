@@ -87,8 +87,10 @@ function templateTab(root) {
     { key: 'obe', label: 'Template OBE', value: x => x.t && x.t.template_obe ? (x.t.template_obe.link || x.t.template_obe.label) : '' },
     { key: 'status', label: 'Status', value: x => tplStatus(x.t) },
   ];
-  const table = dataTable({ columns, rows: [], pageSize: 100, groupBy: x => `Semester ${x.c.semester}`, onRowClick: x => editTemplate(x.c, x.t),
-    rowActions: x => h('div', { class: 'row-actions' }, h('button', { class: 'btn btn-icon', type: 'button', title: x.t ? 'Ubah template' : 'Isi template', 'aria-label': 'Ubah template', onclick: () => editTemplate(x.c, x.t) }, icon(x.t ? 'edit' : 'plus', 'sm'))) });
+  // CRUD hanya lewat tombol aksi di kanan (baris tidak bisa diklik) — baris berisi tautan dokumen,
+  // jadi tombol eksplisit mencegah form terbuka tanpa sengaja. Ikon: + = isi baru, pensil = ubah.
+  const table = dataTable({ columns, rows: [], pageSize: 100, groupBy: x => `Semester ${x.c.semester}`,
+    rowActions: x => h('div', { class: 'row-actions' }, h('button', { class: 'btn btn-icon', type: 'button', title: x.t ? 'Ubah template' : 'Isi template', 'aria-label': x.t ? 'Ubah template' : 'Isi template', onclick: () => editTemplate(x.c, x.t) }, icon(x.t ? 'edit' : 'plus', 'sm'))) });
   tableBox.appendChild(table.el);
 
   const sel = (key, label, opts) => { const s = h('select', { class: 'select', 'aria-label': label }, h('option', { value: '' }, label), opts.map(o => h('option', { value: o.value ?? o }, o.label ?? o))); s.value = st[key]; s.addEventListener('change', () => { st[key] = s.value; pref.set('rps_tpl', st); refresh(); }); return s; };
@@ -112,7 +114,7 @@ function templateTab(root) {
   box.append(
     h('div', { class: 'page-head' },
       h('div', {}, h('span', { class: 'eyebrow' }, 'Akademik · RPS & OBE'), h('h1', {}, 'Template RPS & OBE per Mata Kuliah'),
-        h('p', {}, 'Daftar seluruh mata kuliah kurikulum IBM beserta draf/template RPS dan OBE. Pilih baris untuk mengisi atau memperbarui tautan template. Daftar mata kuliah dikelola melalui menu Pengaturan → Kurikulum.')),
+        h('p', {}, 'Daftar seluruh mata kuliah kurikulum IBM beserta draf/template RPS dan OBE. Daftar mata kuliah dikelola melalui menu Pengaturan → Kurikulum.')),
       h('div', { class: 'actions no-print' },
         h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => importDialog({ title: 'Template RPS & OBE', fields: importFields, aliases: { mata_kuliah: ['Mata Kuliah', 'Subject', 'Nama MK'], kode_mk: ['Kode', 'Kode MK'], template_rps: ['Link RPS', 'RPS'], template_obe: ['Link OBE', 'OBE'], dosen_penyusun: ['Dosen', 'Penyusun'] },
           note: 'Setiap baris dicocokkan dengan kurikulum berdasarkan Kode MK atau nama mata kuliah; template yang sudah ada akan diperbarui.',
@@ -214,8 +216,9 @@ function penilaianTab(root) {
     { key: 'berkas', label: 'Berkas Penilaian', value: x => x.a && x.a.berkas ? (x.a.berkas.link || (x.a.berkas.file && x.a.berkas.file.name) || '') : '' },
     { key: 'tgl', label: 'Tanggal Selesai', value: x => (x.a && x.a.tanggal_selesai) || '' },
   ];
-  const table = dataTable({ columns, rows: [], pageSize: 50, onRowClick: x => openObe(x, st.periode), sort: { key: 'mk', dir: 'asc' },
-    rowActions: x => h('div', { class: 'row-actions' }, h('button', { class: 'btn btn-icon', type: 'button', title: 'Isi penilaian', 'aria-label': 'Isi penilaian', onclick: () => openObe(x, st.periode) }, icon(x.a ? 'edit' : 'plus', 'sm'))),
+  // Sama dengan tab Template: CRUD hanya lewat tombol aksi (+ = isi penilaian, pensil = ubah)
+  const table = dataTable({ columns, rows: [], pageSize: 50, sort: { key: 'mk', dir: 'asc' },
+    rowActions: x => h('div', { class: 'row-actions' }, h('button', { class: 'btn btn-icon', type: 'button', title: x.a ? 'Ubah penilaian' : 'Isi penilaian', 'aria-label': x.a ? 'Ubah penilaian' : 'Isi penilaian', onclick: () => openObe(x, st.periode) }, icon(x.a ? 'edit' : 'plus', 'sm'))),
     emptyNode: h('div', { class: 'empty' }, icon('book'), h('h3', {}, 'Belum ada mata kuliah untuk filter ini'), h('p', {}, 'Daftar ini bersumber dari Jadwal Kuliah pada periode terpilih. Pastikan slot jadwal untuk periode ini telah diimpor.')) });
   tableBox.appendChild(table.el);
 
@@ -238,7 +241,7 @@ function penilaianTab(root) {
   box.append(
     h('div', { class: 'page-head' },
       h('div', {}, h('span', { class: 'eyebrow' }, 'Akademik · RPS & OBE'), h('h1', {}, 'Penilaian OBE per Mata Kuliah'),
-        h('p', {}, 'Daftar mata kuliah bersumber dari Jadwal Kuliah pada periode terpilih. Tim IBM bertanggung jawab mengisi penilaian OBE untuk mata kuliah yang diampu Dosen External, sedangkan Dosen Internal Institut Asia mengisi secara mandiri (statusnya tetap dapat dicatat di sini).')),
+        h('p', {}, 'Daftar penilaian OBE tiap Mata Kuliah. Tim IBM bertanggung jawab mengisi penilaian OBE untuk mata kuliah yang diampu Dosen External, sedangkan Dosen Internal Institut Asia mengisi secara mandiri.')),
       h('div', { class: 'actions no-print' },
         h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => exportRows(`Penilaian_OBE_${st.periode}`, exportCols, filtered(), 'xlsx') }, icon('sheet'), 'Ekspor Excel'))),
     kpiBox,

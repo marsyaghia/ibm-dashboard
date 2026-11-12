@@ -175,7 +175,7 @@ function stepForm(nim, info) {
       add(text('saran', 'Saran untuk prodi IBM', { required: true, area: true, rows: 2 })),
     ));
 
-  const send = h('button', { class: 'btn btn-primary', type: 'button' }, icon('check'), 'Kirim penilaian');
+  const send = h('button', { class: 'btn btn-primary', type: 'button' }, icon('check'), 'Kirim Penilaian');
   const actions = h('div', { class: 'pf-actions' }, h('span', { class: 'muted' }, 'Semua kolom wajib diisi.'), send);
   body.append(sec1, sec2, sec3, sec4, actions);
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -196,9 +196,9 @@ function stepForm(nim, info) {
       body.append(h('section', { class: 'pf-card pf-done' },
         h('div', { class: 'ok' }, icon('check')), h('h2', {}, 'Terima kasih!'),
         h('p', {}, `Penilaian Anda untuk ${payload.perusahaan} telah berhasil disimpan. Ulasan Anda akan membantu Program Studi IBM dalam mengevaluasi mitra magang serta membantu mahasiswa angkatan berikutnya dalam memilih tempat magang.`),
-        h('div', { class: 'pf-actions', style: 'justify-content:center' }, h('button', { class: 'btn btn-ghost', type: 'button', onclick: stepNim }, 'Isi penilaian untuk tempat magang lain'))));
+        h('div', { class: 'pf-actions', style: 'justify-content:center' }, h('button', { class: 'btn btn-ghost', type: 'button', onclick: stepNim }, 'Isi Penilaian untuk Tempat Magang Lain'))));
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (err) { toast(err.message || 'Gagal mengirim. Silakan coba kembali.', 'bad'); send.disabled = false; send.replaceChildren(icon('check'), 'Kirim penilaian'); }
+    } catch (err) { toast(err.message || 'Gagal mengirim. Silakan coba kembali.', 'bad'); send.disabled = false; send.replaceChildren(icon('check'), 'Kirim Penilaian'); }
   });
 }
 

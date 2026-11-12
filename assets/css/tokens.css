@@ -83,6 +83,7 @@
   --r-card: 12px;
   --surface-sunk: #F8FAFD;            /* header tabel, area input pasif */
   --row-hover:    #F5F8FD;
+  --group-bg:     #E8EDF5;            /* baris pembatas grup tabel (mis. Semester 1) — sedikit lebih gelap dari baris data */
   --shadow-card:  0 1px 2px rgba(8, 20, 47, .04), 0 1px 3px rgba(8, 20, 47, .03);
   --placeholder:  #8A95AD;
   --ring:         rgba(42, 82, 160, .16);
@@ -141,6 +142,7 @@
   /* Tambahan dashboard */
   --surface-sunk: #0D1630;
   --row-hover:    #16224A;
+  --group-bg:     #1B2852;
   --placeholder:  #6F7C9B;
   --ring:         rgba(165, 190, 242, .2);
   --line-soft:    #1E2B50;

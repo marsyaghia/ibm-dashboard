@@ -7,7 +7,7 @@ import { crudView } from '../crud.js';
 import { store } from '../store.js';
 import { periodeOptions as calPeriode } from '../jadwal-lib.js';
 
-const PRODI = ['IBM', 'Manajemen', 'Akuntansi', 'Lainnya'];
+const PRODI = ['IBM', 'Manajemen'];
 const STATUS = ['Lengkap', 'Belum Lengkap'];
 const periodeOptions = () => {
   const list = []; for (let y = 2024; y <= new Date().getFullYear() + 1; y++) list.push(`Ganjil ${y}/${y + 1}`, `Genap ${y}/${y + 1}`);
@@ -54,7 +54,7 @@ const exportCols = [
 
 const view = crudView({
   id: 'materials', collection: 'materials', noun: 'materi', title: 'Materi Mengajar & Link PPT', eyebrow: 'Akademik',
-  description: 'Daftar materi dan folder PPT setiap mata kuliah dari masing-masing dosen, sehingga kemajuan penyusunan materi dapat dipantau di luar Google Classroom. Data awal bersumber dari sheet “MATKUL DAN LINK PPT” FEB 2025/2026.',
+  description: 'Daftar materi dan file PPT setiap mata kuliah, sehingga penyusunan materi dapat dipantau di luar Google Classroom.',
   sections, columns, exportColumns: exportCols, exportName: 'Materi_PPT_Dosen', sort: { key: 'mata_kuliah', dir: 'asc' },
   searchPlaceholder: 'Cari mata kuliah atau dosen…',
   search: r => [r.mata_kuliah, r.dosen, r.prodi, r.periode, r.catatan].join(' '),
@@ -62,7 +62,6 @@ const view = crudView({
     { key: 'prodi', label: 'Prodi', options: () => uniq([...PRODI, ...store.all('materials').map(r => r.prodi)]) },
     { key: 'periode', label: 'Periode', options: () => uniq(store.all('materials').map(r => r.periode)).sort().reverse() },
     { key: 'status', label: 'Status', options: STATUS },
-    { key: 'link_ada', label: 'Link', all: 'Semua link', options: [{ value: 'ya', label: 'Ada link' }, { value: 'tidak', label: 'Belum ada link' }], match: (r, v) => (v === 'ya') === hasAttachment(r.materi) },
   ],
   defaults: () => ({ prodi: 'IBM', target_pertemuan: 14, status: 'Belum Lengkap' }),
   kpis: (rows) => {

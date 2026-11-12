@@ -21,7 +21,7 @@ export const flatFields = (sections) => sections.flatMap(s => s.fields);
 
 /**
  * cfg: {
- *   id, collection, title, eyebrow, description, noun,
+ *   id, collection, title, eyebrow, description, noun, addLabel,
  *   sections, columns, filters: [{ key, label, options, match(row, value) }],
  *   search(row) → string, defaults() → {}, sort: { key, dir },
  *   kpis(rows, allRows) → [{ label, value, sub, icon, accent, meter }],
@@ -117,6 +117,7 @@ export function crudView(cfg) {
       { label: 'Excel — semua data', icon: 'sheet', onClick: () => exportRows(cfg.exportName || cfg.title, exportCols(), all(), 'xlsx') },
     ]);
     const exportCols = () => cfg.exportColumns || cfg.columns;
+    // Subtitle otomatis selebar halaman (lihat widenPageDesc di ui.js)
     const head = h('div', { class: 'page-head' },
       h('div', {}, cfg.eyebrow ? h('span', { class: 'eyebrow' }, cfg.eyebrow) : null, h('h1', {}, cfg.title), cfg.description ? h('p', {}, cfg.description) : null),
       h('div', { class: 'actions no-print' },
@@ -155,7 +156,9 @@ export function crudView(cfg) {
       h('button', { class: 'btn btn-icon danger', type: 'button', title: 'Hapus', 'aria-label': 'Hapus', onclick: async () => { if (await confirmDialog(`Hapus ${cfg.noun || 'data'} ini?`)) removeRow(r); } }, icon('trash', 'sm')));
 
     const table = dataTable({
-      columns: cfg.columns, rows: [], sort: cfg.sort, order: cfg.order, onRowClick: cfg.onRowClick ? (r) => cfg.onRowClick(r, ctx) : openForm, rowActions,
+      // Satu cara CRUD: ubah/hapus hanya lewat tombol ikon di kanan. Klik baris hanya dipakai bila
+      // modul memberi aksi lain (mis. membuka profil/detail), bukan membuka form ubah.
+      columns: cfg.columns, rows: [], sort: cfg.sort, order: cfg.order, onRowClick: cfg.onRowClick ? (r) => cfg.onRowClick(r, ctx) : null, rowActions,
       pageSize: cfg.pageSize || 25, footer: cfg.footer, groupBy: cfg.groupBy,
       emptyNode: h('div', { class: 'empty' }, icon('layers'), h('h3', {}, cfg.emptyTitle || 'Belum ada data'), h('p', {}, cfg.emptyText || 'Tambahkan data baru atau impor dari Excel/CSV.'),
         cfg.addable === false ? null : h('button', { class: 'btn btn-primary', type: 'button', onclick: () => openForm(null) }, icon('plus'), cfg.addLabel || `Tambah ${cfg.noun || ''}`.trim())),

@@ -275,7 +275,7 @@ create trigger materi_ppt_updated before insert or update on public.materi_ppt
   for each row execute function public.set_updated_at();
 create index if not exists materi_ppt_periode_idx on public.materi_ppt (periode);
 create index if not exists materi_ppt_batch_id_idx on public.materi_ppt (batch_id);
-comment on column public.materi_ppt.prodi is 'IBM / Manajemen / Akuntansi / Lainnya';
+comment on column public.materi_ppt.prodi is 'IBM / Manajemen';
 comment on column public.materi_ppt.periode is 'Ganjil 2025/2026';
 comment on column public.materi_ppt.status is 'Lengkap / Belum Lengkap';
 comment on column public.materi_ppt.cakupan is 'Pertemuan 1-14';

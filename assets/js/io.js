@@ -187,7 +187,7 @@ export function importDialog({ title, fields, aliases = {}, onImport, note, sect
     if (!recs.length) return toast('Tidak ada baris yang dapat diimpor.', 'bad');
     importBtn.disabled = true; importBtn.textContent = 'Mengimpor…';
     try { await onImport(recs); toast(`${recs.length} baris berhasil diimpor.`, 'ok'); close(); }
-    catch (e) { toast(e.message, 'bad'); importBtn.disabled = false; importBtn.textContent = 'Impor data'; }
+    catch (e) { toast(e.message, 'bad'); importBtn.disabled = false; importBtn.textContent = 'Impor Data'; }
   });
 }
 

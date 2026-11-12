@@ -14,7 +14,10 @@ Panduan singkat untuk revisi lewat ekstensi Claude di VS Code.
 - Popup: `openDrawer` (formulir, lebar sedang) dan `openModal` (`size: 'sm'|'md'|'lg'`, atau `wide: true`). Keduanya tampil di tengah layar.
 - Menu bertab memakai `tabPage(root, items, { eyebrow, title, key, def, actions })` dari `ui.js`: judul menu → (pemilih) → tab → isi tab. Judul isi tab otomatis tampil sebagai judul bagian.
 - Pemilih batch/periode selalu `batchSelect()` / `picker(label, selectEl(...))` agar seragam. Batch bawaan = `firstBatch()` (Batch 1).
-- Huruf judul: `h1`–`h3` otomatis Title Case (`tc()` di `ui.js`, aturan PUEBI: kata tugas tetap kecil). Tulis teks sumber dengan huruf biasa; kamus EN tetap cocok karena pencarian tidak membedakan besar/kecil. Nama orang/data di judul: tambahkan atribut `'data-raw': ''`.
+- Huruf judul & tombol: `h1`–`h3` dan teks tombol berkelas `.btn` otomatis Title Case (`tc()` di `ui.js`, aturan PUEBI: kata tugas tetap kecil). Tulis teks sumber dengan huruf biasa; kamus EN tetap cocok karena pencarian tidak membedakan besar/kecil. Nama orang/data di judul: tambahkan atribut `'data-raw': ''`.
+- Subtitle judul halaman/tab (`<p>` di blok judul `.page-head`) otomatis dipindah menjadi baris selebar halaman di bawah judul + tombol (`widenPageDesc()` di `ui.js`, CSS `.has-desc`/`.page-desc`). Cukup tulis `h('p', …)` seperti biasa.
+- Baris pembatas grup tabel (`groupBy`, mis. "Semester 1") memakai token `--group-bg`.
+- Satu cara CRUD: ubah/hapus hanya lewat tombol ikon di kanan (ikon + = isi baru, pensil = ubah, tempat sampah = hapus). `crudView` tidak lagi membuka form saat baris diklik; `onRowClick` hanya untuk aksi lain seperti membuka profil/detail (Mahasiswa, Dosen, respon Magang) atau navigasi.
 - Ukuran huruf & tinggi kontrol dari token (`--fs-*`, `--ctl-h`) di `tokens.css`.
 - Foto profil: field `type: 'photo'` (`form.js`), tampil dengan `avatar(nama, foto)` (`ui.js`; mendukung link Google Drive & unggahan).
 - Waktu selalu WIB (`nowWIB()`, `today()` di `ui.js`).

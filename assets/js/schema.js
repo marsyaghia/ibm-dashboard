@@ -39,7 +39,7 @@ export const SCHEMA = {
     ['jenis_dosen', 'text', 'Dosen External / Dosen Internal'], ['berkas', 'att'], ['status', 'text', 'Belum / Proses / Selesai'], ['tanggal_selesai', 'date'], ['catatan'],
   ]),
   materials: T('materi_ppt', 'Materi & PPT Dosen', 'Link materi/PPT tiap mata kuliah.', [
-    ['mata_kuliah'], ['dosen'], ['prodi', 'text', 'IBM / Manajemen / Akuntansi / Lainnya'], ['periode', 'text', 'Ganjil 2025/2026'], ['batch_id'], ['materi', 'att'],
+    ['mata_kuliah'], ['dosen'], ['prodi', 'text', 'IBM / Manajemen'], ['periode', 'text', 'Ganjil 2025/2026'], ['batch_id'], ['materi', 'att'],
     ['pertemuan_tersedia', 'int'], ['target_pertemuan', 'int'], ['status', 'text', 'Lengkap / Belum Lengkap'], ['cakupan', 'text', 'Pertemuan 1-14'], ['gclassroom'], ['catatan'],
   ]),
   calendar: T('kalender_akademik', 'Jadwal Kuliah', 'Kalender akademik dari bagian akademik (sesuai PDF).', [
