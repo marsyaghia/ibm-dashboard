@@ -394,7 +394,6 @@ export default {
       { id: 'link', label: 'Link form', fn: (b, ctx) => linkForm(b, goWith(ctx), currentBatch()) },
     ], {
       eyebrow: 'Program', title: 'Data Magang', key: 'tab_mg', def: 'penempatan',
-      description: 'Penempatan magang mahasiswa dan penilaian tempat magang. Pilih batch untuk menampilkan datanya di semua tab.',
       actions: (ctx) => [batchSelect({ value: currentBatch(), withAll: true, allValue: 'all', onChange: (v) => { pref.set('mg_batch2', v); ctx.redraw(); } })],
     });
   },

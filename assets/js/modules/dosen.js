@@ -86,7 +86,7 @@ function profile(r, ctx) {
 
 const view = crudView({
   id: 'lecturers', collection: 'lecturers', noun: 'dosen', title: 'Biodata Dosen', eyebrow: 'Data dosen',
-  description: 'Profil pengampu IBM, baik Dosen Internal maupun Dosen External (praktisi industri). Pilih nama dosen untuk melihat profil beserta mata kuliah, RPS, dan materi terkait.',  sections, columns, exportColumns: exportCols, exportName: 'Biodata_Dosen_IBM', sort: { key: 'nama', dir: 'asc' }, unit: 'dosen',
+  sections, columns, exportColumns: exportCols, exportName: 'Biodata_Dosen_IBM', sort: { key: 'nama', dir: 'asc' }, unit: 'dosen',
   searchPlaceholder: 'Cari nama, instansi, mata kuliah…',
   search: r => [r.nama, r.instansi, r.jabatan, r.mata_kuliah, r.email, r.s1, r.s2, r.s3].join(' '),
   filters: [

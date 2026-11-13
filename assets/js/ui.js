@@ -339,17 +339,18 @@ export function tabs(items, active, onChange) {
   return bar;
 }
 
-/** Judul halaman menu (dipakai di atas tab) */
-export function moduleHead({ eyebrow, title, description, actions } = {}) {
+/** Judul halaman menu (dipakai di atas tab): hanya eyebrow + judul besar, tanpa subtitle.
+    (opsi description sengaja diabaikan; keterangan ada di subtitle masing-masing tab) */
+export function moduleHead({ eyebrow, title, actions } = {}) {
   return h('div', { class: 'module-head' },
-    h('div', { class: 'module-title' }, eyebrow ? h('span', { class: 'eyebrow' }, eyebrow) : null, h('h1', {}, title), description ? h('p', {}, description) : null),
+    h('div', { class: 'module-title' }, eyebrow ? h('span', { class: 'eyebrow' }, eyebrow) : null, h('h1', {}, title)),
     actions && [].concat(actions).filter(Boolean).length ? h('div', { class: 'actions no-print' }, actions) : null);
 }
 
 /**
  * Halaman menu bertab yang seragam: judul menu → (pemilih, mis. batch) → tab → isi tab.
  * items: [{ id, label, fn(body, ctx) → { destroy? } }]
- * opts: { eyebrow, title, description, key (pref tab), def, remember (default true), actions(ctx) → Node[] }
+ * opts: { eyebrow, title, key (pref tab), def, remember (default true), actions(ctx) → Node[] }
  */
 export function tabPage(root, items, opts = {}) {
   const key = opts.key; const remember = opts.remember !== false;
@@ -363,7 +364,7 @@ export function tabPage(root, items, opts = {}) {
   };
   function draw() {
     inner && inner.destroy && inner.destroy(); clear(root);
-    root.append(moduleHead({ eyebrow: opts.eyebrow, title: opts.title, description: opts.description, actions: opts.actions ? opts.actions(ctx) : null }),
+    root.append(moduleHead({ eyebrow: opts.eyebrow, title: opts.title, actions: opts.actions ? opts.actions(ctx) : null }),
       tabs(items, tab, (id) => ctx.go(id)));
     clear(body); root.appendChild(body);
     inner = (items.find(x => x.id === tab) || items[0]).fn(body, ctx) || null;

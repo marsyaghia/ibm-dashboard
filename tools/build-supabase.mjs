@@ -56,7 +56,8 @@ create policy "admin_pengguna_baca" on public.admin_pengguna
 
 insert into public.admin_pengguna (email, nama, sapaan) values
   ('ibm@asia.ac.id',   'Admin IBM',               'Admin IBM'),
-  ('danar@asia.ac.id', 'Karolus Danar Kurniawan', 'Pak Karolus')
+  ('danar@asia.ac.id', 'Karolus Danar Kurniawan', 'Pak Karolus'),
+  ('risasantoso@asia.ac.id', 'Risa Santoso', 'Risa Santoso')
 on conflict (email) do nothing;
 
 -- 2) FUNGSI BANTU ---------------------------------------------------------------

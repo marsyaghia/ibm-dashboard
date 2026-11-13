@@ -419,7 +419,6 @@ export default {
       { id: 'target', label: 'Target', fn: (b) => crudView(targetCfg(currentBatch()))(b) },
     ], {
       eyebrow: 'Program', title: 'Immersion', key: 'tab_imm', def: 'rekap',
-      description: 'Tabungan dan arus kas program immersion. Pilih batch untuk menampilkan datanya di semua tab.',
       actions: (ctx) => [batchSelect({ value: currentBatch(), onChange: (v) => { pref.set('imm_batch2', v); ctx.redraw(); } })],
     });
   },

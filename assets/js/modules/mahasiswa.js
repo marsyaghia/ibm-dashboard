@@ -229,7 +229,6 @@ function profile(r, ctx) {
 
 const view = crudView({
   id: 'students', collection: 'students', noun: 'mahasiswa', title: 'Biodata Mahasiswa', eyebrow: 'Data mahasiswa',
-  description: 'Biodata lengkap mahasiswa IBM sesuai Formulir Pendataan Mahasiswa, diurutkan per batch lalu abjad. Pilih nama mahasiswa untuk melihat profil dan rekap datanya.',
   sections, columns, exportColumns: exportCols, exportName: 'Biodata_Mahasiswa_IBM', unit: 'mahasiswa',
   // Selalu urut Batch 1, 2, … lalu abjad nama — tetap berlaku setelah data diperbarui
   order: chain(byBatch(), byText(r => r.nama)),

@@ -56,7 +56,7 @@ class DemoAdapter {
   async fileBlob(meta) { return idbDo('readonly', st => st.get(meta.id)); }
   async fileUrl(meta) { const b = await this.fileBlob(meta); return b ? URL.createObjectURL(b) : null; }
   async deleteFile(meta) { try { await idbDo('readwrite', st => st.delete(meta.id)); } catch (e) { /* abaikan */ } }
-  async admins() { return [{ email: 'ibm@asia.ac.id', nama: 'Admin IBM', sapaan: 'Admin IBM', peran: 'superadmin' }, { email: 'danar@asia.ac.id', nama: 'Karolus Danar Kurniawan', sapaan: 'Pak Karolus', peran: 'superadmin' }]; }
+  async admins() { return [{ email: 'ibm@asia.ac.id', nama: 'Admin IBM', sapaan: 'Admin IBM', peran: 'superadmin' }, { email: 'danar@asia.ac.id', nama: 'Karolus Danar Kurniawan', sapaan: 'Pak Karolus', peran: 'superadmin' }, { email: 'risasantoso@asia.ac.id', nama: 'Risa Santoso', sapaan: 'Risa Santoso', peran: 'superadmin' }]; }
   async signOut() { location.search = ''; }
   async reset() { this.data = { ...demoSeed(), __seeded: nowIso() }; this.persist(); }
 }

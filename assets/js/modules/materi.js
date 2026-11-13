@@ -4,6 +4,7 @@
    ========================================================================= */
 import { h, icon, badge, docLink, hasAttachment, batchName, batchOptions, uniq, pct, fmtNum } from '../ui.js';
 import { crudView } from '../crud.js';
+import { dataTable } from '../table.js';
 import { store } from '../store.js';
 import { periodeOptions as calPeriode } from '../jadwal-lib.js';
 
@@ -54,7 +55,6 @@ const exportCols = [
 
 const view = crudView({
   id: 'materials', collection: 'materials', noun: 'materi', title: 'Materi Mengajar & Link PPT', eyebrow: 'Akademik',
-  description: 'Daftar materi dan file PPT setiap mata kuliah, sehingga penyusunan materi dapat dipantau di luar Google Classroom.',
   sections, columns, exportColumns: exportCols, exportName: 'Materi_PPT_Dosen', sort: { key: 'mata_kuliah', dir: 'asc' },
   searchPlaceholder: 'Cari mata kuliah atau dosen…',
   search: r => [r.mata_kuliah, r.dosen, r.prodi, r.periode, r.catatan].join(' '),
@@ -80,9 +80,13 @@ const view = crudView({
     if (!list.length) return null;
     return h('div', { class: 'card', style: { marginBottom: '16px' } },
       h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, 'Perlu ditindaklanjuti'), h('p', {}, 'Dosen dengan materi belum lengkap (sesuai filter)'))),
-      h('div', { class: 'table-wrap' }, h('table', { class: 'tbl compact' },
-        h('thead', {}, h('tr', {}, h('th', {}, 'Dosen'), h('th', { class: 'right' }, 'Mata kuliah'), h('th', { class: 'right' }, 'Belum lengkap'), h('th', { class: 'right' }, 'Tanpa link'))),
-        h('tbody', {}, list.map(([d, v]) => h('tr', {}, h('td', {}, h('span', { class: 'primary' }, d)), h('td', { class: 'right num' }, fmtNum(v.n)), h('td', { class: 'right num' }, fmtNum(v.belum)), h('td', { class: 'right num' }, fmtNum(v.nolink))))))));
+      // dataTable agar otomatis menjadi kartu di HP/tablet (tanpa geser ke samping)
+      dataTable({ rows: list.map(([d, v]) => ({ d, ...v })), pageSize: Infinity, compact: true, className: 'tbl-mid', columns: [
+        { key: 'd', label: 'Dosen', main: true, render: x => h('span', { class: 'primary' }, x.d) },
+        { key: 'n', label: 'Mata kuliah', align: 'center', width: '130px', render: x => h('span', { class: 'num' }, fmtNum(x.n)) },
+        { key: 'belum', label: 'Belum lengkap', align: 'center', width: '130px', render: x => h('span', { class: 'num' }, fmtNum(x.belum)) },
+        { key: 'nolink', label: 'Tanpa link', align: 'center', width: '130px', render: x => h('span', { class: 'num' }, fmtNum(x.nolink)) },
+      ] }).el);
   },
   aliases: { mata_kuliah: ['MATA KULIAH', 'Matkul'], dosen: ['DOSEN'], prodi: ['PRODI'], periode: ['SEMESTER'], materi: ['LINK PPT', 'Link'], cakupan: ['PERTEMUAN'], status: ['KET', 'Keterangan'] },
   importNote: 'Format sheet “MATKUL DAN LINK PPT” (NO, MATA KULIAH, DOSEN, PRODI, SEMESTER, LINK PPT, PERTEMUAN, KET) dikenali secara otomatis. Silakan pilih berkas .xlsx/.csv hasil unduhan dari Google Sheets.',

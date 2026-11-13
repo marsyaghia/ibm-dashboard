@@ -6,12 +6,13 @@ Buka di https://supabase.com/dashboard/project/vhecgwfuoapzdwvephhz
 ## Yang sudah disiapkan
 
 - **20 tabel**, satu tabel per menu (daftar lengkap ada di tabel di bawah). Semuanya dikunci **Row Level Security**: hanya email yang terdaftar di tabel `admin_pengguna` yang bisa membaca atau menulis.
-- Tabel `admin_pengguna` berisi 2 superadmin:
+- Tabel `admin_pengguna` berisi 3 superadmin:
 
   | email | nama | sapaan (tampil di beranda) |
   |---|---|---|
   | `ibm@asia.ac.id` | Admin IBM | Admin IBM |
   | `danar@asia.ac.id` | Karolus Danar Kurniawan | Pak Karolus |
+  | `risasantoso@asia.ac.id` | Risa Santoso | Risa Santoso |
 
 - Bucket penyimpanan privat **`dashboard-files`** (maksimal 15 MB per berkas) untuk bukti transfer, sertifikat, berkas OBE, dan lainnya.
 - Skema lengkap ada di `supabase/schema.sql`. Skema ini sudah diterapkan ke project, jadi tidak perlu dijalankan ulang.
@@ -27,6 +28,8 @@ Akun `ibm@asia.ac.id` sudah ada. Akun `danar@asia.ac.id` belum dibuat.
 1. Buka **Authentication → Users → Add user → Create new user**.
 2. Isi email `danar@asia.ac.id` dan kata sandi awal. Centang **Auto Confirm User**.
 3. Berikan kata sandi awal itu langsung ke Pak Karolus. Setelah masuk, beliau bisa menggantinya di **Pengaturan → Akun superadmin → Ganti kata sandi**.
+
+Akun `risasantoso@asia.ac.id` (Risa Santoso) sudah terdaftar di `admin_pengguna`. Akun loginnya dibuat dengan cara yang sama: **Authentication → Users → Add user → Create new user**, isi email tersebut beserta kata sandi awal, lalu centang **Auto Confirm User**.
 
 > Kata sandi tidak pernah melewati Claude atau kode dashboard. Buat dan bagikan sendiri.
 

@@ -69,7 +69,7 @@ function daftar(root) {
       if (Object.values(v).some(a => !a.length)) return toast('Setiap daftar minimal berisi satu pilihan.', 'bad');
       save.disabled = true; try { await store.saveSetting('daftar', v); toast('Daftar pilihan disimpan.', 'ok'); } catch (e) { toast(e.message, 'bad'); } save.disabled = false;
     });
-    root.append(head('Pengaturan', 'Daftar pilihan', 'Daftar pilihan yang ditampilkan pada dropdown formulir. Tulis satu pilihan per baris. Perubahan nama pilihan tidak memengaruhi data yang sudah ada; data tersebut tetap ditampilkan dan dapat difilter.', save),
+    root.append(head('Pengaturan', 'Daftar pilihan', 'Daftar pilihan yang ditampilkan pada dropdown formulir. Tulis satu pilihan per baris.', save),
       h('div', { class: 'grid grid-3' }, LISTS.map(([k, label, used]) => {
         const ta = h('textarea', { class: 'textarea', rows: 9, 'aria-label': label }); ta.value = (cur[k] || []).join('\n'); areas[k] = ta;
         return h('div', { class: 'card card-pad' }, h('h3', { style: { fontSize: '14.5px' } }, label), h('p', { class: 'muted', style: { margin: '2px 0 10px', fontSize: '12.5px' } }, `Digunakan di: ${used}`), ta,
@@ -82,7 +82,7 @@ function daftar(root) {
 /* =================== Batch =================== */
 const batchView = crudView({
   id: 'batches', collection: 'batches', noun: 'batch', title: 'Batch', eyebrow: 'Pengaturan · Master data',
-  description: 'Daftar angkatan program IBM. Kode batch (B1, B2, dst.) digunakan sebagai batch_id pada seluruh tabel impor CSV.',
+  description: 'Daftar angkatan program IBM. Kode batch (B1, B2, B3, B4 dst.).',
   sections: [{ fields: [
     { key: 'id', label: 'Kode batch', type: 'text', required: true, col: 'third', placeholder: 'mis. B5', help: 'Tidak dapat diubah setelah disimpan.' },
     { key: 'nama', label: 'Nama batch', type: 'text', required: true, col: 'third', placeholder: 'mis. Batch 5' },
@@ -106,7 +106,7 @@ const batchView = crudView({
 const RUMPUN = ['MKD', 'MKF', 'MKI', 'MKP', 'MKPil', 'MKL', 'MKK', 'IBM Activity'];
 const kurikulumView = crudView({
   id: 'courses', collection: 'courses', noun: 'mata kuliah', title: 'Kurikulum IBM (CSPP)', eyebrow: 'Pengaturan · Master data',
-  description: 'Daftar mata kuliah per semester yang menjadi acuan menu RPS & OBE, Jadwal Kuliah, dan Trent. MKD Dikti · MKF Fakultas · MKI Institut · MKP Prodi · MKPil Pilihan · MKL Lintas Prodi · MKK Konsentrasi.',
+  description: 'Daftar mata kuliah per semester yang menjadi acuan menu RPS & OBE, Jadwal Kuliah, dan Trent.',
   sections: [{ fields: [
     { key: 'semester', label: 'Semester', type: 'number', required: true, col: 'third', min: 1, max: 8 },
     { key: 'kode', label: 'Kode', type: 'text', col: 'third' },
@@ -159,7 +159,7 @@ function akun(root) {
   });
   const list = h('div', {}, h('p', { class: 'muted' }, 'Memuat daftar akun…'));
   box.append(
-    head('Pengaturan', 'Akun superadmin', 'Hanya email yang terdaftar pada tabel admin_pengguna (Supabase) yang dapat masuk. Sapaan di Dashboard mengikuti kolom “sapaan”.'),
+    head('Pengaturan', 'Akun superadmin', 'Hanya email yang terdaftar pada Supabase yang dapat masuk.'),
     h('div', { class: 'grid grid-main' },
       h('div', { class: 'card' }, h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, 'Akun yang memiliki akses'), h('p', {}, 'Dikelola di Supabase, bukan dari dashboard'))), list,
         h('div', { class: 'card-body' }, h('div', { class: 'note' }, icon('info'), h('div', {},
@@ -228,7 +228,7 @@ function dataView(root) {
     }));
     const tables = ORDER.map((c, i) => ({ c, i: i + 1, t: SCHEMA[c], n: store.all(c).length }));
     root.append(
-      head('Pengaturan', 'Data & impor', 'Data dapat diimpor per menu langsung melalui Supabase (Table Editor → tabel → Insert → Import data from CSV) menggunakan template di bawah, atau melalui tombol “Impor” pada setiap menu dashboard.'),
+      head('Pengaturan', 'Data & impor', 'Data dapat diimpor per menu langsung melalui Supabase menggunakan template di bawah, atau melalui tombol “Impor” pada setiap menu dashboard.'),
       kpiRow([
         { label: 'Mode penyimpanan', value: store.mode === 'supabase' ? 'Supabase' : 'Demo (browser)', small: true, sub: store.mode === 'supabase' ? 'data bersama seluruh superadmin' : 'data contoh — tidak tersimpan ke server', icon: 'database', accent: true },
         { label: 'Total catatan', value: count, sub: `${COLLECTIONS.length} tabel`, icon: 'layers' },
@@ -245,19 +245,20 @@ function dataView(root) {
           h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => templateCSV(x.c) }, icon('download', 'sm'), 'Template'),
           x.n ? h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => dataCSV(x.c) }, icon('sheet', 'sm'), 'Data CSV') : null) }).el),
       h('div', { class: 'grid grid-2 mt' },
-        h('div', { class: 'card card-pad stack' },
-          h('h3', { style: { fontSize: '15px' } }, 'Cadangan & ekspor'),
-          h('div', { class: 'actions' },
+        h('div', { class: 'card' },
+          h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, 'Cadangan & ekspor'),
+            h('p', {}, 'Berkas unggahan (PDF, foto, Excel) tersimpan di Supabase Storage dan tidak termasuk dalam cadangan JSON, sedangkan tautan Google Drive tetap disertakan. Supabase juga membuat cadangan basis data harian secara otomatis.'))),
+          h('div', { class: 'card-body backup-actions' },
             h('button', { class: 'btn btn-primary', type: 'button', onclick: () => { download(new Blob([JSON.stringify(store.exportAll(), null, 1)], { type: 'application/json' }), `Cadangan_Dashboard_IBM_${new Date().toISOString().slice(0, 10)}.json`); toast('Cadangan JSON diunduh.', 'ok'); } }, icon('download'), 'Unduh cadangan (.json)'),
             h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => restoreIn.click() }, icon('upload'), 'Pulihkan cadangan'),
-            h('button', { class: 'btn btn-ghost', type: 'button', onclick: exportAllXlsx }, icon('sheet'), 'Semua data ke Excel'), restoreIn),
-          h('p', { class: 'muted', style: { margin: 0, fontSize: '12.5px' } }, 'Berkas unggahan (PDF, foto, Excel) tersimpan di Supabase Storage dan tidak termasuk dalam cadangan JSON, sedangkan tautan Google Drive tetap disertakan. Supabase juga membuat cadangan basis data harian secara otomatis.')),
-        h('div', { class: 'card card-pad stack' },
-          h('h3', { style: { fontSize: '15px' } }, store.mode === 'demo' ? 'Mode demo' : 'Tentang'),
+            h('button', { class: 'btn btn-ghost', type: 'button', onclick: exportAllXlsx }, icon('sheet'), 'Semua data ke Excel'), restoreIn)),
+        // Kartu kedua bergaya sama (judul di kepala kartu) agar kedua kartu sejajar rapi
+        h('div', { class: 'card' },
           store.mode === 'demo'
-            ? [h('p', { class: 'muted', style: { margin: 0 } }, 'Mode demo menggunakan data contoh yang tersimpan di browser ini (alamat berakhiran ?demo=1). Pilih Reset untuk mengembalikan data contoh ke kondisi awal.'),
-              h('div', {}, h('button', { class: 'btn btn-danger', type: 'button', onclick: async () => { if (await confirmDialog('Reset data demo ke kondisi awal?', { okText: 'Reset' })) { await store.resetDemo(); toast('Data demo direset.', 'ok'); } } }, icon('refresh', 'sm'), 'Reset data demo'))]
-            : h('dl', { class: 'dl' }, h('dt', {}, 'Aplikasi'), h('dd', {}, `${CONFIG.app.name} · ${CONFIG.app.org}`), h('dt', {}, 'Alamat'), h('dd', {}, CONFIG.app.url), h('dt', {}, 'Database'), h('dd', {}, CONFIG.supabase.url.replace('https://', '')), h('dt', {}, 'Tanggal'), h('dd', {}, fmtDateLong(new Date()))))),
+            ? [h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, 'Mode demo'), h('p', {}, 'Mode demo menggunakan data contoh yang tersimpan di browser ini (alamat berakhiran ?demo=1). Pilih Reset untuk mengembalikan data contoh ke kondisi awal.'))),
+              h('div', { class: 'card-body backup-actions' }, h('button', { class: 'btn btn-danger', type: 'button', onclick: async () => { if (await confirmDialog('Reset data demo ke kondisi awal?', { okText: 'Reset' })) { await store.resetDemo(); toast('Data demo direset.', 'ok'); } } }, icon('refresh', 'sm'), 'Reset data demo'))]
+            : [h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, 'Tentang'))),
+              h('div', { class: 'card-body' }, h('dl', { class: 'dl' }, h('dt', {}, 'Aplikasi'), h('dd', {}, `${CONFIG.app.name} · ${CONFIG.app.org}`), h('dt', {}, 'Alamat'), h('dd', {}, CONFIG.app.url), h('dt', {}, 'Database'), h('dd', {}, CONFIG.supabase.url.replace('https://', '')), h('dt', {}, 'Tanggal'), h('dd', {}, fmtDateLong(new Date()))))])),
     );
   };
   render();
