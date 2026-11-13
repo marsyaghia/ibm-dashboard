@@ -4,7 +4,7 @@
    Kalender akademik. Semua tampilan dibentuk dari Slot jadwal (kelas
    mingguan) + Kalender akademik (data PDF bagian akademik).
    ========================================================================= */
-import { h, icon, clear, badge, batchName, batchOptions, batchSelect, picker, selectEl, tabPage, pref, toast, fmtDate, fmtDateLong, fmtDayDate, parseDate, isoDate, today, uniq, pct, sum, openDrawer, confirmDialog, chain, byBatch, byText, batchRank } from '../ui.js';
+import { h, icon, clear, badge, batchName, batchLabel, batchOptions, batchSelect, firstBatch, picker, selectEl, tabPage, pref, toast, fmtDate, fmtDateLong, fmtDayDate, parseDate, isoDate, today, uniq, pct, sum, openDrawer, confirmDialog, chain, byBatch, byText, batchRank } from '../ui.js';
 import { buildForm } from '../form.js';
 import { crudView, kpiRow } from '../crud.js';
 import { dataTable } from '../table.js';
@@ -63,9 +63,11 @@ function looseCard(slots, showBatch) {
 
 /* =================== TAB 1 — JADWAL FULL (satu semester) =================== */
 function jadwalFull(root) {
-  const st = loadState(); const box = h('div');
+  // Setiap kali tab dibuka: periode berjalan + Batch 1 (tidak memakai pilihan tersimpan)
+  const st = { periode: currentPeriode(), batch: firstBatch(), page: 0 }; const box = h('div');
+  const onPick = () => { saveState(st); st.page = 0; render(); };
   function render() {
-    saveState(st); clear(box);
+    clear(box);
     const info = periodInfo(st.periode); const t = today();
     const slots = slotsOf(st.periode, st.batch);
     const fixed = slots.filter(s => HARI.includes(s.hari)); const loose = slots.filter(s => !HARI.includes(s.hari));
@@ -77,7 +79,7 @@ function jadwalFull(root) {
       const ev = eventsBetween(info, a, b).map(e => e.kegiatan);
       return `Minggu ${w} · ${fmtDate(a)} – ${fmtDate(b)}${ev.length ? ' · ' + ev.join(', ') : ''}`;
     };
-    const [per, bat] = pickers(st, render);
+    const [per, bat] = pickers(st, onPick);
     const rowsXls = [['Minggu', 'Tanggal', 'Hari', 'Jam', 'Mata Kuliah', 'Batch', 'Dosen', 'Jenis Dosen', 'Ruang', 'Pertemuan', 'Keterangan', 'Absensi Dosen Eksternal'],
       ...all.map(x => [weekNo(info, x.tanggal) || '', x.tanggal, x.slot.hari, timeLabel(x.slot), x.slot.mata_kuliah, batchName(x.slot.batch_id), x.slot.dosen, jenisDosen(x.slot), x.slot.ruang, x.no, x.jenis !== 'Kuliah' ? x.jenis : '', (x.absen && x.absen.status) || '']),
       ...loose.map(s => ['', '', '(tanpa hari tetap)', '', s.mata_kuliah, batchName(s.batch_id), s.dosen, jenisDosen(s), s.ruang, '', s.mode || s.catatan || '', ''])];
@@ -85,9 +87,10 @@ function jadwalFull(root) {
     box.append(...[
       h('div', { class: 'page-head' },
         h('div', {}, h('span', { class: 'eyebrow' }, 'Jadwal Kuliah · Jadwal Full'), h('h1', {}, 'Jadwal Satu Semester'),
-          h('p', {}, `${st.periode} · ${st.batch ? batchName(st.batch) : 'semua batch'} — seluruh pertemuan dari awal perkuliahan sampai UAS, dikelompokkan per minggu.`)),
+          h('p', {}, 'Seluruh jadwal pertemuan perkuliahan, dikelompokkan per minggu.')),
         h('div', { class: 'actions no-print' }, per, bat,
-          h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => window.print() }, icon('print'), 'Cetak'),
+          // Cetak: seluruh minggu dalam satu dokumen (tanpa paginasi), lalu kembali ke halaman semula
+          h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => { st.printAll = true; render(); window.addEventListener('afterprint', () => { st.printAll = false; render(); }, { once: true }); window.print(); } }, icon('print'), 'Cetak'),
           h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => exportWorkbook(`Jadwal_Full_${st.periode}_${st.batch ? batchName(st.batch) : 'Semua'}`.replace(/\W+/g, '_'), [{ name: 'Jadwal Full', rows: rowsXls }]) }, icon('sheet'), 'Ekspor Excel'))),
       calNote(st.periode, info),
       kpiRow([
@@ -97,7 +100,11 @@ function jadwalFull(root) {
         { label: 'Tanpa hari/jam tetap', value: loose.length, sub: 'rincian pada tabel di bawah', icon: 'layers' },
       ]),
       h('div', { class: 'card' }, dataTable({
-        rows: all, pageSize: Infinity, groupBy: groupLabel, onRowClick: x => openSlot(x.slot),
+        // Paginasi per minggu: satu minggu tidak pernah terpecah; beberapa minggu digabung hingga ±30 baris per halaman
+        rows: all, groupBy: groupLabel, onRowClick: x => openSlot(x.slot),
+        pageBy: st.printAll ? null : x => weekNo(info, x.tanggal) || 0, pageRows: 30, pageSize: st.printAll ? Infinity : 30,
+        page: st.page, onPage: (p) => { st.page = p; },
+        rowClass: x => x.tanggal === t ? 'is-today' : '',
         emptyNode: h('div', { class: 'empty' }, icon('calendar'), h('h3', {}, 'Belum ada pertemuan'), h('p', {}, 'Pastikan telah tersedia slot jadwal dengan hari tetap serta kalender akademik untuk periode ini.')),
         columns: [
           { key: 'tanggal', label: 'Tanggal', sortable: false, nowrap: true, render: x => h('div', { class: 'time-cell' }, h('b', {}, fmtDate(x.tanggal)), h('span', {}, `${x.slot.hari} · ${timeLabel(x.slot) || 'jam belum diisi'}`)) },
@@ -108,7 +115,6 @@ function jadwalFull(root) {
         ] }).el),
       looseCard(loose, !st.batch),
     ].filter(Boolean));
-    box.querySelectorAll('tbody tr').forEach(tr => { if (tr.querySelector('.time-cell b') && tr.querySelector('.time-cell b').textContent === fmtDate(t)) tr.classList.add('is-today'); });
   }
   render(); root.appendChild(box);
   return { destroy: store.subscribe(render) };
@@ -157,7 +163,7 @@ function weekly(root) {
     box.append(...[
       h('div', { class: 'page-head' },
         h('div', {}, h('span', { class: 'eyebrow' }, 'Jadwal Kuliah · Weekly'), h('h1', {}, 'Jadwal Mingguan'),
-          h('p', {}, ws ? `${st.periode} · ${st.batch ? batchName(st.batch) : 'semua batch'} · ${fmtDateLong(ws)} – ${fmtDateLong(addDays(ws, 5))}. Pilih kelas untuk mengubah slot jadwal.` : `${st.periode} · ${st.batch ? batchName(st.batch) : 'semua batch'}.`)),
+          h('p', {}, ws ? `${st.periode} · ${batchLabel(st.batch)} · ${fmtDateLong(ws)} – ${fmtDateLong(addDays(ws, 5))}. Pilih kelas untuk mengubah slot jadwal.` : `${st.periode} · ${batchLabel(st.batch)}.`)),
         h('div', { class: 'actions no-print' }, per, bat, nav,
           h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => window.print() }, icon('print'), 'Cetak'),
           h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => exportWorkbook(`Jadwal_Mingguan_${st.periode}_${st.batch ? batchName(st.batch) : 'Semua'}`.replace(/\W+/g, '_'), [{ name: 'Jadwal Mingguan', rows: [['Hari', 'Jam Mulai', 'Jam Selesai', 'Mata Kuliah', 'Batch', 'Semester', 'Dosen', 'Jenis Dosen', 'Ruang', 'Mode', 'Tipe', 'SKS'], ...slots.map(s => [s.hari || '(tanpa hari tetap)', s.jam_mulai, s.jam_selesai, s.mata_kuliah, batchName(s.batch_id), s.semester, s.dosen, jenisDosen(s), s.ruang, s.mode, s.tipe, s.sks])] }]) }, icon('sheet'), 'Ekspor Excel'),
@@ -214,7 +220,7 @@ function daily(root) {
           h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => { st.date = today(); render(); } }, 'Hari ini'), bat)),
       evs.length ? h('div', { class: 'note warn' }, icon('calendar'), h('div', {}, evs.map(e => `${e.kegiatan} (${fmtDate(e.start)}${e.end > e.start ? ' – ' + fmtDate(e.end) : ''})`).join(' · '))) : null,
       kpiRow([
-        { label: 'Kelas hari ini', value: sessions.length, sub: st.batch ? batchName(st.batch) : 'semua batch', icon: 'calendar', accent: true },
+        { label: 'Kelas hari ini', value: sessions.length, sub: batchLabel(st.batch), icon: 'calendar', accent: true },
         { label: 'Kelas Dosen External', value: lb.length, sub: 'perlu absensi', icon: 'teacher' },
         { label: 'Absensi tercatat', value: `${done} / ${lb.length}`, meter: pct(done, lb.length), meterTone: 'ok', icon: 'clipboard' },
         { label: 'Dosen External hadir', value: lb.filter(x => x.absen && HADIR.includes(x.absen.status)).length, icon: 'check' },
@@ -276,8 +282,10 @@ const hariIdx = (r) => { const i = HARI.indexOf(r.hari); return i < 0 ? 9 : i; }
 const slotOrder = chain(byBatch(), (a, b) => (Number(a.semester) || 99) - (Number(b.semester) || 99), (a, b) => hariIdx(a) - hariIdx(b), byText(r => r.jam_mulai || '99'), byText(r => r.mata_kuliah));
 const slotView = crudView({
   id: 'schedules', collection: 'schedules', noun: 'jadwal', title: 'List Jadwal', eyebrow: 'Jadwal Kuliah · Data dasar',
-  description: 'Daftar seluruh kelas mingguan per batch dan periode, diurutkan berdasarkan batch, semester, hari, dan jam. Jadwal Full, Weekly, Daily, serta Absensi Dosen Eksternal disusun dari data ini. Kosongkan kolom hari untuk kelas tanpa hari/jam tetap.',
+  description: 'Daftar seluruh kelas mingguan per batch dan periode, diurutkan berdasarkan batch, semester, hari, dan jam.',
   sections: slotSections, beforeSave: slotBeforeSave, exportName: 'List_Jadwal_IBM', order: slotOrder, pageSize: 100, addLabel: 'Tambah jadwal',
+  // Maksimal 4 batch per halaman (satu batch tidak pernah terpecah ke dua halaman)
+  pageBy: r => r.batch_id || '', pageGroups: 4,
   groupBy: r => [batchName(r.batch_id), r.semester ? `Semester ${r.semester}` : 'Semester belum diisi'].join(' · '),
   columns: [
     { key: 'mata_kuliah', label: 'Mata kuliah', main: true, render: r => h('div', {}, h('span', { class: 'primary' }, r.mata_kuliah), r.tipe && r.tipe !== 'Kuliah' ? h('span', { class: 'pill gold', style: { marginLeft: '6px' } }, r.tipe) : null, h('span', { class: 'secondary' }, [r.kode, r.sks ? `${r.sks} SKS` : ''].filter(Boolean).join(' · '))) },
@@ -296,9 +304,6 @@ const slotView = crudView({
   filters: [
     { key: 'periode', label: 'Periode', options: periodeOptions },
     { key: 'batch_id', label: 'Batch', options: () => batchOptions() },
-    { key: 'semester', label: 'Semester', options: () => uniq(store.all('schedules').map(r => String(r.semester || ''))).sort((a, b) => a - b).map(s => ({ value: s, label: `Semester ${s}` })), match: (r, v) => String(r.semester) === v },
-    { key: 'hari', label: 'Hari', options: [...HARI, { value: '__none', label: 'Tanpa hari tetap' }], match: (r, v) => v === '__none' ? !HARI.includes(r.hari) : r.hari === v },
-    { key: 'jenis', label: 'Jenis dosen', all: 'Semua jenis dosen', options: ['Dosen External', 'Dosen Internal', 'Ikut Fakultas'], match: (r, v) => jenisDosen(r) === v },
   ],
   search: r => [r.mata_kuliah, r.dosen, r.kode, r.ruang, r.catatan].join(' '),
   searchPlaceholder: 'Cari mata kuliah, dosen, ruang…',
@@ -312,7 +317,8 @@ const slotView = crudView({
 const toneKat = (k) => ({ Perkuliahan: 'info', UTS: 'warn', UAS: 'warn', Libur: 'ok' }[k] || '');
 const kalenderView = crudView({
   id: 'calendar', collection: 'calendar', noun: 'kegiatan', title: 'Kalender Akademik', eyebrow: 'Jadwal Kuliah · Data dasar',
-  description: 'Data disalin dari PDF kalender akademik: Semester (Ganjil/Genap), Tahun Ajaran, Jenis Kegiatan, dan rentang tanggal “… s.d. …”. Kegiatan Perkuliahan menentukan awal pertemuan, UTS/UAS menandai periode ujian, dan Libur menggeser pertemuan ke minggu berikutnya.',
+  // Tahun ajaran mengikuti periode yang sedang berjalan (otomatis, tanpa diubah manual)
+  description: () => `Kalender akademik TA ${currentPeriode()}.`,
   sections: [{ fields: [
     { key: 'semester', label: 'Semester', type: 'select', options: ['Ganjil', 'Genap', 'Pendek'], required: true, col: 'third' },
     { key: 'tahun_ajaran', label: 'Tahun ajaran', type: 'text', required: true, col: 'third', placeholder: '2026/2027' },

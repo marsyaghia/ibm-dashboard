@@ -628,8 +628,27 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .sheet-picker { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--surface-sunk); border-radius: var(--r-card) var(--r-card) 0 0; }
 .sheet-picker .select { width: auto; min-width: 160px; }
 .sheet-picker .select-wide { flex: 1 1 320px; max-width: none; }
-.sheet-meta { display: flex; gap: 8px 18px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: var(--fs-sm); color: var(--muted); }
-.sheet-meta b { color: var(--ink); font-weight: 600; }
+/* Ringkasan kelas di Lembar Absensi: 5 kolom sejajar, label kecil di atas nilai, dipisah garis tipis */
+.sheet-meta { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr) minmax(0, 2fr) minmax(0, .7fr) minmax(0, 1.1fr); border-bottom: 1px solid var(--line); }
+.sheet-meta .sm-item { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 12px 16px; border-left: 1px solid var(--line); }
+.sheet-meta .sm-item:first-child { border-left: 0; }
+.sheet-meta .sm-label { font-size: var(--fs-2xs); font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.sheet-meta b { color: var(--ink); font-weight: 600; font-size: var(--fs-sm); line-height: 1.35; overflow-wrap: anywhere; }
+/* Tabel lembar: proporsi kolom dari colgroup (absensi.js); label pertemuan + UTS/UAS satu baris */
+.presensi .meet-no { flex-wrap: nowrap; white-space: nowrap; }
+@media (max-width: 1024px) {
+  .sheet-meta { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .sheet-meta .sm-item { border-left: 0; border-top: 1px solid var(--line); }
+  .sheet-meta .sm-item:nth-child(-n+3) { border-top: 0; }
+  .sheet-meta .sm-item:not(:nth-child(3n+1)) { border-left: 1px solid var(--line); }
+}
+@media (max-width: 640px) {
+  .sheet-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sheet-meta .sm-item { padding: 10px 12px; border-left: 0 !important; border-top: 1px solid var(--line) !important; }
+  .sheet-meta .sm-item:nth-child(-n+2) { border-top: 0 !important; }
+  .sheet-meta .sm-item:nth-child(3) { grid-column: 1 / -1; }  /* nama dosen (paling panjang) selebar kartu */
+  .sheet-meta .sm-item:nth-child(2), .sheet-meta .sm-item:nth-child(5) { border-left: 1px solid var(--line) !important; }
+}
 
 /* ---------- 14. Login ---------- */
 .boot { min-height: 100vh; min-height: 100dvh; display: grid; place-content: center; justify-items: center; gap: 12px; }
@@ -683,6 +702,31 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .tbl.stack.as-cards.presensi tr { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .tbl.stack.as-cards.matrix td.mark { text-align: left !important; }
 .tbl.stack.as-cards.matrix td:first-child { width: auto; }
+
+/* Trent · Pembayaran per batch: isi baris & tombol ubah/hapus rata tengah vertikal */
+.tbl-pay td, .tbl-pay td.actions-cell { vertical-align: middle; }
+.tbl-pay td.cell-main { min-width: 220px; }
+.tbl-pay .badge { white-space: nowrap; }
+.doc-stack { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.doc-stack .doc-link { white-space: nowrap; }
+.tbl.stack.as-cards.tbl-pay .doc-stack .doc-link { white-space: normal; }
+
+/* Trent · Progres mahasiswa: kolom mata kuliah selebar sama, rata tengah */
+.trent-matrix td { vertical-align: middle; }
+.trent-matrix th.idx, .trent-matrix td.idx { width: 44px; text-align: center; }
+.trent-matrix th.mark, .trent-matrix td.mark { width: 76px; padding-left: 6px; padding-right: 6px; }
+.trent-matrix th.mark .secondary { margin-top: 2px; }
+.trent-matrix td.cell-main { min-width: 180px; }
+.trent-matrix th.m-done, .trent-matrix td.m-done { width: 80px; }
+.trent-matrix td.m-note { min-width: 120px; }
+@media (pointer: coarse) { .trent-matrix .tick { width: 36px; height: 36px; } }
+/* Kartu: nama di atas, petak centang berjajar rata tengah, Selesai & Catatan selebar kartu */
+.tbl.stack.as-cards.trent-matrix tr { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 10px 8px; }
+.tbl.stack.as-cards.trent-matrix td.mark { display: flex; flex-direction: column; align-items: center; gap: 4px; width: auto; padding: 8px 4px; border: 1px solid var(--line-soft); border-radius: 8px; text-align: center !important; }
+.tbl.stack.as-cards.trent-matrix td.mark::before { margin: 0; }
+.tbl.stack.as-cards.trent-matrix td.m-done, .tbl.stack.as-cards.trent-matrix td.m-note { grid-column: 1 / -1; width: auto; }
+.tbl.stack.as-cards.trent-matrix td.m-done { display: flex; align-items: baseline; gap: 8px; }
+.tbl.stack.as-cards.trent-matrix td.m-done::before { margin: 0; }
 
 /* Kartu tabel lebih rapat: judul di atas, tombol ikon di pojok kanan atas, kolom kosong disembunyikan */
 .tbl.stack.as-cards tr { position: relative; gap: 8px 16px; }
@@ -846,6 +890,18 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .tbl.cicilan.as-cards td:has(> .cic-empty) { display: none; }
 .tbl.cicilan.as-cards tr { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .tbl.cicilan.as-cards .cic-cell { align-items: flex-start; }
+/* Matriks cicilan: nama tidak terjepit; di kartu, Total & Kurang tampil paling atas dalam kotak lembut, lalu cicilan ke-1, ke-2, … */
+.tbl.cicilan td.cell-main { min-width: 180px; }
+.tbl.cicilan.as-cards td { order: 1; }
+.tbl.cicilan.as-cards td.cic-sum { order: 0; padding: 6px 10px; border-radius: 8px; background: var(--surface-sunk); }
+@media (max-width: 640px) { .tbl.cicilan.as-cards tr { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Tabel dengan isi & tombol ikon rata tengah vertikal (Immersion, dsb.) */
+.tbl-mid td, .tbl-mid td.actions-cell { vertical-align: middle; }
+.tbl-mid .badge { white-space: nowrap; }
+/* Rekap Immersion: kartu bertumpuk dengan jarak lega */
+.imm-stack > * + * { margin-top: 20px; }
+.imm-stack { margin-top: 4px; }
 .stars { display: inline-flex; align-items: center; gap: 1px; white-space: nowrap; }
 .stars i { display: inline-grid; color: var(--line); }
 .stars i .icon { width: 14px; height: 14px; fill: currentColor; stroke: none; }
@@ -873,7 +929,15 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .review .dl > div { display: contents; }
 .linkrow .flabel { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
 .copybox { display: flex; gap: 8px; align-items: center; padding: 6px 6px 6px 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-sunk); }
-.copybox code { flex: 1; border: 0; background: none; padding: 0; font-size: 12.5px; min-width: 0; }
+.copybox code { flex: 1; border: 0; background: none; padding: 0; font-size: 12.5px; min-width: 0; overflow-wrap: anywhere; }
+/* Data Magang · rekap rekomendasi per perusahaan: bilah Ya/Tidak/Mungkin + keterangan persen */
+.rekom { display: flex; flex-direction: column; gap: 5px; min-width: 150px; }
+.rekom-bar { display: flex; height: 6px; border-radius: 99px; overflow: hidden; background: var(--line-soft); }
+.rekom-bar i { display: block; height: 100%; }
+.rekom-bar i.rk-ok { background: var(--ok); } .rekom-bar i.rk-bad { background: var(--bad); } .rekom-bar i.rk-warn { background: var(--warn); }
+.rekom-legend { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: var(--fs-xs); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rekom-legend .rk-ok { color: var(--ok); font-weight: 600; } .rekom-legend .rk-bad { color: var(--bad); } .rekom-legend .rk-warn { color: var(--warn); }
+.tbl.stack.as-cards .rekom { min-width: 0; }
 .copybox.edit { padding: 6px; background: var(--surface); }
 .copybox.edit .input { flex: 1; min-width: 0; border: 0; height: 34px; }
 .belum summary { cursor: pointer; font-weight: 600; font-size: var(--fs-sm); color: var(--ink); padding: 4px 0; }

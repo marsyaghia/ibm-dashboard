@@ -14,8 +14,11 @@ Panduan singkat untuk revisi lewat ekstensi Claude di VS Code.
 - Popup: `openDrawer` (formulir, lebar sedang) dan `openModal` (`size: 'sm'|'md'|'lg'`, atau `wide: true`). Keduanya tampil di tengah layar.
 - Menu bertab memakai `tabPage(root, items, { eyebrow, title, key, def, actions })` dari `ui.js`: judul menu → (pemilih) → tab → isi tab. Judul isi tab otomatis tampil sebagai judul bagian.
 - Pemilih batch/periode selalu `batchSelect()` / `picker(label, selectEl(...))` agar seragam. Batch bawaan = `firstBatch()` (Batch 1).
-- Huruf judul & tombol: `h1`–`h3` dan teks tombol berkelas `.btn` otomatis Title Case (`tc()` di `ui.js`, aturan PUEBI: kata tugas tetap kecil). Tulis teks sumber dengan huruf biasa; kamus EN tetap cocok karena pencarian tidak membedakan besar/kecil. Nama orang/data di judul: tambahkan atribut `'data-raw': ''`.
+- Pilihan "Semua …" di dropdown filter otomatis Title Case ("Semua Batch", "Semua Status"; aturan di `h()` untuk `<option>`). Subtitle/keterangan yang menyebut pilihan dropdown memakai teks yang sama: batch → `batchLabel(id)` (`''`/`'all'` → "Semua Batch"), periode → nilai dropdown (bawaan `currentPeriode()`).
+- Huruf judul, tab, judul formulir & label isian: `h1`–`h3`, label tab, judul popup, judul bagian formulir, label field formulir (`form.js`) dan teks tombol berkelas `.btn` otomatis Title Case (`tc()` di `ui.js`, aturan PUEBI: kata tugas tetap kecil). Tulis teks sumber dengan huruf biasa; kamus EN tetap cocok karena pencarian tidak membedakan besar/kecil. Nama orang/data di judul: tambahkan atribut `'data-raw': ''`.
 - Subtitle judul halaman/tab (`<p>` di blok judul `.page-head`) otomatis dipindah menjadi baris selebar halaman di bawah judul + tombol (`widenPageDesc()` di `ui.js`, CSS `.has-desc`/`.page-desc`). Cukup tulis `h('p', …)` seperti biasa.
+- Subtitle/teks yang menyebut tahun ajaran **tidak boleh ditulis manual**: hitung dari `currentPeriode()` (`jadwal-lib.js`, mis. "Ganjil 2026/2027"). Di `crudView`, `description` boleh berupa fungsi, mis. `` description: () => `Kalender akademik TA ${currentPeriode()}.` ``. Tambahkan pola EN-nya di `EN_PATTERNS`.
+- Tabel panjang dibagi per kelompok, bukan dipotong di tengah kelompok: `dataTable({ pageBy, pageGroups, pageRows })` (juga lewat `crudView`). Contoh: Jadwal Full per minggu (`pageRows: 30`), List Jadwal maks. 4 batch per halaman (`pageGroups: 4`).
 - Baris pembatas grup tabel (`groupBy`, mis. "Semester 1") memakai token `--group-bg`.
 - Satu cara CRUD: ubah/hapus hanya lewat tombol ikon di kanan (ikon + = isi baru, pensil = ubah, tempat sampah = hapus). `crudView` tidak lagi membuka form saat baris diklik; `onRowClick` hanya untuk aksi lain seperti membuka profil/detail (Mahasiswa, Dosen, respon Magang) atau navigasi.
 - Ukuran huruf & tinggi kontrol dari token (`--fs-*`, `--ctl-h`) di `tokens.css`.
@@ -52,7 +55,7 @@ Panduan singkat untuk revisi lewat ekstensi Claude di VS Code.
 | `jadwal.js` | Jadwal Full / Weekly / Daily / List Jadwal (id tab `slot`) / Kalender akademik (logika tanggal di `jadwal-lib.js`) |
 | `absensi.js` | Absensi Dosen Eksternal: Lembar absensi (selalu dibuka pertama) / Log / Rekap |
 | `trent.js` | Trent Global College |
-| `immersion.js` | Immersion per batch: rekap, matriks cicilan, log setoran, kas & pengeluaran (valas, rencana/realisasi), target |
+| `immersion.js` | Immersion per batch: rekap (baca-saja), cicilan per mahasiswa (satu-satunya tempat CRUD setoran: catat, ubah, hapus, verifikasi, impor — `openSetoran()`), kas & pengeluaran (valas, rencana/realisasi), target. Tab Log setoran sudah dihapus |
 | `magang.js` | Data Magang per batch: penempatan, penilaian per perusahaan, respon form, link form/bit.ly |
 | `sertifikat.js`, `mahasiswa.js`, `dosen.js` | Data mahasiswa & dosen (klik nama → popup profil; mahasiswa punya kolom `foto`, migrasi di `supabase/sql/migrasi-foto-mahasiswa.sql`) |
 | `pengaturan.js` | Pengaturan |

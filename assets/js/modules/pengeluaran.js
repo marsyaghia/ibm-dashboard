@@ -108,7 +108,7 @@ function laporan(root) {
 
     const yearSel = h('select', { class: 'select', style: { width: 'auto' }, 'aria-label': 'Tahun laporan' }, h('option', { value: 'all' }, 'Semua tahun'), allYears().map(y => h('option', { value: y }, `Tahun ${y}`)));
     yearSel.value = p.tahun; yearSel.addEventListener('change', () => { p.tahun = yearSel.value; pref.set('lap_exp', p); render(); });
-    const periodLabel = p.tahun === 'all' ? 'Semua periode' : `Tahun ${p.tahun}`;
+    const periodLabel = p.tahun === 'all' ? 'Semua Periode' :`Tahun ${p.tahun}`;
 
     box.append(...[
       h('div', { class: 'page-head has-desc' },

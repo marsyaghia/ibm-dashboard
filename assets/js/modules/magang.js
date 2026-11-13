@@ -3,12 +3,12 @@
    Pemilih batch di atas tab berlaku untuk semua tab:
    • Penempatan      : siapa magang di mana, posisi, durasi, status
    • Penilaian tempat: rekap rating tiap perusahaan dari ulasan mahasiswa
-   • Respon penilaian: semua jawaban form (bisa ditinjau / disembunyikan)
+   • Respon penilaian: semua jawaban form (semua ditampilkan, dikelompokkan per batch)
    • Link form       : link publik per batch + bit.ly + daftar yang belum mengisi
    Form publik untuk mahasiswa: penilaian-magang.html?batch=B2 (tanpa login,
    disimpan lewat fungsi Supabase "kirim_penilaian_magang").
    ========================================================================= */
-import { h, icon, clear, fmtDate, fmtDateLong, sum, uniq, pct, badge, batchName, batches, studentOf, withStudent, today, tabPage, batchSelect, firstBatch, pref, toast, openModal, docLink, chain, byBatch, byText } from '../ui.js';
+import { h, icon, clear, fmtDate, fmtDateLong, sum, uniq, pct, badge, batchName, batchOptions, batches, studentOf, withStudent, today, tabPage, batchSelect, firstBatch, pref, toast, openModal, docLink, chain, byBatch, byText } from '../ui.js';
 import { crudView, kpiRow } from '../crud.js';
 import { dataTable } from '../table.js';
 import { hbars } from '../charts.js';
@@ -17,19 +17,30 @@ import { store } from '../store.js';
 
 const STATUS = ['Proses', 'Diterima', 'Berjalan', 'Selesai', 'Dihentikan'];
 const JENIS = ['Penempatan prodi', 'Inisiatif mahasiswa', 'Permintaan perusahaan'];
-const STATUS_REVIEW = ['Baru', 'Ditinjau', 'Disembunyikan'];
 const MODE = ['WFO', 'Hybrid', 'WFH'];
 const ASPEK = [
   ['rating_jobdesk', 'Kesesuaian jobdesk'], ['rating_lingkungan', 'Lingkungan kerja'], ['rating_bimbingan', 'Bimbingan mentor'],
   ['rating_kompensasi', 'Kompensasi'], ['rating_pengembangan', 'Pengembangan skill'],
 ];
 const toneStatus = (s) => ({ Proses: 'warn', Diterima: '', Berjalan: 'ok', Selesai: 'ok', Dihentikan: 'bad' }[s] ?? '');
-const toneReview = (s) => ({ Baru: 'warn', Ditinjau: 'ok', Disembunyikan: '' }[s] ?? '');
 const norm = (s) => String(s || '').toLowerCase().replace(/\b(pt|cv|tbk)\b\.?/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
-const visible = (r) => r.status_review !== 'Disembunyikan';
+// Semua respon ditampilkan & diperhitungkan (fitur tinjau/sembunyikan dihapus)
+const visible = () => true;
 const avg = (rows, k) => { const v = rows.map(r => Number(r[k])).filter(n => n > 0); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0; };
 const fmt1 = (n) => n ? n.toFixed(1).replace('.', ',') : '–';
 const share = (rows, k, yes = 'Ya') => { const v = rows.filter(r => r[k]); return v.length ? pct(v.filter(r => r[k] === yes).length, v.length) : null; };
+const REKOM = ['Ya', 'Tidak', 'Mungkin'];
+const toneRekom = (v) => ({ Ya: 'ok', Tidak: 'bad', Mungkin: 'warn' }[v] || '');
+/** Rekap rekomendasi: persentase Ya / Tidak / Mungkin dari mahasiswa yang menjawab */
+function rekomSplit(rows) {
+  const v = rows.filter(r => REKOM.includes(r.rekomendasi)); if (!v.length) return null;
+  const p = Object.fromEntries(REKOM.map(k => [k, Math.round(v.filter(r => r.rekomendasi === k).length / v.length * 100)]));
+  return { ...p, n: v.length };
+}
+/** Tampilan rekap rekomendasi: bilah warna + "Ya 60% · Tidak 20% · Mungkin 20%" */
+const rekomCell = (sp) => !sp ? h('span', { class: 'muted' }, '–') : h('div', { class: 'rekom' },
+  h('div', { class: 'rekom-bar', role: 'img', 'aria-label': REKOM.map(k => `${k} ${sp[k]}%`).join(', ') }, ...REKOM.map(k => sp[k] ? h('i', { class: `rk-${toneRekom(k)}`, style: { width: `${sp[k]}%` } }) : null)),
+  h('div', { class: 'rekom-legend' }, ...REKOM.map(k => h('span', { class: `rk-${toneRekom(k)}` }, `${k} ${sp[k]}%`))));
 
 /** Tampilan bintang (baca saja) */
 export function stars(value, { size = '', label = true } = {}) {
@@ -63,7 +74,7 @@ function companies(bid) {
   return [...map.values()].map(c => ({
     ...c, n: c.reviews.length, mahasiswa: uniq(c.placements.map(m => m.student_id || m.nama_mahasiswa)).length,
     rating: avg(c.reviews, 'rating_keseluruhan'), aspek: Object.fromEntries(ASPEK.map(([k]) => [k, avg(c.reviews, k)])),
-    rekomendasi: share(c.reviews, 'rekomendasi'), jobdesk: share(c.reviews, 'jobdesk_sesuai'), lingkungan: share(c.reviews, 'lingkungan_cocok'), kompensasi: share(c.reviews, 'kompensasi_sepadan'),
+    rekomendasi: share(c.reviews, 'rekomendasi'), rekom: rekomSplit(c.reviews), jobdesk: share(c.reviews, 'jobdesk_sesuai'), lingkungan: share(c.reviews, 'lingkungan_cocok'), kompensasi: share(c.reviews, 'kompensasi_sepadan'),
     posisi: uniq([...c.placements.map(m => m.posisi), ...c.reviews.map(r => r.posisi)]).join(', '),
     batches: uniq([...c.placements.map(m => m.batch_id), ...c.reviews.map(r => r.batch_id)]),
   }));
@@ -77,7 +88,7 @@ function companyDetail(c) {
       h('div', {}, stars(c.rating, { size: 'lg' }), h('p', { class: 'muted' }, c.n ? `${c.n} ulasan mahasiswa` : 'Belum ada ulasan')),
       h('div', { class: 'company-aspek' }, hbars(ASPEK.map(([k, l]) => ({ label: l, value: c.aspek[k], display: c.aspek[k] ? `${fmt1(c.aspek[k])} / 5` : '–' })), { max: 5, color: 'var(--gold)' }))),
     kpiRow([
-      { label: 'Merekomendasikan', value: yn(c.rekomendasi), sub: 'menjawab “Ya”', icon: 'check', accent: true },
+      { label: 'Merekomendasikan', value: yn(c.rekomendasi), sub: c.rekom ? `Tidak ${c.rekom.Tidak}% · Mungkin ${c.rekom.Mungkin}%` : 'menjawab “Ya”', icon: 'check', accent: true },
       { label: 'Jobdesk sesuai', value: yn(c.jobdesk), icon: 'clipboard' },
       { label: 'Lingkungan cocok', value: yn(c.lingkungan), icon: 'users' },
       { label: 'Kompensasi sepadan', value: yn(c.kompensasi), icon: 'wallet' },
@@ -102,8 +113,7 @@ function reviewCard(r) {
       r.jobdesk_sesuai ? badge(`Jobdesk sesuai: ${r.jobdesk_sesuai}`, r.jobdesk_sesuai === 'Ya' ? 'ok' : r.jobdesk_sesuai === 'Tidak' ? 'bad' : 'warn') : null,
       r.lingkungan_cocok ? badge(`Lingkungan: ${r.lingkungan_cocok}`, r.lingkungan_cocok === 'Ya' ? 'ok' : r.lingkungan_cocok === 'Tidak' ? 'bad' : 'warn') : null,
       r.kompensasi_sepadan ? badge(`Kompensasi sepadan: ${r.kompensasi_sepadan}`, r.kompensasi_sepadan === 'Ya' ? 'ok' : r.kompensasi_sepadan === 'Tidak' ? 'bad' : 'warn') : null,
-      r.rekomendasi ? badge(`Rekomendasi: ${r.rekomendasi}`, r.rekomendasi === 'Ya' ? 'ok' : r.rekomendasi === 'Tidak' ? 'bad' : 'warn') : null,
-      r.status_review === 'Disembunyikan' ? badge('Disembunyikan', '') : null),
+      r.rekomendasi ? badge(`Rekomendasi: ${r.rekomendasi}`, toneRekom(r.rekomendasi)) : null),
     h('dl', { class: 'dl' },
       row('Kelebihan', r.kelebihan), row('Kekurangan', r.kekurangan), row('Skill yang didapat', r.skill_didapat),
       row('Kompensasi diterima', r.kompensasi_diterima), row('Jam kerja', r.jam_kerja), row('Beban kerja', r.beban_kerja), row('Tawaran kerja', r.tawaran_kerja), row('Saran untuk prodi', r.saran)));
@@ -112,8 +122,8 @@ function reviewCard(r) {
 /* =================== Penempatan =================== */
 const penempatanCfg = (bid) => ({
   id: `internships_${bid}`, collection: 'internships', noun: 'data magang', title: 'Penempatan Magang', eyebrow: `Data Magang · ${batchName(bid)}`,
-  description: 'Data tempat magang (PKL) setiap mahasiswa, meliputi perusahaan, posisi, durasi, dan status. Kolom “Penilaian” menunjukkan apakah mahasiswa telah mengisi formulir penilaian tempat magang.',
-  rowsFilter: (rows) => rows.filter(inBatch(bid)), addLabel: 'Tambah data magang',
+  description: 'Data tempat magang (PKL) dan respon penilaian setiap mahasiswa.',
+  rowsFilter: (rows) => rows.filter(inBatch(bid)), addLabel: 'Tambah data magang', tableClass: 'tbl-mid',
   sections: [
     { title: 'Mahasiswa', fields: [
       { key: 'batch_id', label: 'Batch', type: 'batch', required: true, col: 'half' },
@@ -149,8 +159,8 @@ const penempatanCfg = (bid) => ({
     { key: 'perusahaan', label: 'Perusahaan', render: r => r.perusahaan ? h('div', {}, h('span', { class: 'primary' }, r.perusahaan), r.kota ? h('span', { class: 'secondary' }, r.kota) : null) : h('span', { class: 'muted' }, 'Belum ada') },
     { key: 'posisi', label: 'Posisi', render: r => r.posisi || h('span', { class: 'muted' }, '–') },
     { key: 'mulai', label: 'Durasi', value: r => r.mulai || '', render: r => h('div', {}, h('span', {}, r.durasi || '–'), r.mulai ? h('span', { class: 'secondary' }, `${fmtDate(r.mulai)} – ${r.selesai ? fmtDate(r.selesai) : '…'}`) : null) },
-    { key: 'status', label: 'Status', render: r => badge(r.status, toneStatus(r.status)) },
-    { key: 'nilai', label: 'Penilaian', value: r => { const x = reviewsOf(r).filter(visible)[0]; return x ? Number(x.rating_keseluruhan) || 0 : -1; }, render: r => { const x = reviewsOf(r).filter(visible)[0]; return x ? stars(x.rating_keseluruhan) : ['Berjalan', 'Selesai'].includes(r.status) ? badge('Belum menilai', 'warn') : h('span', { class: 'muted' }, '–'); } },
+    { key: 'status', label: 'Status', nowrap: true, render: r => badge(r.status, toneStatus(r.status)) },
+    { key: 'nilai', label: 'Penilaian', nowrap: true, value: r => { const x = reviewsOf(r).filter(visible)[0]; return x ? Number(x.rating_keseluruhan) || 0 : -1; }, render: r => { const x = reviewsOf(r).filter(visible)[0]; return x ? stars(x.rating_keseluruhan) : ['Berjalan', 'Selesai'].includes(r.status) ? badge('Belum menilai', 'warn') : h('span', { class: 'muted' }, '–'); } },
   ],
   exportColumns: [
     { key: 'batch_id', label: 'Batch', value: r => batchName(r.batch_id) }, { key: 'periode', label: 'Periode' }, { key: 'mhs', label: 'Nama Mahasiswa', value: r => studentOf(r) }, { key: 'nim', label: 'NIM' },
@@ -165,7 +175,6 @@ const penempatanCfg = (bid) => ({
   filters: [
     { key: 'status', label: 'Status', options: STATUS },
     { key: 'jenis', label: 'Jenis', options: JENIS },
-    { key: 'perusahaan', label: 'Perusahaan', options: () => uniq(store.all('internships').filter(inBatch(bid)).map(r => r.perusahaan)).sort() },
     { key: 'nilai', label: 'Penilaian', all: 'Semua penilaian', options: ['Sudah menilai', 'Belum menilai'], match: (r, v) => (reviewsOf(r).length > 0) === (v === 'Sudah menilai') },
   ],
   defaults: () => ({ batch_id: bid === 'all' ? '' : bid, status: 'Proses', jenis: 'Penempatan prodi' }),
@@ -193,32 +202,32 @@ function penilaian(root, go, bid) {
     const rated = list.filter(c => c.n);
     const search = h('input', { class: 'input', type: 'search', placeholder: 'Cari perusahaan, kota, posisi…', 'aria-label': 'Cari perusahaan', value: q });
     const shown = () => list.filter(c => !q || [c.nama, c.kota, c.posisi].join(' ').toLowerCase().includes(q.toLowerCase()));
-    const table = dataTable({ rows: shown(), pageSize: 25, onRowClick: companyDetail, sort: { key: 'rating', dir: 'desc' },
+    const table = dataTable({ rows: shown(), pageSize: 25, onRowClick: companyDetail, sort: { key: 'rating', dir: 'desc' }, className: 'tbl-mid',
       emptyNode: h('div', { class: 'empty' }, icon('building'), h('h3', {}, 'Belum ada tempat magang'), h('p', {}, 'Data perusahaan ditampilkan secara otomatis berdasarkan tab Penempatan dan formulir penilaian.')),
       columns: [
         { key: 'nama', label: 'Perusahaan', main: true, render: c => h('div', {}, h('span', { class: 'primary' }, c.nama), h('span', { class: 'secondary' }, [c.kota, c.posisi].filter(Boolean).join(' · ') || '–')) },
-        { key: 'rating', label: 'Rating', value: c => c.rating || -1, render: c => c.n ? stars(c.rating) : h('span', { class: 'muted' }, 'Belum dinilai') },
+        { key: 'rating', label: 'Rating', nowrap: true, value: c => c.rating || -1, render: c => c.n ? stars(c.rating) : h('span', { class: 'muted' }, 'Belum dinilai') },
         { key: 'n', label: 'Ulasan', align: 'right', render: c => h('span', { class: 'num' }, `${c.n} / ${c.mahasiswa || c.n}`) },
-        { key: 'rekomendasi', label: 'Rekomendasi', align: 'right', value: c => c.rekomendasi ?? -1, render: c => c.rekomendasi === null ? h('span', { class: 'muted' }, '–') : badge(`${c.rekomendasi}% Ya`, c.rekomendasi >= 70 ? 'ok' : c.rekomendasi >= 40 ? 'warn' : 'bad') },
+        // Persentase jawaban "Merekomendasikan?" dari mahasiswa yang magang di perusahaan ini
+        { key: 'rekomendasi', label: 'Rekomendasi (Ya / Tidak / Mungkin)', cls: 'wide', value: c => c.rekomendasi ?? -1, render: c => rekomCell(c.rekom) },
         { key: 'jobdesk', label: 'Jobdesk sesuai', align: 'right', value: c => c.jobdesk ?? -1, render: c => c.jobdesk === null ? h('span', { class: 'muted' }, '–') : h('span', { class: 'num' }, `${c.jobdesk}%`) },
         { key: 'kompensasi', label: 'Kompensasi sepadan', align: 'right', value: c => c.kompensasi ?? -1, render: c => c.kompensasi === null ? h('span', { class: 'muted' }, '–') : h('span', { class: 'num' }, `${c.kompensasi}%`) },
       ] });
     search.addEventListener('input', () => { q = search.value; table.update(shown()); });
     const xls = () => exportWorkbook(`Penilaian_Tempat_Magang_${batchName(bid)}`.replace(/\W+/g, '_'), [
-      { name: 'Per Perusahaan', rows: [['Perusahaan', 'Kota', 'Jumlah Ulasan', 'Rating Keseluruhan', ...ASPEK.map(a => a[1]), 'Rekomendasi (%)', 'Jobdesk Sesuai (%)', 'Lingkungan Cocok (%)', 'Kompensasi Sepadan (%)'],
-        ...list.map(c => [c.nama, c.kota, c.n, c.rating ? +c.rating.toFixed(2) : '', ...ASPEK.map(([k]) => c.aspek[k] ? +c.aspek[k].toFixed(2) : ''), c.rekomendasi ?? '', c.jobdesk ?? '', c.lingkungan ?? '', c.kompensasi ?? ''])] },
+      { name: 'Per Perusahaan', rows: [['Perusahaan', 'Kota', 'Jumlah Ulasan', 'Rating Keseluruhan', ...ASPEK.map(a => a[1]), 'Rekomendasi Ya (%)', 'Rekomendasi Tidak (%)', 'Rekomendasi Mungkin (%)', 'Jobdesk Sesuai (%)', 'Lingkungan Cocok (%)', 'Kompensasi Sepadan (%)'],
+        ...list.map(c => [c.nama, c.kota, c.n, c.rating ? +c.rating.toFixed(2) : '', ...ASPEK.map(([k]) => c.aspek[k] ? +c.aspek[k].toFixed(2) : ''), c.rekom ? c.rekom.Ya : '', c.rekom ? c.rekom.Tidak : '', c.rekom ? c.rekom.Mungkin : '', c.jobdesk ?? '', c.lingkungan ?? '', c.kompensasi ?? ''])] },
     ]);
     box.append(...[
       h('div', { class: 'page-head' },
         h('div', {}, h('span', { class: 'eyebrow' }, `Data Magang · ${batchName(bid)}`), h('h1', {}, 'Penilaian Tempat Magang'),
-          h('p', {}, 'Rekapitulasi ulasan mahasiswa untuk setiap perusahaan. Pilih nama perusahaan untuk membaca seluruh ulasan. Ulasan yang disembunyikan tidak diperhitungkan.')),
+          h('p', {}, 'Rekapitulasi ulasan mahasiswa untuk setiap perusahaan.')),
         h('div', { class: 'actions no-print' },
-          h('button', { class: 'btn btn-ghost', type: 'button', onclick: xls }, icon('sheet'), 'Ekspor'),
-          h('button', { class: 'btn btn-primary', type: 'button', onclick: () => go('link') }, icon('link'), 'Link form penilaian'))),
+          h('button', { class: 'btn btn-ghost', type: 'button', onclick: xls }, icon('sheet'), 'Ekspor'))),
       kpiRow([
         { label: 'Rating rata-rata', value: revs.length ? `${fmt1(avg(revs, 'rating_keseluruhan'))} / 5` : '–', sub: `${revs.length} ulasan`, icon: 'star', accent: true },
         { label: 'Perusahaan dinilai', value: `${rated.length} / ${list.length}`, sub: 'tempat magang', icon: 'building', meter: pct(rated.length, list.length), meterTone: 'ok' },
-        { label: 'Merekomendasikan', value: share(revs, 'rekomendasi') === null ? '–' : `${share(revs, 'rekomendasi')}%`, sub: 'mahasiswa menjawab “Ya”', icon: 'check' },
+        { label: 'Merekomendasikan', value: share(revs, 'rekomendasi') === null ? '–' : `${share(revs, 'rekomendasi')}%`, sub: rekomSplit(revs) ? `Tidak ${rekomSplit(revs).Tidak}% · Mungkin ${rekomSplit(revs).Mungkin}%` : 'mahasiswa menjawab “Ya”', icon: 'check' },
         { label: 'Kompensasi sepadan', value: share(revs, 'kompensasi_sepadan') === null ? '–' : `${share(revs, 'kompensasi_sepadan')}%`, sub: 'menjawab “Ya”', icon: 'wallet' },
       ]),
       revs.length ? h('div', { class: 'card' }, h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, 'Rata-rata per aspek'), h('p', {}, `Skala 1–5 · ${revs.length} ulasan`))),
@@ -233,9 +242,10 @@ function penilaian(root, go, bid) {
 /* =================== Respon penilaian =================== */
 const YN = ['Ya', 'Sebagian', 'Tidak']; const YC = ['Ya', 'Cukup', 'Tidak'];
 const responCfg = (bid) => ({
-  id: `internshipReviews_${bid}`, collection: 'internshipReviews', noun: 'penilaian', title: 'Respon Penilaian Magang', eyebrow: `Data Magang · ${batchName(bid)}`,
-  description: 'Jawaban formulir penilaian dari mahasiswa (diterima secara otomatis melalui tautan bit.ly). Tandai “Ditinjau” setelah dibaca, atau “Disembunyikan” apabila ulasan tidak layak diperhitungkan.',
-  rowsFilter: (rows) => rows.filter(inBatch(bid)), addLabel: 'Input penilaian',
+  id: 'internshipReviews', collection: 'internshipReviews', noun: 'penilaian', title: 'Respon Penilaian Magang', eyebrow: `Data Magang · ${batchName(bid)}`,
+  description: 'Jawaban formulir penilaian dari mahasiswa.',
+  // Semua batch dimuat; filter "Batch" di bilah alat (awal = batch terpilih di atas tab), dikelompokkan per batch
+  addLabel: 'Input penilaian', tableClass: 'tbl-mid', pageSize: 20,
   sections: [
     { title: 'Mahasiswa & tempat magang', fields: [
       { key: 'batch_id', label: 'Batch', type: 'batch', required: true, col: 'half' },
@@ -269,9 +279,7 @@ const responCfg = (bid) => ({
       { key: 'saran', label: 'Saran untuk prodi', type: 'textarea', rows: 2 },
       { key: 'tampilkan_anonim', label: 'Anonim', type: 'checkbox', checkLabel: 'Tampilkan ulasan tanpa nama' },
     ] },
-    { title: 'Tinjauan tim IBM', fields: [
-      { key: 'status_review', label: 'Status', type: 'select', options: STATUS_REVIEW, col: 'half', default: 'Ditinjau' },
-      { key: 'sumber', label: 'Sumber', type: 'select', options: ['Form publik', 'Input admin'], col: 'half', default: 'Input admin' },
+    { title: 'Catatan internal', fields: [
       { key: 'catatan_admin', label: 'Catatan internal', type: 'textarea', rows: 2 },
     ] },
   ],
@@ -283,11 +291,10 @@ const responCfg = (bid) => ({
   },
   columns: [
     { key: 'created_at', label: 'Tanggal masuk', value: r => r.created_at || '', render: r => r.created_at ? fmtDate(String(r.created_at).slice(0, 10)) : '–', nowrap: true },
-    { key: 'nama', label: 'Mahasiswa', main: true, value: r => r.nama_lengkap || studentOf(r), render: r => h('div', {}, h('span', { class: 'primary' }, r.nama_lengkap || studentOf(r)), h('span', { class: 'secondary' }, [bid === 'all' ? batchName(r.batch_id) : null, r.nim, r.tampilkan_anonim ? 'minta anonim' : null].filter(Boolean).join(' · '))) },
+    { key: 'nama', label: 'Mahasiswa', main: true, value: r => r.nama_lengkap || studentOf(r), render: r => h('div', {}, h('span', { class: 'primary' }, r.nama_lengkap || studentOf(r)), h('span', { class: 'secondary' }, [r.nim, r.tampilkan_anonim ? 'minta anonim' : null].filter(Boolean).join(' · '))) },
     { key: 'perusahaan', label: 'Perusahaan', render: r => h('div', {}, h('span', { class: 'primary' }, r.perusahaan), h('span', { class: 'secondary' }, [r.posisi, r.durasi].filter(Boolean).join(' · '))) },
-    { key: 'rating_keseluruhan', label: 'Rating', value: r => Number(r.rating_keseluruhan) || 0, render: r => stars(r.rating_keseluruhan) },
-    { key: 'rekomendasi', label: 'Rekomendasi', render: r => r.rekomendasi ? badge(r.rekomendasi, r.rekomendasi === 'Ya' ? 'ok' : r.rekomendasi === 'Tidak' ? 'bad' : 'warn') : h('span', { class: 'muted' }, '–') },
-    { key: 'status_review', label: 'Status', render: r => badge(r.status_review || 'Baru', toneReview(r.status_review || 'Baru')) },
+    { key: 'rating_keseluruhan', label: 'Rating', nowrap: true, value: r => Number(r.rating_keseluruhan) || 0, render: r => stars(r.rating_keseluruhan) },
+    { key: 'rekomendasi', label: 'Rekomendasi', nowrap: true, render: r => r.rekomendasi ? badge(r.rekomendasi, toneRekom(r.rekomendasi)) : h('span', { class: 'muted' }, '–') },
   ],
   exportColumns: [
     { key: 'created_at', label: 'Tanggal Masuk', value: r => String(r.created_at || '').slice(0, 10) }, { key: 'batch_id', label: 'Batch', value: r => batchName(r.batch_id) },
@@ -296,33 +303,30 @@ const responCfg = (bid) => ({
     { key: 'jobdesk_sesuai', label: 'Jobdesk Sesuai' }, { key: 'lingkungan_cocok', label: 'Lingkungan Cocok' }, { key: 'kompensasi_diterima', label: 'Kompensasi Diterima' }, { key: 'kompensasi_sepadan', label: 'Kompensasi Sepadan' },
     { key: 'jam_kerja', label: 'Jam Kerja' }, { key: 'beban_kerja', label: 'Beban Kerja' }, { key: 'skill_didapat', label: 'Skill Didapat' }, { key: 'kelebihan', label: 'Kelebihan' }, { key: 'kekurangan', label: 'Kekurangan' },
     { key: 'rekomendasi', label: 'Rekomendasi' }, { key: 'tawaran_kerja', label: 'Tawaran Kerja' }, { key: 'saran', label: 'Saran' }, { key: 'tampilkan_anonim', label: 'Anonim', value: r => r.tampilkan_anonim ? 'Ya' : 'Tidak' },
-    { key: 'status_review', label: 'Status Tinjauan' }, { key: 'sumber', label: 'Sumber' },
+    { key: 'sumber', label: 'Sumber' },
   ],
-  exportName: `Respon_Penilaian_Magang_${batchName(bid)}`, sort: { key: 'created_at', dir: 'desc' },
+  exportName: 'Respon_Penilaian_Magang',
+  // Urutan bawaan: Batch 1, Batch 2, … lalu respon terbaru; baris pembatas per batch
+  order: chain(byBatch(), (a, b) => String(b.created_at || '').localeCompare(String(a.created_at || ''))),
+  groupBy: r => batchName(r.batch_id),
   searchPlaceholder: 'Cari nama, NIM, perusahaan, ulasan…', search: r => [r.nama_lengkap, r.nim, r.perusahaan, r.posisi, r.kelebihan, r.kekurangan, r.saran].join(' '),
   filters: [
-    { key: 'status_review', label: 'Status', options: STATUS_REVIEW, match: (r, v) => (r.status_review || 'Baru') === v },
-    { key: 'perusahaan', label: 'Perusahaan', options: () => uniq(store.all('internshipReviews').filter(inBatch(bid)).map(r => r.perusahaan)).sort() },
-    { key: 'rating_keseluruhan', label: 'Rating', all: 'Semua rating', options: [5, 4, 3, 2, 1].map(n => ({ value: String(n), label: `${n} bintang` })), match: (r, v) => String(r.rating_keseluruhan) === v },
+    { key: 'batch_id', label: 'Batch', options: () => batchOptions() },
+    { key: 'rekomendasi', label: 'Rekomendasi', options: REKOM },
   ],
   defaults: () => ({ batch_id: bid === 'all' ? '' : bid, status_review: 'Ditinjau', sumber: 'Input admin' }),
-  onRowClick: (r, ctx) => {
-    const body = reviewCard(r);
-    const edit = h('button', { class: 'btn btn-ghost', type: 'button' }, icon('edit', 'sm'), 'Ubah');
-    const setSt = (st) => async () => { await store.save('internshipReviews', { ...r, status_review: st }); toast(`Status: ${st}.`, 'ok'); close(); };
-    const { close } = openModal({ title: r.perusahaan || 'Penilaian magang', subtitle: `${String(r.created_at || '').slice(0, 10) ? `Masuk ${fmtDateLong(String(r.created_at).slice(0, 10))} · ` : ''}${r.sumber || 'Form publik'}`, body, size: 'lg',
-      footer: [h('div', { class: 'left' }, edit), r.status_review === 'Disembunyikan' ? h('button', { class: 'btn btn-ghost', type: 'button', onclick: setSt('Ditinjau') }, 'Tampilkan lagi') : h('button', { class: 'btn btn-ghost', type: 'button', onclick: setSt('Disembunyikan') }, 'Sembunyikan'),
-        r.status_review !== 'Ditinjau' ? h('button', { class: 'btn btn-primary', type: 'button', onclick: setSt('Ditinjau') }, icon('check'), 'Tandai ditinjau') : h('button', { class: 'btn btn-primary', type: 'button', onclick: () => close() }, 'Tutup')] });
-    edit.addEventListener('click', () => { close(); ctx.openForm(r); });
+  // Klik baris → baca ulasan lengkap (ubah/hapus lewat tombol ikon di kanan)
+  onRowClick: (r) => {
+    const { close } = openModal({ title: r.perusahaan || 'Penilaian magang', subtitle: `${String(r.created_at || '').slice(0, 10) ? `Masuk ${fmtDateLong(String(r.created_at).slice(0, 10))} · ` : ''}${r.sumber || 'Form publik'}`, body: reviewCard(r), size: 'lg',
+      footer: [h('button', { class: 'btn btn-primary', type: 'button', onclick: () => close() }, 'Tutup')] });
   },
-  rowExtra: (r) => (r.status_review || 'Baru') === 'Baru' ? [h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: async (e) => { e.stopPropagation(); await store.save('internshipReviews', { ...r, status_review: 'Ditinjau' }); toast('Ditandai ditinjau.', 'ok'); } }, icon('check', 'sm'), 'Ditinjau')] : [],
   kpis: (rows) => {
-    const vis = rows.filter(visible);
+    const sp = rekomSplit(rows);
     return [
       { label: 'Respon masuk', value: rows.length, sub: `${rows.filter(r => r.sumber === 'Form publik').length} dari form publik`, icon: 'message', accent: true },
-      { label: 'Rating rata-rata', value: vis.length ? `${fmt1(avg(vis, 'rating_keseluruhan'))} / 5` : '–', sub: `${vis.length} ulasan dihitung`, icon: 'star' },
-      { label: 'Merekomendasikan', value: share(vis, 'rekomendasi') === null ? '–' : `${share(vis, 'rekomendasi')}%`, icon: 'check' },
-      { label: 'Perlu ditinjau', value: rows.filter(r => (r.status_review || 'Baru') === 'Baru').length, sub: 'status “Baru”', icon: 'bell' },
+      { label: 'Rating rata-rata', value: rows.length ? `${fmt1(avg(rows, 'rating_keseluruhan'))} / 5` : '–', sub: `${rows.length} ulasan`, icon: 'star' },
+      { label: 'Merekomendasikan', value: sp ? `${sp.Ya}%` : '–', sub: sp ? `Tidak ${sp.Tidak}% · Mungkin ${sp.Mungkin}%` : 'belum ada jawaban', icon: 'check' },
+      { label: 'Perusahaan dinilai', value: uniq(rows.map(r => norm(r.perusahaan)).filter(Boolean)).length, sub: 'tempat magang', icon: 'building' },
     ];
   },
   aliases: { nama_lengkap: ['Nama', 'Nama Lengkap'], perusahaan: ['Perusahaan', 'Tempat Magang'], rating_keseluruhan: ['Rating', 'Bintang', 'Rating Keseluruhan'] },
@@ -340,7 +344,7 @@ function linkForm(root, go, bid) {
     box.append(...[
       h('div', { class: 'page-head' },
         h('div', {}, h('span', { class: 'eyebrow' }, `Data Magang · ${batchName(bid)}`), h('h1', {}, 'Link Form Penilaian'),
-          h('p', {}, 'Setiap batch memiliki tautan formulir tersendiri sehingga jawaban otomatis tercatat pada batch yang sesuai. Mahasiswa hanya perlu memasukkan NIM; nama, perusahaan, dan posisi akan terisi otomatis berdasarkan data penempatan.'))),
+          h('p', {}, 'Setiap batch memiliki tautan formulir tersendiri sehingga jawaban otomatis tercatat pada batch yang sesuai.'))),
       h('div', { class: 'note' }, icon('info'), h('div', {},
         h('b', {}, 'Langkah membuat tautan bit.ly: '), '1) Salin “Link panjang” di bawah. 2) Buka bitly.com → Create new → Link, lalu tempelkan link panjang tersebut. 3) Isi kolom back-half, contoh: ', h('code', {}, 'PenilaianMagangIBM-B2'), '. 4) Tempelkan tautan bit.ly yang dihasilkan ke kolom “Link bit.ly”, kemudian pilih Simpan. Tautan pendek inilah yang dibagikan kepada mahasiswa.')),
       ...list.map(b => {
@@ -355,8 +359,6 @@ function linkForm(root, go, bid) {
           if (v && !/^https:\/\/[^\s/]+\.[^\s]+/i.test(v)) return toast('Format link tidak valid.', 'bad');
           save.disabled = true; try { await store.saveSetting('magang_form', { ...(store.setting('magang_form') || {}), [b.id]: v }); toast(`Link ${b.nama} disimpan.`, 'ok'); } catch (e) { toast(e.message, 'bad'); save.disabled = false; }
         });
-        const shareLink = short || long;
-        const pesan = `Yth. Mahasiswa IBM ${b.nama} yang sedang atau telah menyelesaikan magang,\n\nDimohon kesediaannya untuk mengisi formulir penilaian tempat magang melalui tautan berikut (estimasi pengisian ±3 menit; hanya dengan memasukkan NIM):\n${shareLink}\n\nAtas perhatian dan partisipasinya, kami ucapkan terima kasih.\n\nTim IBM`;
         return h('div', { class: 'card' },
           h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, `Form penilaian · ${b.nama}`), h('p', {}, `${sudah.length} dari ${target.length} mahasiswa (berjalan/selesai) sudah mengisi`)),
             h('div', { class: 'actions' }, h('a', { class: 'btn btn-ghost btn-sm', href: long, target: '_blank', rel: 'noopener' }, icon('external', 'sm'), 'Buka form'))),
@@ -366,9 +368,6 @@ function linkForm(root, go, bid) {
               h('div', { class: 'copybox' }, h('code', {}, long), h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => copy(long) }, icon('copy', 'sm'), 'Salin'))),
             h('div', { class: 'linkrow' }, h('span', { class: 'flabel' }, 'Link bit.ly (dibagikan ke mahasiswa)'),
               h('div', { class: 'copybox edit' }, inp, save, short ? h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => copy(short) }, icon('copy', 'sm'), 'Salin') : null)),
-            h('div', { class: 'actions' },
-              h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => copy(pesan, 'Pesan pengumuman disalin.') }, icon('message', 'sm'), 'Salin pesan pengumuman'),
-              belum.length ? h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => copy(`Mohon segera melengkapi penilaian tempat magang melalui tautan berikut: ${shareLink}\n\nDaftar mahasiswa yang belum mengisi:\n${belum.map((m, i) => `${i + 1}. ${studentOf(m)} — ${m.perusahaan || '-'}`).join('\n')}`, 'Daftar pengingat disalin.') }, icon('bell', 'sm'), `Salin pengingat (${belum.length} belum)`) : null),
             belum.length ? h('details', { class: 'belum' }, h('summary', {}, `${belum.length} mahasiswa belum mengisi`),
               h('ul', { class: 'list' }, ...belum.map(m => h('li', {}, h('span', { class: 'ico warn' }, icon('clock', 'sm')), h('div', {}, h('strong', {}, studentOf(m)), h('span', {}, [m.perusahaan, m.status].filter(Boolean).join(' · ')))))))
               : target.length ? h('div', { class: 'note' }, icon('check'), h('div', {}, 'Seluruh mahasiswa yang sedang atau telah menyelesaikan magang sudah mengisi penilaian.')) : null));
@@ -386,8 +385,13 @@ export default {
     return tabPage(root, [
       { id: 'penempatan', label: 'Penempatan', fn: (b) => crudView(penempatanCfg(currentBatch()))(b) },
       { id: 'penilaian', label: 'Penilaian tempat magang', fn: (b, ctx) => penilaian(b, goWith(ctx), currentBatch()) },
-      { id: 'respon', label: 'Respon penilaian', fn: (b) => crudView(responCfg(currentBatch()))(b) },
-      { id: 'link', label: 'Link form (bit.ly)', fn: (b, ctx) => linkForm(b, goWith(ctx), currentBatch()) },
+      { id: 'respon', label: 'Respon penilaian', fn: (b) => {
+        // Filter "Batch" di tab ini dimulai dari batch yang dipilih di atas tab
+        const key = 'filters_internshipReviews'; const bid = currentBatch();
+        pref.set(key, { ...pref.get(key, {}), batch_id: bid === 'all' ? '' : bid });
+        return crudView(responCfg(bid))(b);
+      } },
+      { id: 'link', label: 'Link form', fn: (b, ctx) => linkForm(b, goWith(ctx), currentBatch()) },
     ], {
       eyebrow: 'Program', title: 'Data Magang', key: 'tab_mg', def: 'penempatan',
       description: 'Penempatan magang mahasiswa dan penilaian tempat magang. Pilih batch untuk menampilkan datanya di semua tab.',

@@ -1,12 +1,12 @@
 /* =========================================================================
    6. ABSENSI DOSEN EXTERNAL — per mata kuliah, per periode, per batch (diisi tim IBM)
    Hanya kelas yang diajar Dosen External; dosen internal Asia tidak dicatat di sini.
-   • Rekap kehadiran : persentase per kelas atau per dosen
-   • Lembar absensi  : seluruh pertemuan satu kelas (status, dosen mengajar, jam)
+   • Rekap kehadiran : persentase per dosen
+   • Lembar absensi  : seluruh pertemuan satu kelas (status, dosen pengajar, jam)
    • Log absensi     : semua catatan (filter, ekspor)
    Absensi cepat juga bisa diisi dari Jadwal Kuliah → Daily.
    ========================================================================= */
-import { h, icon, clear, badge, batchName, batchOptions, batchSelect, picker, selectEl, tabPage, pref, toast, fmtDate, today, pct, uniq, chain, byBatch, byText } from '../ui.js';
+import { h, icon, clear, badge, batchName, batchLabel, batchOptions, batchSelect, picker, selectEl, tabPage, pref, toast, fmtDate, today, pct, uniq, chain, byBatch, byText } from '../ui.js';
 import { crudView, kpiRow } from '../crud.js';
 import { dataTable } from '../table.js';
 import { exportWorkbook } from '../io.js';
@@ -17,7 +17,7 @@ import { HARI, STATUS_ABSEN, HADIR, toneAbsen, periodInfo, periodeOptions, curre
 const pctCell = (p) => p === null ? h('span', { class: 'muted' }, '–') : h('div', { class: 'progress-cell' }, h('small', {}, `${p}%`), h('div', { class: `meter ${p >= 80 ? 'ok' : 'warn'}` }, h('i', { style: { width: `${p}%` } })));
 /** Kelas Dosen External dengan hari tetap pada periode/batch */
 const lbSlots = (periode, batch) => slotsOf(periode, batch).filter(s => HARI.includes(s.hari) && isLB(s)).sort(byTime);
-/** Pilihan "dosen mengajar": dosen terjadwal + seluruh Biodata Dosen */
+/** Pilihan "dosen pengajar": dosen terjadwal + seluruh Biodata Dosen */
 const dosenOptions = (slot, cur) => uniq([slot.dosen, ...store.all('lecturers').filter(l => l.status !== 'Tidak aktif').map(l => l.nama).sort((a, b) => a.localeCompare(b)), cur]);
 
 function selectors(state, render, { slot = false } = {}) {
@@ -33,16 +33,17 @@ function selectors(state, render, { slot = false } = {}) {
   return out;
 }
 const loadState = () => {
-  const st = { periode: pref.get('abs_periode', ''), batch: pref.get('abs_batch', ''), slot: pref.get('abs_slot', ''), mode: pref.get('abs_mode', 'kelas') };
+  const st = { periode: pref.get('abs_periode', ''), batch: pref.get('abs_batch', ''), slot: pref.get('abs_slot', '') };
   if (!periodeOptions().includes(st.periode)) st.periode = currentPeriode();
   return st;
 };
 
-/* =================== Rekap kehadiran =================== */
-function rekap(root, goSheet) {
-  const state = loadState(); const box = h('div');
+/* =================== Rekap kehadiran (per dosen) =================== */
+function rekap(root) {
+  // Dibuka pada periode yang sedang berjalan; batch mengikuti pilihan terakhir
+  const state = { ...loadState(), periode: currentPeriode() }; const box = h('div');
   function render() {
-    pref.set('abs_periode', state.periode); pref.set('abs_batch', state.batch); pref.set('abs_mode', state.mode);
+    pref.set('abs_periode', state.periode); pref.set('abs_batch', state.batch);
     clear(box);
     const t = today();
     const rows = lbSlots(state.periode, state.batch).map(s => ({ s, r: attendanceSummary(s, t) }));
@@ -53,7 +54,6 @@ function rekap(root, goSheet) {
       g.kelas.push(x.s.mata_kuliah); g.due += x.r.due; g.rec += x.r.tercatat; g.hadir += x.r.hadir; g.diganti += x.r.diganti; g.tidak += x.r.tidak; g.belum += x.r.belum; return m;
     }, {})).map(g => ({ ...g, persen: (g.hadir + g.diganti + g.tidak) ? Math.round(g.hadir / (g.hadir + g.diganti + g.tidak) * 100) : null }));
     const [per, bat] = selectors(state, render);
-    const modeSel = h('div', { class: 'seg', role: 'group', 'aria-label': 'Tampilan' }, [['kelas', 'Per kelas'], ['dosen', 'Per dosen']].map(([v, l]) => h('button', { type: 'button', 'aria-pressed': String(state.mode === v), onclick: () => { state.mode = v; render(); } }, l)));
 
     const exportAll = () => {
       const ids = new Set(rows.map(x => x.s.id));
@@ -61,22 +61,10 @@ function rekap(root, goSheet) {
       exportWorkbook(`Rekap_Absensi_Dosen_LB_${state.periode}_${state.batch ? batchName(state.batch) : 'Semua'}`.replace(/\W+/g, '_'), [
         { name: 'Per Kelas', rows: [['Mata Kuliah', 'Batch', 'Dosen', 'Jadwal', 'Terjadwal s.d. hari ini', 'Tercatat', 'Hadir', 'Diganti', 'Tidak hadir', 'Belum dicatat', 'Kehadiran (%)'], ...rows.map(x => [x.s.mata_kuliah, batchName(x.s.batch_id), x.s.dosen, `${x.s.hari} ${timeLabel(x.s)}`, x.r.due, x.r.tercatat, x.r.hadir, x.r.diganti, x.r.tidak, x.r.belum, x.r.persen ?? ''])] },
         { name: 'Per Dosen', rows: [['Dosen', 'Kelas', 'Terjadwal s.d. hari ini', 'Tercatat', 'Hadir', 'Diganti', 'Tidak hadir', 'Belum dicatat', 'Kehadiran (%)'], ...byDosen.map(g => [g.nama, uniq(g.kelas).join('; '), g.due, g.rec, g.hadir, g.diganti, g.tidak, g.belum, g.persen ?? ''])] },
-        { name: 'Detail', rows: [['Tanggal', 'Mata Kuliah', 'Batch', 'Pertemuan', 'Jenis', 'Status', 'Dosen Terjadwal', 'Dosen Mengajar', 'Jam Masuk', 'Jam Keluar', 'Catatan', 'Dicatat Oleh'], ...att.map(a => [a.tanggal, a.mata_kuliah, batchName(a.batch_id), a.pertemuan, a.jenis, a.status, a.dosen_jadwal, a.dosen_hadir, a.jam_masuk, a.jam_keluar, a.catatan, a.dicatat_oleh])] },
+        { name: 'Detail', rows: [['Tanggal', 'Mata Kuliah', 'Batch', 'Pertemuan', 'Jenis', 'Status', 'Dosen Terjadwal', 'Dosen Pengajar', 'Jam Masuk', 'Jam Keluar', 'Catatan', 'Dicatat Oleh'], ...att.map(a => [a.tanggal, a.mata_kuliah, batchName(a.batch_id), a.pertemuan, a.jenis, a.status, a.dosen_jadwal, a.dosen_hadir, a.jam_masuk, a.jam_keluar, a.catatan, a.dicatat_oleh])] },
       ]);
     };
     const num = (v, warn) => warn && v ? h('b', { class: 'num', style: { color: 'var(--warn)' } }, v) : h('span', { class: 'num' }, v);
-    const tblKelas = dataTable({ rows, pageSize: Infinity, order: chain(byBatch(x => x.s.batch_id), byText(x => x.s.mata_kuliah)), onRowClick: x => goSheet(x.s),
-      columns: [
-        { key: 'mk', label: 'Mata kuliah', main: true, value: x => x.s.mata_kuliah, render: x => h('div', {}, h('span', { class: 'primary' }, x.s.mata_kuliah), h('span', { class: 'secondary' }, `${x.s.dosen || '—'} · ${batchName(x.s.batch_id)}`)) },
-        { key: 'jadwal', label: 'Jadwal', nowrap: true, value: x => `${HARI.indexOf(x.s.hari)}${x.s.jam_mulai}`, render: x => h('div', {}, x.s.hari, h('span', { class: 'secondary num' }, timeLabel(x.s))) },
-        { key: 'due', width: '96px', label: 'Terjadwal', align: 'right', value: x => x.r.due, render: x => num(`${x.r.due}/${x.r.total}`) },
-        { key: 'hadir', width: '96px', label: 'Hadir', align: 'right', value: x => x.r.hadir, render: x => num(x.r.hadir) },
-        { key: 'diganti', width: '96px', label: 'Diganti', align: 'right', value: x => x.r.diganti, render: x => num(x.r.diganti) },
-        { key: 'tidak', width: '96px', label: 'Tidak hadir', align: 'right', value: x => x.r.tidak, render: x => num(x.r.tidak) },
-        { key: 'belum', width: '96px', label: 'Belum dicatat', align: 'right', value: x => x.r.belum, render: x => num(x.r.belum, true) },
-        { key: 'persen', label: 'Kehadiran', width: '130px', value: x => x.r.persen ?? 101, render: x => pctCell(x.r.persen) },
-      ],
-      rowActions: x => h('div', { class: 'row-actions' }, h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => goSheet(x.s) }, icon('clipboard', 'sm'), 'Isi absensi')) });
     const tblDosen = dataTable({ rows: byDosen, pageSize: Infinity, order: byText(g => g.nama),
       columns: [
         { key: 'nama', label: 'Dosen', main: true, render: g => h('div', {}, h('span', { class: 'primary' }, g.nama), h('span', { class: 'secondary' }, uniq(g.kelas).join(' · '))) },
@@ -90,8 +78,8 @@ function rekap(root, goSheet) {
 
     box.append(...[
       h('div', { class: 'page-head' },
-        h('div', {}, h('span', { class: 'eyebrow' }, 'Akademik · Absensi Dosen Eksternal'), h('h1', {}, 'Rekap Kehadiran Dosen External'), h('p', {}, `${state.periode} · ${state.batch ? batchName(state.batch) : 'semua batch'}. Dihitung berdasarkan pertemuan yang telah berlangsung (s.d. ${fmtDate(t)}); status “Dijadwal ulang” dan “Libur” tidak diperhitungkan.`)),
-        h('div', { class: 'actions no-print' }, per, bat, modeSel, h('button', { class: 'btn btn-ghost', type: 'button', onclick: exportAll }, icon('sheet'), 'Ekspor Excel'))),
+        h('div', {}, h('span', { class: 'eyebrow' }, 'Akademik · Absensi Dosen Eksternal'), h('h1', {}, 'Rekap Kehadiran Dosen External'), h('p', {}, `${state.periode} · ${batchLabel(state.batch)}. Dihitung berdasarkan pertemuan yang telah berlangsung.`)),
+        h('div', { class: 'actions no-print' }, per, bat, h('button', { class: 'btn btn-ghost', type: 'button', onclick: exportAll }, icon('sheet'), 'Ekspor Excel'))),
       kpiRow([
         { label: 'Kehadiran Dosen External', value: tot.cnt ? `${Math.round(tot.hadir / tot.cnt * 100)}%` : '–', sub: `${tot.hadir} hadir dari ${tot.cnt} pertemuan tercatat`, meter: tot.cnt ? Math.round(tot.hadir / tot.cnt * 100) : 0, meterTone: 'ok', icon: 'teacher', accent: true },
         { label: 'Pertemuan s.d. hari ini', value: tot.due, sub: `${rows.length} kelas · ${uniq(rows.map(x => x.s.dosen)).length} Dosen External`, icon: 'calendar' },
@@ -99,7 +87,7 @@ function rekap(root, goSheet) {
         { label: 'Belum dicatat', value: tot.belum, sub: 'perlu dicatat oleh Tim IBM', icon: 'alert' },
       ]),
       h('div', { class: 'card' }, !rows.length ? h('div', { class: 'empty' }, icon('teacher'), h('h3', {}, 'Tidak ada kelas Dosen External'), h('p', {}, 'Periode/batch ini tidak memiliki kelas Dosen External dengan hari tetap. Jenis dosen dapat diatur melalui Jadwal Kuliah → List Jadwal atau Biodata Dosen.'))
-        : (state.mode === 'dosen' ? tblDosen : tblKelas).el),
+        : tblDosen.el),
     ].filter(Boolean));
   }
   render(); root.appendChild(box);
@@ -108,28 +96,37 @@ function rekap(root, goSheet) {
 
 /* =================== Lembar absensi =================== */
 function lembar(root) {
-  const state = loadState(); const box = h('div'); let muted = false;
+  // Pengisian di tabel TIDAK me-render ulang halaman (agar posisi gulir & fokus tidak lompat ke atas):
+  // simpanan sendiri hanya memperbarui KPI; render penuh hanya untuk perubahan data lain, dengan posisi gulir dipertahankan.
+  const state = loadState(); const box = h('div');
+  let pending = 0, lastSave = 0, refreshKpi = () => { };
   function render() {
     pref.set('abs_periode', state.periode); pref.set('abs_batch', state.batch);
-    clear(box);
+    clear(box); refreshKpi = () => { };
     const sels = selectors(state, render, { slot: true }); pref.set('abs_slot', state.slot);
     const slot = store.get('schedules', state.slot);
     const pickBar = h('div', { class: 'sheet-picker no-print' }, ...sels);
     const head = (...actions) => h('div', { class: 'page-head' },
       h('div', {}, h('span', { class: 'eyebrow' }, 'Akademik · Absensi Dosen Eksternal'), h('h1', {}, 'Lembar Absensi Dosen Eksternal'),
-        h('p', {}, 'Pilih periode, batch, dan kelas, lalu isi status kehadiran dosen pada setiap pertemuan. Perubahan tersimpan otomatis.')),
+        h('p', {}, 'Pilih periode, batch, dan kelas, lalu isi status kehadiran dosen pada setiap pertemuan.')),
       actions.length ? h('div', { class: 'actions no-print' }, ...actions) : null);
     if (!slot) { box.append(head(), h('div', { class: 'card' }, pickBar, h('div', { class: 'empty' }, icon('teacher'), h('h3', {}, 'Tidak ada kelas Dosen External dengan hari tetap'), h('p', {}, 'Silakan pilih periode/batch lain atau lengkapi hari, jam, dan jenis dosen melalui Jadwal Kuliah → List Jadwal.')))); return; }
     const sessions = sessionsOf(slot, periodInfo(slot.periode));
-    const t = today(); const sm = attendanceSummary(slot, t);
-    const save = async (x, patch, rowEl) => {
-      muted = true;
-      try { x.absen = await saveAbsen(x, patch); rowEl.classList.add('saved'); setTimeout(() => rowEl.classList.remove('saved'), 900); }
-      catch (e) { toast(e.message, 'bad'); } finally { muted = false; }
+    const t = today();
+    // Simpan berurutan per pertemuan: perubahan beruntun (mis. jam masuk lalu jam keluar) tidak saling
+    // menimpa dan tidak membuat catatan ganda sebelum simpanan pertama selesai.
+    const save = (x, patch, rowEl) => {
+      pending++; lastSave = Date.now();
+      x._q = (x._q || Promise.resolve()).then(async () => {
+        try { x.absen = await saveAbsen(x, patch); rowEl.classList.add('saved'); setTimeout(() => rowEl.classList.remove('saved'), 900); }
+        catch (e) { toast(e.message, 'bad'); }
+        finally { pending--; lastSave = Date.now(); refreshKpi(); }
+      });
+      return x._q;
     };
     const exportSheet = () => exportWorkbook(`Absensi_${slot.mata_kuliah}_${batchName(slot.batch_id)}_${slot.periode}`.replace(/\W+/g, '_'), [{ name: 'Absensi Dosen Eksternal', rows: [
       ['Mata Kuliah', slot.mata_kuliah], ['Batch', batchName(slot.batch_id)], ['Periode', slot.periode], ['Dosen', slot.dosen], ['Jadwal', `${slot.hari} ${timeLabel(slot)} · ${slot.ruang || ''}`], [],
-      ['Pertemuan', 'Tanggal', 'Jenis', 'Status', 'Dosen Mengajar', 'Jam Masuk', 'Jam Keluar', 'Catatan'].map(v => ({ v, bold: true })),
+      ['Pertemuan', 'Tanggal', 'Jenis', 'Status', 'Dosen Pengajar', 'Jam Masuk', 'Jam Keluar', 'Catatan'].map(v => ({ v, bold: true })),
       ...sessions.map(x => { const a = x.absen || {}; return [x.no, x.tanggal, x.jenis, a.status || '', a.dosen_hadir || '', a.jam_masuk || '', a.jam_keluar || '', a.catatan || '']; }),
     ], header: false, widths: [11, 12, 9, 20, 34, 10, 10, 40] }]);
 
@@ -139,7 +136,7 @@ function lembar(root) {
       const st = h('select', { class: `select st-${toneAbsen(a.status) || 'none'}`, 'aria-label': `Status pertemuan ${x.no}` }, h('option', { value: '' }, x.tanggal <= t ? '— Belum dicatat —' : '—'), STATUS_ABSEN.map(v => h('option', { value: v }, v)));
       st.value = a.status || '';
       st.addEventListener('change', () => { st.className = `select st-${toneAbsen(st.value) || 'none'}`; save(x, { status: st.value, dosen_hadir: dsn.value || slot.dosen }, tr); });
-      const dsn = h('select', { class: 'select', 'aria-label': `Dosen mengajar pertemuan ${x.no}` }, dosenOptions(slot, a.dosen_hadir).map(n => h('option', { value: n }, n === slot.dosen ? `${n} (terjadwal)` : n)));
+      const dsn = h('select', { class: 'select', 'aria-label': `Dosen pengajar pertemuan ${x.no}` }, dosenOptions(slot, a.dosen_hadir).map(n => h('option', { value: n }, n === slot.dosen ? `${n} (terjadwal)` : n)));
       dsn.value = a.dosen_hadir || slot.dosen || '';
       dsn.addEventListener('change', () => { const patch = { dosen_hadir: dsn.value }; if (dsn.value !== slot.dosen && (!st.value || HADIR.includes(st.value))) { patch.status = 'Diganti dosen lain'; st.value = patch.status; st.className = `select st-${toneAbsen(patch.status)}`; } save(x, patch, tr); });
       const time = (key, label) => { const el = h('input', { class: 'input', type: 'time', value: a[key] || '', 'aria-label': label }); el.addEventListener('change', () => save(x, { [key]: el.value }, tr)); return el; };
@@ -149,48 +146,66 @@ function lembar(root) {
       date.addEventListener('change', () => { if (date.value) save(x, { tanggal: date.value }, tr); });
       tr.append(
         h('td', { class: 'cell-main' }, h('div', { class: 'meet-no' }, h('b', {}, `Pertemuan ${x.no}`), x.jenis !== 'Kuliah' ? h('span', { class: 'pill gold' }, x.jenis) : null)),
-        L('Tanggal', date), L('Status', st), L('Dosen mengajar', dsn),
+        L('Tanggal', date), L('Status', st), L('Dosen pengajar', dsn),
         L('Jam masuk – keluar', h('div', { class: 'jam' }, time('jam_masuk', 'Jam masuk'), time('jam_keluar', 'Jam keluar'))),
         L('Catatan', note));
       return tr;
     }));
 
-    const meta = (label, value) => value ? h('span', {}, `${label} `, h('b', {}, value)) : null;
-    box.append(
-      head(h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => window.print() }, icon('print'), 'Cetak'),
-        h('button', { class: 'btn btn-ghost', type: 'button', onclick: exportSheet }, icon('sheet'), 'Ekspor Excel')),
-      kpiRow([
+    // Ringkasan kelas: 5 kolom sejajar (label kecil di atas, nilai di bawah)
+    const meta = (label, value) => h('div', { class: 'sm-item' }, h('span', { class: 'sm-label' }, label), h('b', {}, value || '–'));
+    const kpiBox = h('div');
+    refreshKpi = () => {
+      const sm = attendanceSummary(slot, t);
+      clear(kpiBox).appendChild(kpiRow([
         { label: 'Kehadiran dosen', value: sm.persen === null ? '–' : `${sm.persen}%`, sub: `${sm.hadir} hadir · ${sm.diganti} diganti · ${sm.tidak} tidak hadir`, meter: sm.persen || 0, meterTone: 'ok', icon: 'teacher', accent: true },
         { label: 'Pertemuan berlangsung', value: `${sm.due} / ${sm.total}`, meter: pct(sm.due, sm.total), icon: 'calendar' },
         { label: 'Belum dicatat', value: sm.belum, sub: 'pertemuan yang telah berlangsung', icon: 'alert' },
-      ]),
+      ]));
+    };
+    refreshKpi();
+    box.append(
+      head(h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => window.print() }, icon('print'), 'Cetak'),
+        h('button', { class: 'btn btn-ghost', type: 'button', onclick: exportSheet }, icon('sheet'), 'Ekspor Excel')),
+      kpiBox,
       h('div', { class: 'card' },
         pickBar,
-        h('div', { class: 'sheet-meta' }, meta('Batch', batchName(slot.batch_id)), meta('Jadwal', `${slot.hari} ${timeLabel(slot)}`), meta('Dosen', slot.dosen || 'belum ditentukan'), meta('Ruang', slot.ruang), meta('Periode', slot.periode)),
+        h('div', { class: 'sheet-meta' }, meta('Batch', batchName(slot.batch_id)), meta('Jadwal', `${slot.hari} ${timeLabel(slot)}`), meta('Dosen', slot.dosen || 'Belum ditentukan'), meta('Ruang', slot.ruang), meta('Periode', slot.periode)),
         h('div', { class: 'table-wrap' }, h('table', { class: 'tbl compact presensi stack' },
-          h('thead', {}, h('tr', {}, [['Pertemuan', '120px'], ['Tanggal', '150px'], ['Status', '200px'], ['Dosen mengajar', ''], ['Jam masuk – keluar', '210px'], ['Catatan', '18%']].map(([x, w]) => h('th', { style: w ? { width: w } : null }, x)))), tbody)),
+          h('colgroup', {}, ['12%', '15%', '17%', '22%', '19%', '15%'].map(w => h('col', { style: { width: w } }))),
+          h('thead', {}, h('tr', {}, ['Pertemuan', 'Tanggal', 'Status', 'Dosen pengajar', 'Jam masuk – keluar', 'Catatan'].map(x => h('th', {}, x)))), tbody)),
         h('div', { class: 'legend-row' }, icon('info', 'sm'), h('span', {}, 'Memilih dosen pengganti otomatis mengubah status menjadi “Diganti dosen lain”.'))));
   }
+  /** Render ulang tanpa menggeser posisi gulir (tinggi area dikunci sementara agar halaman tidak memendek) */
+  function rerender() {
+    const y = window.scrollY; box.style.minHeight = `${box.offsetHeight}px`;
+    render();
+    window.scrollTo(0, y); requestAnimationFrame(() => { box.style.minHeight = ''; });
+  }
   render(); root.appendChild(box);
-  return { destroy: store.subscribe(() => { if (!muted) render(); }) };
+  return { destroy: store.subscribe((c) => {
+    // Absensi yang baru saja diisi di halaman ini: cukup perbarui KPI, baris tabel dibiarkan apa adanya
+    if (c === 'attendance' && (pending > 0 || Date.now() - lastSave < 2000)) { refreshKpi(); return; }
+    rerender();
+  }) };
 }
 
 /* =================== Log absensi =================== */
 const logView = crudView({
   id: 'attendance', collection: 'attendance', noun: 'catatan absensi', title: 'Log Absensi Dosen Eksternal', eyebrow: 'Akademik · Absensi Dosen Eksternal',
-  description: 'Seluruh catatan kehadiran Dosen External yang telah diisi oleh Tim IBM, diurutkan dari yang terbaru. Untuk menambahkan catatan, gunakan tab Lembar Absensi atau menu Jadwal Kuliah → Daily.',
-  addable: false, exportName: 'Log_Absensi_Dosen_LB', sort: { key: 'tanggal', dir: 'desc' }, pageSize: 50,
+  description: 'Seluruh catatan kehadiran Dosen External yang telah diisi oleh Tim IBM, diurutkan dari yang terbaru.',
+  addable: false, exportName: 'Log_Absensi_Dosen_LB', sort: { key: 'tanggal', dir: 'desc' }, pageSize: 15,
   sections: [{ fields: [
     { key: 'tanggal', label: 'Tanggal', type: 'date', col: 'half' },
     { key: 'status', label: 'Status', type: 'select', options: STATUS_ABSEN, col: 'half', required: true },
-    { key: 'dosen_hadir', label: 'Dosen mengajar', type: 'select', options: (r) => uniq([r && r.dosen_jadwal, ...store.all('lecturers').map(l => l.nama).sort(), r && r.dosen_hadir]) },
+    { key: 'dosen_hadir', label: 'Dosen pengajar', type: 'select', options: (r) => uniq([r && r.dosen_jadwal, ...store.all('lecturers').map(l => l.nama).sort(), r && r.dosen_hadir]) },
     { key: 'jam_masuk', label: 'Jam masuk', type: 'text', col: 'half' }, { key: 'jam_keluar', label: 'Jam keluar', type: 'text', col: 'half' },
     { key: 'catatan', label: 'Catatan', type: 'textarea' },
   ] }],
   columns: [
     { key: 'tanggal', label: 'Tanggal', render: r => fmtDate(r.tanggal), nowrap: true },
     { key: 'mata_kuliah', label: 'Mata kuliah', main: true, render: r => h('div', {}, h('span', { class: 'primary' }, r.mata_kuliah), h('span', { class: 'secondary' }, `${batchName(r.batch_id)} · Pertemuan ${r.pertemuan}${r.jenis && r.jenis !== 'Kuliah' ? ' · ' + r.jenis : ''}`)) },
-    { key: 'dosen_hadir', label: 'Dosen mengajar', render: r => h('div', {}, r.dosen_hadir || r.dosen_jadwal || '–', r.dosen_hadir && nameKey(r.dosen_hadir) !== nameKey(r.dosen_jadwal) ? h('span', { class: 'secondary' }, `Terjadwal: ${r.dosen_jadwal}`) : null) },
+    { key: 'dosen_hadir', label: 'Dosen pengajar', render: r => h('div', {}, r.dosen_hadir || r.dosen_jadwal || '–', r.dosen_hadir && nameKey(r.dosen_hadir) !== nameKey(r.dosen_jadwal) ? h('span', { class: 'secondary' }, `Terjadwal: ${r.dosen_jadwal}`) : null) },
     { key: 'status', label: 'Status', render: r => badge(r.status, toneAbsen(r.status)) },
     { key: 'jam', label: 'Jam', value: r => r.jam_masuk, render: r => r.jam_masuk ? `${r.jam_masuk}${r.jam_keluar ? '–' + r.jam_keluar : ''}` : null },
     { key: 'periode', label: 'Periode', nowrap: true },
@@ -198,7 +213,7 @@ const logView = crudView({
   exportColumns: [
     { key: 'tanggal', label: 'Tanggal' }, { key: 'periode', label: 'Periode' }, { key: 'batch_id', label: 'Batch', value: r => batchName(r.batch_id) },
     { key: 'mata_kuliah', label: 'Mata Kuliah' }, { key: 'pertemuan', label: 'Pertemuan' }, { key: 'jenis', label: 'Jenis' }, { key: 'status', label: 'Status' },
-    { key: 'dosen_jadwal', label: 'Dosen Terjadwal' }, { key: 'dosen_hadir', label: 'Dosen Mengajar' }, { key: 'jam_masuk', label: 'Jam Masuk' }, { key: 'jam_keluar', label: 'Jam Keluar' },
+    { key: 'dosen_jadwal', label: 'Dosen Terjadwal' }, { key: 'dosen_hadir', label: 'Dosen Pengajar' }, { key: 'jam_masuk', label: 'Jam Masuk' }, { key: 'jam_keluar', label: 'Jam Keluar' },
     { key: 'catatan', label: 'Catatan' }, { key: 'dicatat_oleh', label: 'Dicatat Oleh' },
   ],
   importable: false,
@@ -224,7 +239,7 @@ export default {
     return tabPage(root, [
       { id: 'lembar', label: 'Lembar absensi', fn: (body) => lembar(body) },
       { id: 'log', label: 'Log absensi', fn: (body) => logView(body) },
-      { id: 'rekap', label: 'Rekap kehadiran', fn: (body, ctx) => rekap(body, (s) => { pref.set('abs_slot', s.id); pref.set('abs_batch', s.batch_id); pref.set('abs_periode', s.periode); ctx.go('lembar'); }) },
+      { id: 'rekap', label: 'Rekap kehadiran', fn: (body) => rekap(body) },
     ], { eyebrow: 'Akademik', title: 'Absensi Dosen Eksternal', def: 'lembar', remember: false });
   },
 };

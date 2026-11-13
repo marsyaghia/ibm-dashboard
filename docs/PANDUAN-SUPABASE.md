@@ -102,7 +102,7 @@ Tombol **Impor** ada di setiap menu. Fitur ini menerima Excel atau CSV dengan ju
 | 14 | `pemasukan` | Perolehan Mahasiswa | — |
 | 15 | `sertifikat` | Sertifikat Mahasiswa | — |
 | 16 | `immersion_target` | Immersion → Target per batch | — |
-| 17 | `immersion_tabungan` | Immersion → Log setoran (kolom `cicilan_ke` = urutan cicilan) | — |
+| 17 | `immersion_tabungan` | Immersion → Cicilan per mahasiswa (kolom `cicilan_ke` = urutan cicilan) | — |
 | 18 | `immersion_pengeluaran` | Immersion → Kas & pengeluaran (kolom `jenis`: Pengeluaran / Pemasukan lain / Penukaran uang; `status`: Realisasi / Rencana) | — |
 | 18a | `magang` | Data Magang → Penempatan | — |
 | 18b | `penilaian_magang` | Data Magang → Respon penilaian (biasanya masuk otomatis dari form publik) | — |

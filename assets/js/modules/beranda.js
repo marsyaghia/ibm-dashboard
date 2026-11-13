@@ -218,7 +218,7 @@ function moduleCards() {
     card('absensi', 'clipboard', 'Absensi Dosen Eksternal', cnt ? `${Math.round(hadir / cnt * 100)}% hadir` : '–', `${rec} / ${due} pertemuan tercatat`, pct(rec, due)),
     card('trent', 'handshake', 'Trent Global College', `${tpOk} / ${tp.length}`, 'tagihan lunas', pct(tpOk, tp.length)),
     card('immersion', 'plane', 'Immersion', immTarget ? `${pct(immTot, immTarget)}%` : fmtIDRShort(sum(store.all('immersionSavings').filter(r => (r.status || 'Terverifikasi') === 'Terverifikasi'), 'jumlah')), immTarget ? `${fmtIDRShort(immTot)} dari ${fmtIDRShort(immTarget)}` : 'target tabungan belum diatur', immTarget ? pct(immTot, immTarget) : undefined),
-    (() => { const mg = store.all('internships'); const rv = store.all('internshipReviews').filter(r => r.status_review !== 'Disembunyikan'); const avg = rv.length ? (sum(rv, 'rating_keseluruhan') / rv.length).toFixed(1).replace('.', ',') : null;
+    (() => { const mg = store.all('internships'); const rv = store.all('internshipReviews'); const avg = rv.length ? (sum(rv, 'rating_keseluruhan') / rv.length).toFixed(1).replace('.', ',') : null;
       return card('magang', 'briefcase', 'Data Magang', `${mg.filter(m => m.status === 'Berjalan').length} berjalan`, `${mg.length} penempatan · ${rv.length ? `rating ${avg}/5 (${rv.length} ulasan)` : 'belum ada ulasan'}`, mg.length ? pct(rv.length, mg.filter(m => ['Berjalan', 'Selesai'].includes(m.status)).length) : undefined); })(),
     card('sertifikat', 'award', 'Sertifikat', `${certOk} / ${cert.length}`, 'sertifikat sudah terbit', cert.length ? pct(certOk, cert.length) : undefined),
     card('mahasiswa', 'users', 'Biodata Mahasiswa', `${aktif} aktif`, `${studs.length} mahasiswa · ${batches().length} batch`),

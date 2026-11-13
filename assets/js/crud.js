@@ -28,6 +28,8 @@ export const flatFields = (sections) => sections.flatMap(s => s.fields);
  *   above(rows, allRows) → Node, rowsFilter(rows) → rows, exportName,
  *   extraActions(ctx) → [Node], drawerFooter(rec, close) → [Node],
  *   beforeSave(rec) → rec, aliases, importNote, pageSize, groupBy, footer,
+ *   pageBy / pageGroups / pageRows: paginasi per kelompok (lihat dataTable di table.js),
+ *   description: teks atau fungsi → teks (dihitung saat halaman dibuka),
  *   importSection: key field yang diisi dari baris judul di berkas impor (mis. "BATCH 1 / 2023" → batch_id)
  * }
  */
@@ -117,9 +119,11 @@ export function crudView(cfg) {
       { label: 'Excel — semua data', icon: 'sheet', onClick: () => exportRows(cfg.exportName || cfg.title, exportCols(), all(), 'xlsx') },
     ]);
     const exportCols = () => cfg.exportColumns || cfg.columns;
-    // Subtitle otomatis selebar halaman (lihat widenPageDesc di ui.js)
+    // Subtitle otomatis selebar halaman (lihat widenPageDesc di ui.js).
+    // description boleh berupa fungsi agar teks dinamis (mis. tahun ajaran berjalan) dihitung saat dibuka.
+    const desc = typeof cfg.description === 'function' ? cfg.description() : cfg.description;
     const head = h('div', { class: 'page-head' },
-      h('div', {}, cfg.eyebrow ? h('span', { class: 'eyebrow' }, cfg.eyebrow) : null, h('h1', {}, cfg.title), cfg.description ? h('p', {}, cfg.description) : null),
+      h('div', {}, cfg.eyebrow ? h('span', { class: 'eyebrow' }, cfg.eyebrow) : null, h('h1', {}, cfg.title), desc ? h('p', {}, desc) : null),
       h('div', { class: 'actions no-print' },
         ...(cfg.extraActions ? cfg.extraActions(ctx) : []),
         cfg.importable === false ? null : h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => importDialog({ title: cfg.title, fields: [...fields, ...(cfg.importExtra || []), ...schemaExtras(cfg.collection, [...fields, ...(cfg.importExtra || [])])], aliases: cfg.aliases, note: cfg.importNote, sectionKey: cfg.importSection, onImport: (recs) => importRecords(recs) }) }, icon('upload'), 'Impor'),
@@ -159,7 +163,7 @@ export function crudView(cfg) {
       // Satu cara CRUD: ubah/hapus hanya lewat tombol ikon di kanan. Klik baris hanya dipakai bila
       // modul memberi aksi lain (mis. membuka profil/detail), bukan membuka form ubah.
       columns: cfg.columns, rows: [], sort: cfg.sort, order: cfg.order, onRowClick: cfg.onRowClick ? (r) => cfg.onRowClick(r, ctx) : null, rowActions,
-      pageSize: cfg.pageSize || 25, footer: cfg.footer, groupBy: cfg.groupBy,
+      pageSize: cfg.pageSize || 25, footer: cfg.footer, groupBy: cfg.groupBy, className: cfg.tableClass || '', pageBy: cfg.pageBy, pageGroups: cfg.pageGroups, pageRows: cfg.pageRows,
       emptyNode: h('div', { class: 'empty' }, icon('layers'), h('h3', {}, cfg.emptyTitle || 'Belum ada data'), h('p', {}, cfg.emptyText || 'Tambahkan data baru atau impor dari Excel/CSV.'),
         cfg.addable === false ? null : h('button', { class: 'btn btn-primary', type: 'button', onclick: () => openForm(null) }, icon('plus'), cfg.addLabel || `Tambah ${cfg.noun || ''}`.trim())),
     });

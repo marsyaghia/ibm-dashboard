@@ -1,19 +1,20 @@
 /* =========================================================================
    10. IMMERSION — tabungan & arus kas program immersion, dipisah per batch.
    Pemilih batch di atas tab berlaku untuk semua tab:
-   • Rekap            : ringkasan dana (tabungan + pemasukan lain − pengeluaran),
-                        progres tabungan per mahasiswa, pengeluaran per kategori
-   • Cicilan          : matriks mahasiswa × cicilan ke-1..n (format sheet "B2 - Cicilan")
-   • Log setoran      : tiap setoran tabungan + bukti transfer + verifikasi
+   • Rekap            : ringkasan dana (baca-saja): progres tabungan per mahasiswa,
+                        pengeluaran per kategori, perbandingan antarbatch
+   • Cicilan          : matriks mahasiswa × cicilan ke-1..n + SATU-SATUNYA tempat
+                        CRUD setoran (catat, ubah, hapus, verifikasi, impor)
    • Kas & pengeluaran: pengeluaran, pemasukan lain (dana fasilitator, dll.),
                         penukaran uang asing, dan rencana anggaran
    • Target           : goal tabungan per batch
    ========================================================================= */
-import { h, icon, clear, fmtIDR, fmtNum, fmtDate, fmtDateLong, sum, uniq, pct, badge, docLink, batchName, batches, studentOf, withStudent, today, parseDate, tabPage, batchSelect, firstBatch, pref, toast, openModal, chain, byBatch, byText } from '../ui.js';
-import { crudView, kpiRow } from '../crud.js';
+import { h, icon, clear, fmtIDR, fmtNum, fmtDate, fmtDateLong, sum, uniq, pct, badge, docLink, batchName, batches, studentOf, withStudent, today, parseDate, tabPage, batchSelect, firstBatch, pref, toast, openModal, openDrawer, confirmDialog, tc, chain, byBatch, byText } from '../ui.js';
+import { crudView, kpiRow, schemaExtras, flatFields } from '../crud.js';
+import { buildForm } from '../form.js';
 import { dataTable } from '../table.js';
 import { hbars } from '../charts.js';
-import { exportWorkbook } from '../io.js';
+import { exportWorkbook, importDialog } from '../io.js';
 import { store } from '../store.js';
 
 const STATUS_SETOR = ['Terverifikasi', 'Menunggu verifikasi', 'Ditolak'];
@@ -72,24 +73,104 @@ export function batchProgress(batchId) {
 const statusMhs = (x, goal) => !goal ? 'Target belum diatur' : x.terkumpul >= goal ? 'Tercapai' : x.terkumpul > 0 ? 'Belum tercapai' : 'Belum menabung';
 const progressCell = (p) => p === null ? h('span', { class: 'muted' }, '–') : h('div', { class: 'progress-cell' }, h('small', {}, `${p}%`), h('div', { class: `meter ${p >= 100 ? 'ok' : p >= 50 ? '' : 'warn'}` }, h('i', { style: { width: `${p}%` } })));
 
-/* ---------- Riwayat setoran satu mahasiswa ---------- */
-function studentLog(x, P, go) {
-  const list = [...x.mine].sort((a, b) => b._ke - a._ke);
-  const body = h('div', { class: 'stack' },
-    kpiRow([
-      { label: 'Terkumpul', value: fmtIDR(x.terkumpul), sub: `${x.n} setoran terverifikasi`, icon: 'piggy', accent: true },
-      { label: 'Kurang', value: fmtIDR(x.kurang), sub: P.goal ? `dari target ${fmtIDR(P.goal)}` : 'target belum diatur', icon: 'alert', meter: x.persen ?? 0, meterTone: 'ok' },
-    ]),
-    list.length ? dataTable({ rows: list, pageSize: Infinity, compact: true, columns: [
-      { key: '_ke', label: 'Cicilan', main: true, render: r => h('b', {}, `Cicilan ${r._ke}`) },
-      { key: 'tanggal', label: 'Tanggal', render: r => fmtDate(r.tanggal), nowrap: true },
-      { key: 'jumlah', label: 'Jumlah', align: 'right', render: r => h('span', { class: 'num' }, fmtIDR(r.jumlah)) },
-      { key: 'status', label: 'Status', render: r => badge(r.status || 'Terverifikasi', toneSetor(r.status || 'Terverifikasi')) },
-      { key: 'bukti', label: 'Bukti TF', sortable: false, render: r => docLink(r.bukti, '') },
-    ] }).el : h('div', { class: 'empty' }, icon('piggy'), h('h3', {}, 'Belum ada setoran'), h('p', {}, 'Silakan catat setoran pertama untuk mahasiswa ini.')));
+/* =================== Setoran (CRUD hanya dari tab Cicilan) =================== */
+const setoranSections = [
+  { title: 'Setoran', fields: [
+    { key: 'batch_id', label: 'Batch', type: 'batch', required: true, col: 'half' },
+    { key: 'tanggal', label: 'Tanggal setor', type: 'date', required: true, col: 'half', default: () => today() },
+    { key: 'student_id', label: 'Mahasiswa', type: 'student', batchKey: 'batch_id', required: true },
+    { key: 'cicilan_ke', label: 'Cicilan ke-', type: 'number', min: 1, col: 'third', help: 'Kosongkan untuk mengisi nomor berikutnya secara otomatis' },
+    { key: 'jumlah', label: 'Jumlah setoran', type: 'money', required: true, col: 'third' },
+    { key: 'metode', label: 'Metode', type: 'select', options: METODE, col: 'third', default: 'Transfer Bank' },
+    { key: 'status', label: 'Status verifikasi', type: 'select', options: STATUS_SETOR, col: 'half', default: 'Menunggu verifikasi' },
+  ] },
+  { title: 'Bukti transfer', fields: [
+    { key: 'bukti', label: 'Bukti transfer', type: 'attachment', accept: 'image/*,.pdf', help: 'Unggah foto/PDF bukti transfer atau cantumkan tautan Google Drive.' },
+    { key: 'catatan', label: 'Catatan', type: 'textarea', rows: 2 },
+  ] },
+];
+const setoranBeforeSave = (rec) => {
+  const { _ke, ...clean } = rec; // _ke hanya kolom bantu tampilan, bukan kolom Supabase
+  const r = withStudent(clean);
+  if (!r.cicilan_ke && r.student_id) r.cicilan_ke = store.all('immersionSavings').filter(x => x.id !== r.id && x.batch_id === r.batch_id && x.student_id === r.student_id).reduce((m, x) => Math.max(m, Number(x.cicilan_ke) || 0), 0) + 1;
+  return r;
+};
+const setoranAliases = { student_id: ['Nama', 'Nama Mahasiswa', 'Mahasiswa'], jumlah: ['Nominal', 'Setoran'], tanggal: ['Tanggal Setor', 'Tanggal Transfer'], cicilan_ke: ['Cicilan', 'Cicilan ke', 'Cicilan Ke-'] };
+
+/** Formulir tambah/ubah setoran */
+function openSetoran(rec = {}) {
+  const isNew = !rec.id; const { _ke, ...data } = rec;
+  const form = buildForm(setoranSections, isNew ? { status: 'Menunggu verifikasi', metode: 'Transfer Bank', tanggal: today(), ...data } : data);
+  const save = h('button', { class: 'btn btn-primary', type: 'button' }, icon('check'), isNew ? 'Simpan' : 'Simpan perubahan');
+  const del = !isNew ? h('button', { class: 'btn btn-danger', type: 'button' }, icon('trash', 'sm'), 'Hapus') : null;
+  const d = openDrawer({ title: isNew ? 'Catat setoran' : 'Ubah setoran', subtitle: data.student_id ? studentOf(data) : null, body: form.el,
+    footer: [h('div', { class: 'left' }, del), h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => d.close() }, 'Batal'), save] });
+  save.addEventListener('click', async () => {
+    save.disabled = true;
+    try { const v = await form.collect(); if (!v) { save.disabled = false; return; } await store.save('immersionSavings', setoranBeforeSave(v)); toast(isNew ? 'Setoran dicatat.' : 'Perubahan disimpan.', 'ok'); d.close(); }
+    catch (e) { toast(e.message, 'bad'); save.disabled = false; }
+  });
+  if (del) del.addEventListener('click', async () => { if (await confirmDialog('Hapus setoran ini? Tindakan ini tidak dapat dibatalkan.')) { await removeSetoran(data); d.close(); } });
+}
+async function removeSetoran(r) {
+  try { if (r.bukti && r.bukti.file) store.deleteFile(r.bukti.file).catch(() => { }); await store.remove('immersionSavings', r.id); toast('Setoran dihapus.', 'ok'); }
+  catch (e) { toast(e.message, 'bad'); }
+}
+async function verifySetoran(r) {
+  try { await store.save('immersionSavings', setoranBeforeSave({ ...r, status: 'Terverifikasi' })); toast('Setoran diverifikasi.', 'ok'); }
+  catch (e) { toast(e.message, 'bad'); }
+}
+/** Impor setoran dari Excel/CSV (pengganti tombol Impor di tab Log setoran yang dihapus) */
+function importSetoran(bid) {
+  const fields = flatFields(setoranSections);
+  importDialog({ title: 'Setoran Tabungan', fields: [...fields, ...schemaExtras('immersionSavings', fields)], aliases: setoranAliases,
+    note: 'Kolom yang digunakan: Tanggal, Batch, Nama/NIM mahasiswa, Cicilan ke, Jumlah, Metode, Status, dan Bukti (tautan). Data mahasiswa dicocokkan secara otomatis berdasarkan NIM atau nama.',
+    onImport: (recs) => store.saveMany('immersionSavings', recs.map(r => setoranBeforeSave({ batch_id: bid, status: 'Menunggu verifikasi', metode: 'Transfer Bank', ...r }))) });
+}
+
+/** Tabel daftar setoran dengan tombol ikon: ✓ verifikasi · pensil ubah · tempat sampah hapus */
+function setoranTable(list, { showStudent = false } = {}) {
+  return dataTable({ rows: list, pageSize: Infinity, compact: true, className: 'tbl-mid', columns: [
+    showStudent
+      ? { key: 'mhs', label: 'Mahasiswa', main: true, value: r => studentOf(r), render: r => h('div', {}, h('span', { class: 'primary' }, studentOf(r)), h('span', { class: 'secondary' }, `Cicilan ${r._ke || r.cicilan_ke || '–'}`)) }
+      : { key: '_ke', label: 'Cicilan', main: true, render: r => h('b', {}, `Cicilan ${r._ke}`) },
+    { key: 'tanggal', label: 'Tanggal', render: r => r.tanggal ? fmtDate(r.tanggal) : null, nowrap: true },
+    { key: 'jumlah', label: 'Jumlah', align: 'right', render: r => h('span', { class: 'num' }, fmtIDR(r.jumlah)) },
+    { key: 'status', label: 'Status', render: r => badge(r.status || 'Terverifikasi', toneSetor(r.status || 'Terverifikasi')) },
+    { key: 'bukti', label: 'Bukti TF', sortable: false, render: r => docLink(r.bukti, 'Belum ada') },
+  ], rowActions: (r) => h('div', { class: 'row-actions' },
+    r.status === 'Menunggu verifikasi' ? h('button', { class: 'btn btn-icon', type: 'button', title: 'Verifikasi', 'aria-label': 'Verifikasi', onclick: () => verifySetoran(r) }, icon('check', 'sm')) : null,
+    h('button', { class: 'btn btn-icon', type: 'button', title: 'Ubah', 'aria-label': 'Ubah', onclick: () => openSetoran(r) }, icon('edit', 'sm')),
+    h('button', { class: 'btn btn-icon danger', type: 'button', title: 'Hapus', 'aria-label': 'Hapus', onclick: async () => { if (await confirmDialog('Hapus setoran ini?')) removeSetoran(r); } }, icon('trash', 'sm'))) }).el;
+}
+
+/** Riwayat setoran satu mahasiswa (popup) — ikut diperbarui setelah ubah/hapus/verifikasi */
+function studentLog(studentId, bid) {
+  const body = h('div', { class: 'stack' });
+  const fill = () => {
+    const P = batchProgress(bid); const x = P.rows.find(r => r.s.id === studentId); clear(body); if (!x) return;
+    const list = [...x.mine].sort((a, b) => b._ke - a._ke);
+    body.append(
+      kpiRow([
+        { label: 'Terkumpul', value: fmtIDR(x.terkumpul), sub: `${x.n} setoran terverifikasi`, icon: 'piggy', accent: true },
+        { label: 'Kurang', value: fmtIDR(x.kurang), sub: P.goal ? `dari target ${fmtIDR(P.goal)}` : 'target belum diatur', icon: 'alert', meter: x.persen ?? 0, meterTone: 'ok' },
+      ]),
+      list.length ? setoranTable(list) : h('div', { class: 'empty' }, icon('piggy'), h('h3', {}, 'Belum ada setoran'), h('p', {}, 'Silakan catat setoran pertama untuk mahasiswa ini.')));
+  };
+  fill();
+  const unsub = store.subscribe(fill);
+  const s = store.get('students', studentId) || {};
   const add = h('button', { class: 'btn btn-primary', type: 'button' }, icon('plus'), 'Catat setoran');
-  const { close } = openModal({ title: x.s.nama, subtitle: `${batchName(x.s.batch_id)}${x.s.nim ? ' · ' + x.s.nim : ''} · Tabungan immersion`, body, size: 'lg', footer: [h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => close() }, 'Tutup'), add] });
-  add.addEventListener('click', () => { close(); go('setoran', { batch_id: x.s.batch_id, student_id: x.s.id, cicilan_ke: (x.mine.reduce((m, r) => Math.max(m, r._ke), 0) + 1) }); });
+  const { close } = openModal({ title: s.nama || 'Mahasiswa', subtitle: `${batchName(bid)}${s.nim ? ' · ' + s.nim : ''} · Tabungan immersion`, body, size: 'lg', onClose: unsub,
+    footer: [h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => close() }, 'Tutup'), add] });
+  add.addEventListener('click', () => { const x = batchProgress(bid).rows.find(r => r.s.id === studentId); openSetoran({ batch_id: bid, student_id: studentId, cicilan_ke: (x ? x.mine.reduce((m, r) => Math.max(m, r._ke), 0) : 0) + 1 }); });
+}
+/** Popup daftar setoran yang menunggu verifikasi */
+function pendingLog(bid) {
+  const body = h('div');
+  const fill = () => { const list = batchProgress(bid).pending.map(r => ({ ...r })).sort((a, b) => String(a.tanggal).localeCompare(String(b.tanggal))); clear(body).appendChild(list.length ? setoranTable(list, { showStudent: true }) : h('div', { class: 'empty' }, icon('check'), h('h3', {}, 'Semua setoran sudah terverifikasi'))); };
+  fill(); const unsub = store.subscribe(fill);
+  const { close } = openModal({ title: 'Menunggu verifikasi', subtitle: batchName(bid), body, size: 'lg', onClose: unsub, footer: [h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => close() }, 'Tutup')] });
 }
 
 /* ---------- Ekspor rekap satu batch (format sheet rekap) ---------- */
@@ -118,15 +199,18 @@ function rekap(root, go, bid) {
     const byKat = Object.entries(P.real.filter(isOut).reduce((m, r) => { const k = r.kategori || 'Lainnya'; m[k] = (m[k] || 0) + (Number(r.jumlah) || 0); return m; }, {})).sort((a, b) => b[1] - a[1]);
     const allB = batches().map(b => ({ b, P: batchProgress(b.id) })).filter(x => x.P.target || x.P.total || x.P.kas.length);
     const noSav = !P.sav.length;
+    // Subtitle: destinasi · Tenggat … · Program Selesai — tiap bagian (kecuali destinasi) Title Case, mengikuti batch terpilih
+    const subtitle = t ? [t.destinasi,
+      t.tenggat ? tc(`tenggat ${fmtDateLong(t.tenggat)}${sisaHari !== null && t.status !== 'Selesai' ? (sisaHari >= 0 ? ` (${sisaHari} hari lagi)` : ' (lewat tenggat)') : ''}`) : null,
+      t.status === 'Selesai' ? 'Program Selesai' : null].filter(Boolean).join(' · ') + '.' : 'Target tabungan batch ini belum ditetapkan. Silakan tambahkan melalui tab Target.';
 
+    // Rekap hanya menampilkan ringkasan (baca-saja); pencatatan setoran di tab Cicilan per mahasiswa
     box.append(...[
       h('div', { class: 'page-head' },
         h('div', {}, h('span', { class: 'eyebrow' }, `Program · Immersion · ${batchName(bid)}`), h('h1', {}, t ? t.program || 'Immersion' : `Immersion ${batchName(bid)}`),
-          h('p', {}, t ? [t.destinasi, P.goal ? `target ${fmtIDR(P.goal)} per mahasiswa` : null, t.tenggat ? `tenggat ${fmtDateLong(t.tenggat)}${sisaHari !== null && t.status !== 'Selesai' ? (sisaHari >= 0 ? ` (${sisaHari} hari lagi)` : ' (lewat tenggat)') : ''}` : null, t.status === 'Selesai' ? 'program selesai' : null].filter(Boolean).join(' · ') + '.' : 'Target tabungan batch ini belum ditetapkan. Silakan tambahkan melalui tab Target.')),
+          h('p', {}, subtitle)),
         h('div', { class: 'actions no-print' },
-          h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => exportBatch(bid) }, icon('sheet'), 'Ekspor rekap'),
-          h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => go('kas', { batch_id: bid }) }, icon('expense'), 'Catat kas'),
-          h('button', { class: 'btn btn-primary', type: 'button', onclick: () => go('setoran', { batch_id: bid }) }, icon('plus'), 'Catat setoran'))),
+          h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => exportBatch(bid) }, icon('sheet'), 'Ekspor rekap'))),
       !t ? h('div', { class: 'note warn' }, icon('alert'), h('div', {}, 'Batch ini belum memiliki target tabungan. ', h('button', { class: 'doc-link', type: 'button', onclick: () => go('target', { batch_id: bid }) }, 'Atur target sekarang'))) : null,
       t && !P.goal ? h('div', { class: 'note' }, icon('info'), h('div', {}, 'Target per mahasiswa belum diisi sehingga kekurangan setiap mahasiswa belum dapat dihitung. ', h('button', { class: 'doc-link', type: 'button', onclick: () => go('target') }, 'Lengkapi target'))) : null,
       kpiRow([
@@ -135,12 +219,13 @@ function rekap(root, go, bid) {
         { label: 'Pengeluaran (realisasi)', value: fmtIDR(P.terpakai), sub: P.rencana ? `rencana belum realisasi ${fmtIDR(P.rencana)}` : `${P.real.filter(isOut).length} transaksi`, icon: 'expense' },
         { label: 'Saldo dana', value: fmtIDR(P.saldo), sub: 'tabungan + pemasukan lain − pengeluaran', icon: 'wallet' },
       ]),
-      P.pending.length ? h('div', { class: 'note warn' }, icon('clock'), h('div', {}, `${P.pending.length} setoran (${fmtIDR(sum(P.pending, 'jumlah'))}) menunggu verifikasi dan belum dihitung. `, h('button', { class: 'doc-link', type: 'button', onclick: () => { pref.set(`filters_immersionSavings_${bid}`, { status: 'Menunggu verifikasi' }); go('setoran'); } }, 'Verifikasi sekarang'))) : null,
+      P.pending.length ? h('div', { class: 'note warn' }, icon('clock'), h('div', {}, `${P.pending.length} setoran (${fmtIDR(sum(P.pending, 'jumlah'))}) menunggu verifikasi dan belum dihitung. `, h('button', { class: 'doc-link', type: 'button', onclick: () => go('cicilan') }, 'Buka Cicilan per Mahasiswa'))) : null,
       noSav && P.kas.length ? h('div', { class: 'note' }, icon('info'), h('div', {}, `${batchName(bid)} belum memiliki log setoran per mahasiswa. Dana mahasiswa dicatat sebagai pemasukan di tab Kas & pengeluaran.`)) : null,
-      h('div', { class: byKat.length && !noSav ? 'grid grid-main imm-split' : 'stack' },
+      // Semua kartu bertumpuk selebar halaman dengan jarak seragam (lebih sederhana & rapi di semua perangkat)
+      h('div', { class: 'stack imm-stack' },
         noSav ? null : h('div', { class: 'card' },
-          h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, 'Progres tabungan per mahasiswa'), h('p', {}, 'Pilih nama mahasiswa untuk melihat riwayat cicilan. Hanya setoran terverifikasi yang diperhitungkan.'))),
-          dataTable({ rows: P.rows, pageSize: Infinity, order: byText(x => x.s.nama), onRowClick: x => studentLog(x, P, go),
+          h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, 'Progres tabungan per mahasiswa'), h('p', {}, 'Hanya setoran terverifikasi yang diperhitungkan. Setoran dicatat melalui tab Cicilan per mahasiswa.'))),
+          dataTable({ rows: P.rows, pageSize: Infinity, order: byText(x => x.s.nama), className: 'tbl-mid',
             emptyNode: h('div', { class: 'empty' }, icon('users'), h('h3', {}, 'Belum ada mahasiswa aktif di batch ini')),
             columns: [
               { key: 'nama', label: 'Mahasiswa', main: true, value: x => x.s.nama, render: x => h('div', {}, h('span', { class: 'primary' }, x.s.nama), h('span', { class: 'secondary' }, [x.s.nim, x.last ? `terakhir ${fmtDate(x.last)}` : 'belum ada setoran'].filter(Boolean).join(' · '))) },
@@ -155,9 +240,8 @@ function rekap(root, go, bid) {
           h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, 'Pengeluaran per kategori'), h('p', {}, `Realisasi · total ${fmtIDR(P.terpakai)}`)),
             h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => go('kas') }, 'Lihat rincian')),
           h('div', { class: 'card-body' }, hbars(byKat.map(([label, value]) => ({ label, value, display: `${fmtIDR(value)} · ${pct(value, P.terpakai)}%` }))))) : null,
-      ),
       allB.length > 1 ? h('div', { class: 'card' }, h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, 'Perbandingan antarbatch'), h('p', {}, 'Dana terkumpul (tabungan + pemasukan lain) dan pengeluaran realisasi tiap batch'))),
-        dataTable({ rows: allB, pageSize: Infinity, compact: true, onRowClick: x => { pref.set('imm_batch2', x.b.id); go('rekap'); },
+        dataTable({ rows: allB, pageSize: Infinity, compact: true, className: 'tbl-mid',
           columns: [
             { key: 'b', label: 'Batch', main: true, value: x => x.b.angkatan, render: x => h('div', {}, h('span', { class: 'primary' }, x.b.nama), h('span', { class: 'secondary' }, (x.P.target && x.P.target.program) || '–')) },
             { key: 'masuk', label: 'Dana masuk', align: 'right', value: x => x.P.total + x.P.masukLain, render: x => h('span', { class: 'num' }, fmtIDR(x.P.total + x.P.masukLain)) },
@@ -166,6 +250,7 @@ function rekap(root, go, bid) {
             { key: 'prog', label: 'Tabungan vs target', value: x => x.P.targetTotal ? pct(x.P.total, x.P.targetTotal) : -1, render: x => progressCell(x.P.targetTotal ? Math.min(100, pct(x.P.total, x.P.targetTotal)) : null) },
             { key: 'st', label: 'Status', value: x => (x.P.target || {}).status || '', render: x => badge((x.P.target || {}).status || '') },
           ] }).el) : null,
+      ),
     ].filter(Boolean));
   }
   render(); root.appendChild(box);
@@ -187,103 +272,46 @@ function cicilan(root, go, bid) {
         h('span', { class: `num ${ok ? '' : 'muted'}` }, fmtNum(sum(list, 'jumlah'))),
         h('small', {}, r.tanggal ? fmtDate(r.tanggal).replace(/ \d{4}$/, '') : '–', ok ? null : ' ⏳'));
     };
-    box.append(
+    box.append(...[
       h('div', { class: 'page-head' },
         h('div', {}, h('span', { class: 'eyebrow' }, `Program · Immersion · ${batchName(bid)}`), h('h1', {}, 'Cicilan Tabungan'),
-          h('p', {}, `Setoran tiap mahasiswa per cicilan, mengikuti format sheet rekap. ${P.goal ? `Target ${fmtIDR(P.goal)} per mahasiswa.` : 'Target per mahasiswa belum diatur.'}`)),
+          // Target per mahasiswa otomatis dari target aktif batch (tab Target)
+          h('p', {}, `Setoran/cicilan setiap mahasiswa. ${P.goal ? `Target ${fmtIDR(P.goal)} per mahasiswa.` : 'Target per mahasiswa belum diatur.'}`)),
         h('div', { class: 'actions no-print' },
+          h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => importSetoran(bid) }, icon('upload'), 'Impor'),
           h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => exportBatch(bid) }, icon('sheet'), 'Ekspor Excel'),
-          h('button', { class: 'btn btn-primary', type: 'button', onclick: () => go('setoran', { batch_id: bid }) }, icon('plus'), 'Catat cicilan'))),
+          h('button', { class: 'btn btn-primary', type: 'button', onclick: () => openSetoran({ batch_id: bid }) }, icon('plus'), 'Catat setoran'))),
       kpiRow([
         { label: 'Total terkumpul', value: fmtIDR(P.total), sub: P.targetTotal ? `${pct(P.total, P.targetTotal)}% dari ${fmtIDR(P.targetTotal)}` : `${P.rows.length} mahasiswa`, icon: 'piggy', accent: true, meter: P.targetTotal ? pct(P.total, P.targetTotal) : undefined, meterTone: 'ok' },
         { label: 'Sudah menabung', value: `${P.rows.filter(x => x.n).length} / ${P.rows.length}`, sub: 'mahasiswa', icon: 'users' },
         { label: 'Lunas', value: P.goal ? `${P.rows.filter(x => x.terkumpul >= P.goal).length}` : '–', sub: P.goal ? 'mencapai target' : 'target belum diatur', icon: 'check' },
         { label: 'Rata-rata cicilan', value: fmtIDR(P.sav.length ? Math.round(sum(verified(P.sav), 'jumlah') / Math.max(1, verified(P.sav).length)) : 0), sub: `${verified(P.sav).length} setoran`, icon: 'calendar' },
       ]),
+      P.pending.length ? h('div', { class: 'note warn' }, icon('clock'), h('div', {}, `${P.pending.length} setoran (${fmtIDR(sum(P.pending, 'jumlah'))}) menunggu verifikasi. `, h('button', { class: 'doc-link', type: 'button', onclick: () => pendingLog(bid) }, 'Verifikasi sekarang'))) : null,
       h('div', { class: 'card' },
-        h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, `Matriks cicilan · ${batchName(bid)}`), h('p', {}, 'Nominal dalam Rupiah untuk setiap cicilan (ke-1, ke-2, dst.) beserta tanggal setor. Pilih baris untuk melihat rincian dan menambahkan cicilan. Nominal berwarna abu-abu dengan tanda ⏳ belum terverifikasi.'))),
-        dataTable({ rows: P.rows, pageSize: Infinity, compact: true, className: 'cicilan', onRowClick: x => studentLog(x, P, go),
+        h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, `Matriks cicilan · ${batchName(bid)}`), h('p', {}, 'Klik baris mahasiswa untuk mencatat, mengubah, atau menghapus setoran. Nominal abu-abu bertanda ⏳ belum terverifikasi.'))),
+        dataTable({ rows: P.rows, pageSize: Infinity, compact: true, className: 'cicilan tbl-mid', onRowClick: x => studentLog(x.s.id, bid),
           emptyNode: h('div', { class: 'empty' }, icon('piggy'), h('h3', {}, 'Belum ada data cicilan'), h('p', {}, 'Silakan catat setoran pertama atau impor dari sheet rekap.')),
           columns: [
             { key: 'nama', label: 'Mahasiswa', main: true, value: x => x.s.nama, render: x => h('div', {}, h('span', { class: 'primary' }, x.s.nama), x.s.nim ? h('span', { class: 'secondary' }, x.s.nim) : null) },
             ...cols.map(k => ({ key: `c${k}`, label: `Ke-${k}`, align: 'right', value: x => sum(x.mine.filter(r => r._ke === k), 'jumlah'), render: x => cell(x, k) })),
-            { key: 'terkumpul', label: 'Total', align: 'right', value: x => x.terkumpul, render: x => h('b', { class: 'num' }, fmtIDR(x.terkumpul)) },
-            { key: 'kurang', label: 'Kurang', align: 'right', value: x => x.kurang, render: x => !P.goal ? h('span', { class: 'muted' }, '–') : x.kurang ? h('span', { class: 'num', style: { color: 'var(--warn)' } }, fmtIDR(x.kurang)) : badge('Lunas', 'ok') },
+            { key: 'terkumpul', label: 'Total', align: 'right', cls: 'cic-sum', value: x => x.terkumpul, render: x => h('b', { class: 'num' }, fmtIDR(x.terkumpul)) },
+            { key: 'kurang', label: 'Kurang', align: 'right', cls: 'cic-sum', value: x => x.kurang, render: x => !P.goal ? h('span', { class: 'muted' }, '–') : x.kurang ? h('span', { class: 'num', style: { color: 'var(--warn)' } }, fmtIDR(x.kurang)) : badge('Lunas', 'ok') },
           ],
           footer: (rows) => ['Total', ...cols.map(k => h('span', { class: 'num' }, fmtNum(sum(rows, x => sum(verified(x.mine.filter(r => r._ke === k)), 'jumlah'))))), h('b', { class: 'num' }, fmtIDR(sum(rows, 'terkumpul'))), P.goal ? h('span', { class: 'num' }, fmtIDR(sum(rows, 'kurang'))) : ''],
-        }).el));
+        }).el),
+    ].filter(Boolean));
   }
   render(); root.appendChild(box);
   return { destroy: store.subscribe(render) };
 }
 
-/* =================== Log setoran =================== */
-const setoranCfg = (bid) => ({
-  id: `immersionSavings_${bid}`, collection: 'immersionSavings', noun: 'setoran', title: 'Log Setoran Tabungan', eyebrow: `Program · Immersion · ${batchName(bid)}`,
-  description: 'Pencatatan setiap setoran tabungan immersion, meliputi urutan cicilan, tanggal, jumlah, dan bukti transfer. Setoran baru berstatus “Menunggu verifikasi” hingga diperiksa oleh Tim IBM; hanya setoran terverifikasi yang masuk ke rekap.',
-  rowsFilter: (rows) => rows.filter(r => r.batch_id === bid),
-  sections: [
-    { title: 'Setoran', fields: [
-      { key: 'batch_id', label: 'Batch', type: 'batch', required: true, col: 'half' },
-      { key: 'tanggal', label: 'Tanggal setor', type: 'date', required: true, col: 'half', default: () => today() },
-      { key: 'student_id', label: 'Mahasiswa', type: 'student', batchKey: 'batch_id', required: true },
-      { key: 'cicilan_ke', label: 'Cicilan ke-', type: 'number', min: 1, col: 'third', help: 'Kosongkan untuk mengisi nomor berikutnya secara otomatis' },
-      { key: 'jumlah', label: 'Jumlah setoran', type: 'money', required: true, col: 'third' },
-      { key: 'metode', label: 'Metode', type: 'select', options: METODE, col: 'third', default: 'Transfer Bank' },
-      { key: 'status', label: 'Status verifikasi', type: 'select', options: STATUS_SETOR, col: 'half', default: 'Menunggu verifikasi' },
-    ] },
-    { title: 'Bukti transfer', fields: [
-      { key: 'bukti', label: 'Bukti transfer', type: 'attachment', accept: 'image/*,.pdf', help: 'Unggah foto/PDF bukti transfer atau cantumkan tautan Google Drive.' },
-      { key: 'catatan', label: 'Catatan', type: 'textarea', rows: 2 },
-    ] },
-  ],
-  beforeSave: (rec) => {
-    const r = withStudent(rec);
-    if (!r.cicilan_ke && r.student_id) r.cicilan_ke = store.all('immersionSavings').filter(x => x.id !== r.id && x.batch_id === r.batch_id && x.student_id === r.student_id).reduce((m, x) => Math.max(m, Number(x.cicilan_ke) || 0), 0) + 1;
-    return r;
-  },
-  columns: [
-    { key: 'tanggal', label: 'Tanggal', render: r => fmtDate(r.tanggal), nowrap: true },
-    { key: 'mhs', label: 'Mahasiswa', main: true, value: r => studentOf(r), render: r => h('div', {}, h('span', { class: 'primary' }, studentOf(r)), h('span', { class: 'secondary' }, [r.nim, r.cicilan_ke ? `cicilan ${r.cicilan_ke}` : null].filter(Boolean).join(' · '))) },
-    { key: 'jumlah', label: 'Jumlah', align: 'right', money: true, value: r => Number(r.jumlah) || 0, render: r => h('span', { class: 'num' }, fmtIDR(r.jumlah)), nowrap: true },
-    { key: 'metode', label: 'Metode' },
-    { key: 'status', label: 'Status', render: r => badge(r.status || 'Terverifikasi', toneSetor(r.status || 'Terverifikasi')) },
-    { key: 'bukti', label: 'Bukti TF', sortable: false, render: r => docLink(r.bukti, 'Belum ada') },
-  ],
-  exportColumns: [
-    { key: 'tanggal', label: 'Tanggal' }, { key: 'batch_id', label: 'Batch', value: r => batchName(r.batch_id) }, { key: 'mhs', label: 'Mahasiswa', value: r => studentOf(r) }, { key: 'nim', label: 'NIM' }, { key: 'cicilan_ke', label: 'Cicilan ke' },
-    { key: 'jumlah', label: 'Jumlah (Rp)', money: true, value: r => Number(r.jumlah) || 0 }, { key: 'metode', label: 'Metode' }, { key: 'status', label: 'Status' }, { key: 'bukti', label: 'Bukti' }, { key: 'catatan', label: 'Catatan' },
-  ],
-  exportName: `Setoran_Immersion_${batchName(bid)}`, sort: { key: 'tanggal', dir: 'desc' },
-  searchPlaceholder: 'Cari mahasiswa, NIM, catatan…', search: r => [studentOf(r), r.nim, r.catatan, r.metode].join(' '),
-  filters: [
-    { key: 'student_id', label: 'Mahasiswa', options: () => store.all('students').filter(s => s.batch_id === bid).sort((a, b) => a.nama.localeCompare(b.nama)).map(s => ({ value: s.id, label: s.nama })) },
-    { key: 'status', label: 'Status', options: STATUS_SETOR, match: (r, v) => (r.status || 'Terverifikasi') === v },
-    { key: 'bulan', label: 'Bulan', options: () => uniq(store.all('immersionSavings').filter(r => r.batch_id === bid).map(r => String(r.tanggal || '').slice(0, 7))).sort().reverse(), match: (r, v) => String(r.tanggal || '').startsWith(v) },
-  ],
-  defaults: () => ({ batch_id: bid, status: 'Menunggu verifikasi', metode: 'Transfer Bank', tanggal: today() }),
-  rowExtra: (r) => r.status === 'Menunggu verifikasi' ? [h('button', { class: 'btn btn-ghost btn-sm', type: 'button', title: 'Tandai terverifikasi', onclick: async (e) => { e.stopPropagation(); await store.save('immersionSavings', { ...r, status: 'Terverifikasi' }); toast('Setoran diverifikasi.', 'ok'); } }, icon('check', 'sm'), 'Verifikasi')] : [],
-  kpis: (rows) => {
-    const ok = verified(rows); const ym = today().slice(0, 7); const pend = rows.filter(r => r.status === 'Menunggu verifikasi');
-    return [
-      { label: 'Total terverifikasi', value: fmtIDR(sum(ok, 'jumlah')), sub: `${ok.length} setoran`, icon: 'piggy', accent: true },
-      { label: 'Menunggu verifikasi', value: pend.length, sub: fmtIDR(sum(pend, 'jumlah')), icon: 'clock' },
-      { label: 'Setoran bulan ini', value: fmtIDR(sum(ok.filter(r => String(r.tanggal || '').startsWith(ym)), 'jumlah')), icon: 'calendar' },
-      { label: 'Tanpa bukti TF', value: rows.filter(r => !r.bukti || !(r.bukti.link || r.bukti.file)).length, sub: 'perlu dilengkapi', icon: 'alert' },
-    ];
-  },
-  footer: (rows) => ['Total', '', h('span', { class: 'num' }, fmtIDR(sum(verified(rows), 'jumlah'))), '', '', ''],
-  aliases: { student_id: ['Nama', 'Nama Mahasiswa', 'Mahasiswa'], jumlah: ['Nominal', 'Setoran'], tanggal: ['Tanggal Setor', 'Tanggal Transfer'], cicilan_ke: ['Cicilan', 'Cicilan ke', 'Cicilan Ke-'] },
-  importNote: 'Kolom yang digunakan: Tanggal, Batch, Nama/NIM mahasiswa, Cicilan ke, Jumlah, Metode, Status, dan Bukti (tautan). Data mahasiswa dicocokkan secara otomatis berdasarkan NIM atau nama.',
-  emptyTitle: `Belum ada setoran ${batchName(bid)}`, emptyText: 'Catat setoran tabungan immersion mahasiswa beserta bukti transfernya.',
-});
-
 /* =================== Kas & pengeluaran =================== */
 const kasCfg = (bid) => ({
   id: `immersionExpenses_${bid}`, collection: 'immersionExpenses', noun: 'transaksi kas', title: 'Kas & Pengeluaran Immersion', eyebrow: `Program · Immersion · ${batchName(bid)}`,
-  description: 'Arus dana immersion yang meliputi pengeluaran (tiket, akomodasi, konsumsi, dan lainnya), pemasukan lain (dana fasilitator, sponsor), serta penukaran mata uang asing. Gunakan status “Rencana” untuk anggaran yang belum dibayarkan.',
+  description: 'Arus dana immersion yang meliputi pengeluaran, serta penukaran mata uang asing. Gunakan status “Rencana” untuk anggaran yang belum dibayarkan.',
   rowsFilter: (rows) => rows.filter(r => r.batch_id === bid),
-  addLabel: 'Tambah transaksi',
+  addLabel: 'Tambah transaksi', tableClass: 'tbl-mid',
   sections: [
     { title: 'Transaksi', fields: [
       { key: 'batch_id', label: 'Batch', type: 'batch', required: true, col: 'half' },
@@ -317,8 +345,10 @@ const kasCfg = (bid) => ({
     { key: 'tanggal', label: 'Tanggal', value: r => r.tanggal || '', render: r => r.tanggal ? fmtDate(r.tanggal) : h('span', { class: 'muted' }, '–'), nowrap: true },
     { key: 'uraian', label: 'Uraian', main: true, render: r => h('div', {}, h('span', { class: 'primary' }, r.uraian || r.kategori), h('span', { class: 'secondary' }, [r.kategori, r.vendor, r.pax ? `${r.pax} pax` : null, r.student_id || r.nama_mahasiswa ? studentOf(r) : null].filter(Boolean).join(' · '))) },
     { key: 'jenis', label: 'Jenis', value: r => jenisOf(r), render: r => h('div', { class: 'badges' }, badge(jenisOf(r), toneJenis(jenisOf(r))), statusKas(r) === 'Rencana' ? badge('Rencana', 'warn') : null) },
-    { key: 'asing', label: 'Mata uang asing', value: r => Number(r.nominal_asing) || 0, render: r => fmtAsing(r) ? h('span', { class: 'num' }, fmtAsing(r)) : h('span', { class: 'muted' }, '–'), nowrap: true },
-    { key: 'jumlah', label: 'Jumlah (Rp)', align: 'right', money: true, value: r => Number(r.jumlah) || 0, render: r => r.jumlah === null || r.jumlah === undefined || r.jumlah === '' ? h('span', { class: 'muted' }, '–') : h('span', { class: 'num', style: { color: isIn(r) ? 'var(--ok)' : statusKas(r) === 'Rencana' ? 'var(--muted)' : null } }, `${isIn(r) ? '+' : isOut(r) ? '−' : ''}${fmtIDR(r.jumlah)}`), nowrap: true },
+    // Nominal mata uang asing ditampilkan di bawah jumlah Rupiah (satu kolom, lebih ringkas)
+    { key: 'jumlah', label: 'Jumlah (Rp)', align: 'right', money: true, value: r => Number(r.jumlah) || 0, nowrap: true, render: r => h('div', {},
+      r.jumlah === null || r.jumlah === undefined || r.jumlah === '' ? h('span', { class: 'muted' }, '–') : h('span', { class: 'num', style: { color: isIn(r) ? 'var(--ok)' : statusKas(r) === 'Rencana' ? 'var(--muted)' : null } }, `${isIn(r) ? '+' : isOut(r) ? '−' : ''}${fmtIDR(r.jumlah)}`),
+      fmtAsing(r) ? h('span', { class: 'secondary num' }, fmtAsing(r)) : null) },
     { key: 'bukti', label: 'Bukti', sortable: false, render: r => docLink(r.bukti, '') },
   ],
   exportColumns: [
@@ -346,7 +376,7 @@ const kasCfg = (bid) => ({
   },
   footer: (rows) => {
     const real = rows.filter(r => statusKas(r) === 'Realisasi');
-    return ['Realisasi', '', '', '', h('span', { class: 'num' }, `+${fmtIDR(sum(real.filter(isIn), 'jumlah'))} / −${fmtIDR(sum(real.filter(isOut), 'jumlah'))}`), ''];
+    return ['Realisasi', '', '', h('span', { class: 'num' }, `+${fmtIDR(sum(real.filter(isIn), 'jumlah'))} / −${fmtIDR(sum(real.filter(isOut), 'jumlah'))}`), ''];
   },
   aliases: { student_id: ['Nama Mahasiswa', 'Atas Nama'], jumlah: ['Nominal', 'Total', 'Jumlah (Rp)', 'Total IDR'], vendor: ['Invoice', 'Vendor'], nominal_asing: ['Nominal Yen', 'Yen', 'JPY'], kurs: ['Rate', 'Kurs'] },
   importNote: 'Kolom yang digunakan: Tanggal, Batch, Jenis (Pengeluaran / Pemasukan lain / Penukaran uang), Status (Realisasi / Rencana), Kategori, Uraian, Vendor, Pax, Mata uang, Nominal asing, Kurs, dan Jumlah (Rp).',
@@ -356,7 +386,7 @@ const kasCfg = (bid) => ({
 /* =================== Target per batch =================== */
 const targetCfg = (bid) => ({
   id: 'immersionTargets', collection: 'immersionTargets', noun: 'target', title: 'Target Tabungan per Batch', eyebrow: 'Program · Immersion',
-  description: 'Target tabungan immersion untuk setiap batch (dapat berbeda antarbatch). Rekap menggunakan target berstatus “Aktif” untuk menghitung kekurangan setiap mahasiswa. Tabel ini menampilkan seluruh batch.',
+  description: 'Target tabungan immersion untuk setiap batch.', tableClass: 'tbl-mid',
   sections: [{ fields: [
     { key: 'batch_id', label: 'Batch', type: 'batch', required: true, col: 'half' },
     { key: 'status', label: 'Status', type: 'select', options: ['Aktif', 'Selesai'], col: 'half', default: 'Aktif' },
@@ -371,7 +401,7 @@ const targetCfg = (bid) => ({
     { key: 'target_per_mahasiswa', label: 'Target / mahasiswa', align: 'right', render: r => r.target_per_mahasiswa ? h('span', { class: 'num' }, fmtIDR(r.target_per_mahasiswa)) : h('span', { class: 'muted' }, 'belum diisi') },
     { key: 'progres', label: 'Terkumpul', value: r => { const P = batchProgress(r.batch_id); return P.targetTotal ? pct(P.total, P.targetTotal) : 0; }, render: r => { const P = batchProgress(r.batch_id); return P.target && P.target.id === r.id ? (P.targetTotal ? progressCell(Math.min(100, pct(P.total, P.targetTotal))) : h('span', { class: 'num' }, fmtIDR(P.total))) : h('span', { class: 'muted' }, 'tidak aktif'); } },
     { key: 'tenggat', label: 'Tenggat', render: r => r.tenggat ? fmtDate(r.tenggat) : null, nowrap: true },
-    { key: 'status', label: 'Status', render: r => badge(r.status || 'Aktif') },
+    { key: 'status', label: 'Status', nowrap: true, render: r => badge(r.status || 'Aktif') },
   ],
   exportName: 'Target_Immersion', order: chain(byBatch(), byText(r => r.tenggat)), importable: true,
   defaults: () => ({ batch_id: bid, status: 'Aktif' }),
@@ -385,7 +415,6 @@ export default {
     return tabPage(root, [
       { id: 'rekap', label: 'Rekap', fn: (b, ctx) => rekap(b, goWith(ctx), currentBatch()) },
       { id: 'cicilan', label: 'Cicilan per mahasiswa', fn: (b, ctx) => cicilan(b, goWith(ctx), currentBatch()) },
-      { id: 'setoran', label: 'Log setoran', fn: (b) => crudView(setoranCfg(currentBatch()))(b) },
       { id: 'kas', label: 'Kas & pengeluaran', fn: (b) => crudView(kasCfg(currentBatch()))(b) },
       { id: 'target', label: 'Target', fn: (b) => crudView(targetCfg(currentBatch()))(b) },
     ], {

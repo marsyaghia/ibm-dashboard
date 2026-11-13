@@ -41,7 +41,10 @@ export function h(tag, attrs = {}, ...kids) {
   // Semua judul (h1–h3) dan teks tombol (.btn) otomatis Title Case,
   // kecuali ditandai data-raw (mis. nama orang/perusahaan)
   const titled = (TITLE_TAGS.has(el.tagName) || el.classList.contains('btn')) && !(attrs && attrs['data-raw'] !== undefined);
-  append(el, titled ? kids.flat(Infinity).map(k => (typeof k === 'string' ? tc(k) : k)) : kids);
+  // Pilihan "Semua …" di setiap dropdown filter juga Title Case ("Semua Batch", "Semua Status")
+  const allOpt = el.tagName === 'OPTION' && !titled;
+  append(el, titled ? kids.flat(Infinity).map(k => (typeof k === 'string' ? tc(k) : k))
+    : allOpt ? kids.flat(Infinity).map(k => (typeof k === 'string' && /^Semua\s/i.test(k) ? tc(k) : k)) : kids);
   if (el.classList.contains('page-head')) widenPageDesc(el);
   return el;
 }
@@ -181,8 +184,12 @@ export const pct = (a, b) => b ? Math.round((a / b) * 100) : 0;
 const cmpText = (a, b) => String(a ?? '').localeCompare(String(b ?? ''), 'id', { numeric: true, sensitivity: 'base' });
 /** Urutan batch: Batch 1, Batch 2, … (angkatan lalu nama) */
 export const batches = () => [...store.all('batches')].sort((a, b) => (Number(a.angkatan) || 9999) - (Number(b.angkatan) || 9999) || cmpText(a.nama, b.nama));
-export const batchName = (id) => id === 'all' ? 'Semua batch' : ((store.get('batches', id) || {}).nama || '–');
-export const batchOptions = (withAll = false) => [...(withAll ? [{ value: 'all', label: 'Semua batch' }] : []), ...batches().map(b => ({ value: b.id, label: `${b.nama} · ${b.angkatan}` }))];
+/** Label pilihan "semua batch" — Title Case, sama di dropdown dan di subtitle */
+export const ALL_BATCH = 'Semua Batch';
+export const batchName = (id) => id === 'all' ? ALL_BATCH : ((store.get('batches', id) || {}).nama || '–');
+/** Nama batch untuk subtitle/keterangan yang mengikuti dropdown: '' / 'all' → "Semua Batch" */
+export const batchLabel = (id) => (id && id !== 'all') ? batchName(id) : ALL_BATCH;
+export const batchOptions = (withAll = false) => [...(withAll ? [{ value: 'all', label: ALL_BATCH }] : []), ...batches().map(b => ({ value: b.id, label: `${b.nama} · ${b.angkatan}` }))];
 /** Posisi batch di urutan (data tanpa batch ditaruh paling akhir) */
 export function batchRank(id) { const i = batches().findIndex(b => b.id === id); return i < 0 ? 9999 : i; }
 /** Pembanding baku: urut abjad/angka ala Indonesia ("Batch 2" < "Batch 10") */
@@ -193,10 +200,10 @@ export const byBatch = (f = (r) => r.batch_id) => (a, b) => batchRank(f(a)) - ba
 /** Batch bawaan saat belum ada pilihan: Batch 1 */
 export const firstBatch = () => (batches()[0] || {}).id || '';
 
-/** Dropdown batch yang seragam di semua menu. withAll: tambahkan "Semua batch" (value 'all' atau ''). */
+/** Dropdown batch yang seragam di semua menu. withAll: tambahkan "Semua Batch" (value 'all' atau ''). */
 export function batchSelect({ value, onChange, withAll = false, allValue = '', label = 'Batch', compact = false } = {}) {
   const sel = h('select', { class: 'select', 'aria-label': label },
-    withAll ? h('option', { value: allValue }, 'Semua batch') : null,
+    withAll ? h('option', { value: allValue }, ALL_BATCH) : null,
     batchOptions().map(o => h('option', { value: o.value }, o.label)));
   sel.value = value ?? '';
   if (sel.value !== String(value ?? '')) sel.value = withAll ? allValue : firstBatch();

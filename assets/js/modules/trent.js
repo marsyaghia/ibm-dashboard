@@ -48,16 +48,19 @@ const paySections = [
   ] },
 ];
 
+/* Kolom ringkas agar muat di laptop tanpa berubah jadi kartu: batch menjadi baris grup (groupBy),
+   bukti & marksheet digabung di kolom "Dokumen" dengan label pendek (bukan nama berkas yang panjang). */
+const docShort = (att, label, none) => hasAttachment(att) ? docLink({ ...att, label }) : h('span', { class: 'doc-link none' }, icon('minus', 'sm'), h('span', {}, none));
 const payColumns = [
-  { key: 'batch_id', label: 'Batch', value: r => `${batchSort(r.batch_id)}-${r.semester}-${r.trent_code}`, render: r => h('span', { class: 'primary nowrap' }, batchName(r.batch_id)) },
-  { key: 'trent_code', label: 'Mata kuliah', main: true, minWidth: '240px', render: r => h('div', {}, h('span', { class: 'pill gold' }, r.trent_code), ' ', h('span', { class: 'primary' }, r.subjek || subj(r.trent_code).nama), h('span', { class: 'secondary' }, `Semester ${r.semester || subj(r.trent_code).semester || '–'} · ${r.asia_code || ''}`)) },
-  { key: 'progres', label: 'Progres', render: r => badge(r.progres) },
+  { key: 'trent_code', label: 'Mata kuliah', main: true, value: r => `${batchSort(r.batch_id)}-${r.semester}-${r.trent_code}`, render: r => h('div', {}, h('span', { class: 'pill gold' }, r.trent_code), ' ', h('span', { class: 'primary' }, r.subjek || subj(r.trent_code).nama), h('span', { class: 'secondary' }, [batchName(r.batch_id), `Semester ${r.semester || subj(r.trent_code).semester || '–'}`, r.asia_code].filter(Boolean).join(' · '))) },
+  { key: 'progres', label: 'Progres', nowrap: true, render: r => badge(r.progres) },
   { key: 'mahasiswa_aktif', label: 'Mhs', align: 'right', value: r => Number(r.mahasiswa_aktif) || 0, render: r => h('span', { class: 'num' }, `${fmtNum(r.mahasiswa_aktif)}${r.jumlah_mahasiswa && r.jumlah_mahasiswa !== r.mahasiswa_aktif ? ` / ${r.jumlah_mahasiswa}` : ''}`) },
   { key: 'tagihan', label: 'Tagihan (S$)', align: 'right', decimal: true, value: tagihanSGD, render: r => h('span', { class: 'num' }, tagihanSGD(r) ? fmtSGD(tagihanSGD(r)) : '–'), nowrap: true },
   { key: 'total_idr', label: 'Dibayar (Rp)', align: 'right', money: true, value: r => Number(r.total_idr) || 0, render: r => h('span', { class: 'num' }, r.total_idr ? fmtIDR(r.total_idr) : '–'), nowrap: true },
-  { key: 'status_bayar', label: 'Status', render: r => h('div', {}, badge(r.status_bayar), r.tanggal_bayar ? h('span', { class: 'secondary' }, fmtDate(r.tanggal_bayar)) : null) },
-  { key: 'bukti', label: 'Bukti', sortable: false, render: r => docLink(r.bukti, '–') },
-  { key: 'marksheet', label: 'Marksheet', sortable: false, render: r => hasAttachment(r.marksheet) ? docLink(r.marksheet) : h('span', { class: 'muted' }, r.marksheet_status || '–') },
+  { key: 'status_bayar', label: 'Status', nowrap: true, render: r => h('div', {}, badge(r.status_bayar), r.tanggal_bayar ? h('span', { class: 'secondary' }, fmtDate(r.tanggal_bayar)) : null) },
+  { key: 'dokumen', label: 'Dokumen', sortable: false, render: r => h('div', { class: 'doc-stack' },
+    docShort(r.bukti, 'Bukti transfer', 'Bukti belum ada'),
+    hasAttachment(r.marksheet) ? docLink({ ...r.marksheet, label: 'Marksheet' }) : h('span', { class: 'doc-link none' }, icon('minus', 'sm'), h('span', {}, `Marksheet: ${r.marksheet_status || 'TBC'}`))) },
 ];
 const payExport = [
   { key: 'batch_id', label: 'Batch', value: r => batchName(r.batch_id) }, { key: 'trent_code', label: 'Trent Code' }, { key: 'asia_code', label: 'Asia Code' },
@@ -71,9 +74,10 @@ const payExport = [
 
 const pembayaran = crudView({
   id: 'trentPayments', collection: 'trentPayments', noun: 'pembayaran Trent', title: 'Pembayaran per Batch', eyebrow: 'Kemitraan',
-  description: 'Tagihan dan pembayaran ke Trent Global College per batch dan mata kuliah (tarif per mahasiswa + GST), lengkap dengan bukti transfer dan marksheet.',
-  sections: paySections, columns: payColumns, exportColumns: payExport, exportName: 'Pembayaran_Trent', pageSize: 50,
+  description: 'Tagihan dan pembayaran ke Trent Global College per batch dan mata kuliah, lengkap dengan bukti transfer dan marksheet.',
+  sections: paySections, columns: payColumns, exportColumns: payExport, exportName: 'Pembayaran_Trent', pageSize: 50, tableClass: 'tbl-pay',
   order: chain(byBatch(), (a, b) => (Number(a.semester) || 99) - (Number(b.semester) || 99), byText(r => r.trent_code)),
+  groupBy: r => batchName(r.batch_id),
   searchPlaceholder: 'Cari mata kuliah, kode…',
   search: r => [r.subjek, r.trent_code, r.asia_code, batchName(r.batch_id), r.invoice_no, r.catatan].join(' '),
   filters: [
@@ -102,7 +106,7 @@ const pembayaran = crudView({
       { label: 'Marksheet tersedia', value: `${rows.filter(r => hasAttachment(r.marksheet)).length} / ${rows.length}`, icon: 'sheet' },
     ];
   },
-  footer: (rows) => ['Total', '', '', h('span', { class: 'num' }, fmtNum(sum(rows, r => Number(r.mahasiswa_aktif) || 0))), h('span', { class: 'num' }, fmtSGD(sum(rows, tagihanSGD))), h('span', { class: 'num' }, fmtIDR(sum(rows, 'total_idr'))), '', '', ''],
+  footer: (rows) => ['Total', '', h('span', { class: 'num' }, fmtNum(sum(rows, r => Number(r.mahasiswa_aktif) || 0))), h('span', { class: 'num' }, fmtSGD(sum(rows, tagihanSGD))), h('span', { class: 'num' }, fmtIDR(sum(rows, 'total_idr'))), '', ''],
   emptyTitle: 'Belum ada data pembayaran Trent',
 });
 
@@ -142,7 +146,7 @@ function progresMahasiswa(root) {
 
     box.append(
       h('div', { class: 'page-head' },
-        h('div', {}, h('span', { class: 'eyebrow' }, 'Kemitraan · Trent'), h('h1', {}, 'Progres Mahasiswa Trent'), h('p', {}, 'Pilih kotak untuk menandai bahwa mahasiswa telah menyelesaikan mata kuliah Trent. Tagihan dihitung per mata kuliah yang diselesaikan sesuai tarif pada menu Pengaturan.')),
+        h('div', {}, h('span', { class: 'eyebrow' }, 'Kemitraan · Trent'), h('h1', {}, 'Progres Mahasiswa Trent'), h('p', {}, 'Pilih kotak untuk menandai bahwa mahasiswa telah menyelesaikan mata kuliah Trent. Tagihan dihitung per mata kuliah yang diselesaikan.')),
         h('div', { class: 'actions no-print' }, sel,
           missing.length ? h('button', { class: 'btn btn-ghost', type: 'button', onclick: async () => { await store.saveMany('trentEnrollments', missing.map(s => ({ student_id: s.id, nim: s.nim || '', nama_mahasiswa: s.nama, batch_id: bid, ...Object.fromEntries(cs.map(c => [ck(c), false])) }))); toast(`${missing.length} mahasiswa ditambahkan ke daftar Trent.`, 'ok'); } }, icon('plus'), `Tambahkan ${missing.length} mahasiswa`) : null,
           h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => exportMatrix(bid, rows, cs) }, icon('sheet'), 'Ekspor Excel'))),
@@ -152,16 +156,17 @@ function progresMahasiswa(root) {
         { label: 'Mata kuliah diselesaikan', value: `${totalTicks} / ${rows.length * cs.length}`, meter: pct(totalTicks, rows.length * cs.length), meterTone: 'ok', icon: 'check' },
         { label: `Estimasi tagihan (S$${tarif()}/mk)`, value: fmtSGD(totalTicks * tarif()), sub: 'belum termasuk GST', icon: 'wallet' },
       ]),
-      h('div', { class: 'card' }, rows.length ? h('div', { class: 'table-wrap' }, h('table', { class: 'tbl matrix stack' },
-        h('thead', {}, h('tr', {}, h('th', {}, '#'), h('th', {}, 'Nama mahasiswa'), cs.map(c => h('th', { class: 'mark', title: subj(c).nama }, c, h('span', { class: 'secondary', style: { fontWeight: 500 } }, `Smt ${subj(c).semester}`))), h('th', { class: 'right' }, 'Selesai'), h('th', {}, 'Catatan'))),
+      // Matriks: kolom mata kuliah selebar sama & rata tengah; di layar kecil tampil sebagai kartu berisi petak centang
+      h('div', { class: 'card' }, rows.length ? h('div', { class: 'table-wrap' }, h('table', { class: 'tbl matrix trent-matrix stack' },
+        h('thead', {}, h('tr', {}, h('th', { class: 'idx' }, '#'), h('th', { class: 'name' }, 'Nama mahasiswa'), cs.map(c => h('th', { class: 'mark', title: subj(c).nama }, c, h('span', { class: 'secondary' }, `Smt ${subj(c).semester}`))), h('th', { class: 'right m-done' }, 'Selesai'), h('th', { class: 'm-note' }, 'Catatan'))),
         h('tbody', {}, rows.map((x, i) => h('tr', {},
           h('td', { class: 'muted num idx' }, i + 1),
           h('td', { class: 'cell-main' }, h('button', { class: 'doc-link', type: 'button', onclick: () => editEnrollment(x.en), title: 'Ubah catatan & pembayaran' }, h('span', { class: 'primary' }, x.s.nama))),
-          cs.map(c => h('td', { class: 'mark', 'data-label': c }, h('button', { type: 'button', class: `tick ${x.en[ck(c)] ? 'on' : ''}`, 'aria-pressed': String(!!x.en[ck(c)]), 'aria-label': `${x.s.nama} — ${c}`, onclick: () => toggle(x.en, c) }, icon('check')))),
-          h('td', { class: 'right num', 'data-label': 'Selesai' }, `${doneCount(x.en)}/${cs.length}`),
-          h('td', { class: 'wide', 'data-label': 'Catatan' }, x.en.remarks ? badge(x.en.remarks, doneCount(x.en) < cs.length ? 'warn' : '') : (doneCount(x.en) === cs.length ? badge('Done') : h('span', { class: 'muted' }, '–'))),
+          cs.map(c => h('td', { class: 'mark', 'data-label': c }, h('button', { type: 'button', class: `tick ${x.en[ck(c)] ? 'on' : ''}`, 'aria-pressed': String(!!x.en[ck(c)]), 'aria-label': `${x.s.nama} — ${c}`, title: subj(c).nama, onclick: () => toggle(x.en, c) }, icon('check')))),
+          h('td', { class: 'right num m-done', 'data-label': 'Selesai' }, `${doneCount(x.en)}/${cs.length}`),
+          h('td', { class: 'wide m-note', 'data-label': 'Catatan' }, x.en.remarks ? badge(x.en.remarks, doneCount(x.en) < cs.length ? 'warn' : '') : (doneCount(x.en) === cs.length ? badge('Done') : h('span', { class: 'muted' }, '–'))),
         ))),
-        h('tfoot', {}, h('tr', {}, h('td', { class: 'idx' }), h('td', { class: 'cell-main' }, 'Jumlah selesai'), cs.map(c => h('td', { class: 'mark num', 'data-label': c }, rows.filter(x => x.en[ck(c)]).length)), h('td', { class: 'right num', 'data-label': 'Total' }, totalTicks), h('td', { class: 'idx' }))),
+        h('tfoot', {}, h('tr', {}, h('td', { class: 'idx' }), h('td', { class: 'cell-main' }, 'Jumlah selesai'), cs.map(c => h('td', { class: 'mark num', 'data-label': c }, rows.filter(x => x.en[ck(c)]).length)), h('td', { class: 'right num m-done', 'data-label': 'Total' }, totalTicks), h('td', { class: 'idx' }))),
       )) : h('div', { class: 'empty' }, icon('users'), h('h3', {}, 'Belum ada mahasiswa terdaftar Trent di batch ini'), h('p', {}, missing.length ? 'Gunakan tombol “Tambahkan mahasiswa” di bagian atas.' : 'Silakan tambahkan mahasiswa batch ini melalui menu Biodata Mahasiswa terlebih dahulu.'))),
     );
   }
@@ -195,7 +200,7 @@ function silabus(root) {
   function render() {
     clear(box);
     box.append(
-      h('div', { class: 'page-head' }, h('div', {}, h('span', { class: 'eyebrow' }, 'Kemitraan · Trent'), h('h1', {}, 'Mata Kuliah & Silabus Trent'), h('p', {}, 'Enam mata kuliah Trent Global College yang dikonversi ke dalam kurikulum IBM, beserta dokumen MDD dan rencana pembelajaran per pertemuan.')),
+      h('div', { class: 'page-head' }, h('div', {}, h('span', { class: 'eyebrow' }, 'Kemitraan · Trent'), h('h1', {}, 'Mata Kuliah & Silabus Trent'), h('p', {}, 'Seluruh mata kuliah Trent Global College, beserta dokumen MDD dan RPS setiap pertemuan.')),
         h('div', { class: 'actions' }, h('button', { class: 'btn btn-primary', type: 'button', onclick: () => edit(null) }, icon('plus'), 'Tambah mata kuliah'))),
       h('div', { class: 'grid grid-2' }, subjects().map(s => {
         const items = String(s.silabus || '').split('\n').filter(Boolean);

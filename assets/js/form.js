@@ -6,7 +6,7 @@
          textarea | checkbox | checks | radio | rating (bintang 1–5) | attachment |
          photo (foto profil + pratinjau; data sama dengan attachment) | batch | student | readonly
    ========================================================================= */
-import { h, icon, clear, avatar, toNumber, fmtNum, batchOptions, toast, findStudent } from './ui.js';
+import { h, icon, clear, tc, avatar, toNumber, fmtNum, batchOptions, toast, findStudent } from './ui.js';
 import { store } from './store.js';
 
 const optList = (o, rec) => (typeof o === 'function' ? o(rec) : o || []).map(x => typeof x === 'object' ? x : { value: x, label: x });
@@ -26,7 +26,7 @@ export function buildForm(sections, record = {}, { onChange } = {}) {
       let val = record[f.key] !== undefined && record[f.key] !== null && record[f.key] !== '' ? record[f.key] : (typeof f.default === 'function' ? f.default(record) : f.default);
       if (f.type === 'student' && !val) val = (findStudent(record) || {}).id || '';
       const wrap = h('div', { class: `field ${f.col || ''}`, dataset: { key: f.key } });
-      const label = h('label', { for: id }, f.label, f.required ? h('span', { class: 'req', 'aria-hidden': 'true' }, '*') : null);
+      const label = h('label', { for: id }, tc(f.label), f.required ? h('span', { class: 'req', 'aria-hidden': 'true' }, '*') : null);
       let ctrl;
 
       switch (f.type) {
@@ -74,7 +74,7 @@ export function buildForm(sections, record = {}, { onChange } = {}) {
             box.appendChild(h('label', { class: 'check' }, inp, o.label)); return inp;
           });
           ctrl = { el: box, get: () => multi ? inputs.filter(i => i.checked).map(i => i.value) : ((inputs.find(i => i.checked) || {}).value || ''), set: v => inputs.forEach(i => (i.checked = multi ? (v || []).includes(i.value) : i.value === v)) };
-          wrap.appendChild(h('span', { class: 'flabel' }, f.label, f.required ? h('span', { class: 'req' }, '*') : null));
+          wrap.appendChild(h('span', { class: 'flabel' }, tc(f.label), f.required ? h('span', { class: 'req' }, '*') : null));
           wrap.appendChild(box); if (f.help) wrap.appendChild(h('div', { class: 'help' }, f.help));
           grid.appendChild(wrap); controls[f.key] = { ...ctrl, field: f, wrap }; continue;
         }
@@ -86,7 +86,7 @@ export function buildForm(sections, record = {}, { onChange } = {}) {
           const btns = [1, 2, 3, 4, 5].map(n => h('button', { type: 'button', role: 'radio', 'aria-label': `${n} bintang`, title: LBL[n - 1], onclick: () => { cur = cur === n && !f.required ? 0 : n; paint(); changed(); } }, icon('star')));
           const paint = () => { btns.forEach((b, i) => { b.classList.toggle('on', i < cur); b.setAttribute('aria-checked', String(i + 1 === cur)); }); out.textContent = cur ? `${cur}/5 · ${LBL[cur - 1]}` : 'Belum dinilai'; };
           btns.forEach(b => box.appendChild(b)); box.appendChild(out); paint();
-          wrap.append(h('span', { class: 'flabel' }, f.label, f.required ? h('span', { class: 'req', 'aria-hidden': 'true' }, '*') : null), box);
+          wrap.append(h('span', { class: 'flabel' }, tc(f.label), f.required ? h('span', { class: 'req', 'aria-hidden': 'true' }, '*') : null), box);
           if (f.help) wrap.appendChild(h('div', { class: 'help' }, f.help));
           controls[f.key] = { el: box, get: () => cur || '', set: v => { cur = Number(v) || 0; paint(); }, field: f, wrap };
           grid.appendChild(wrap); continue;
@@ -133,7 +133,7 @@ export function buildForm(sections, record = {}, { onChange } = {}) {
             },
             set: () => { }, setFile: (m) => { fileMeta = m; },
           };
-          wrap.append(h('span', { class: 'flabel' }, f.label), box);
+          wrap.append(h('span', { class: 'flabel' }, tc(f.label)), box);
           if (f.help) wrap.appendChild(h('div', { class: 'help' }, f.help));
           grid.appendChild(wrap); controls[f.key] = { ...ctrl, field: f, wrap }; continue;
         }
@@ -167,7 +167,7 @@ export function buildForm(sections, record = {}, { onChange } = {}) {
             get: () => { const o = { label: att.label || '', link: linkIn.value.trim(), file: fileMeta || null }; return (o.link || o.file || pendingFiles[f.key]) ? o : null; },
             set: () => { }, setFile: (m) => { fileMeta = m; },
           };
-          wrap.append(h('span', { class: 'flabel' }, f.label), box);
+          wrap.append(h('span', { class: 'flabel' }, tc(f.label)), box);
           if (f.help) wrap.appendChild(h('div', { class: 'help' }, f.help));
           grid.appendChild(wrap); controls[f.key] = { ...ctrl, field: f, wrap }; continue;
         }

@@ -3,7 +3,7 @@
    Di layar ≤ 960px setiap baris otomatis tampil sebagai kartu (CSS .tbl.stack),
    jadi tidak ada tabel yang perlu digeser ke samping.
    column: { key, label, render(row), value(row), align: 'right'|'center',
-             sortable (default true), width, main (kolom judul kartu di HP) }
+             sortable (default true), width, main (kolom judul kartu di HP), cls (kelas tambahan <td>) }
    ========================================================================= */
 import { h, icon, clear } from './ui.js';
 
@@ -13,10 +13,41 @@ export function cellValue(col, row) { return col.value ? col.value(row) : row[co
  * order: pembanding urutan bawaan (mis. batch → nama). Bila ada, klik judul kolom
  * berputar: naik → turun → kembali ke urutan bawaan. groupBy hanya dipakai saat
  * tabel memakai urutan bawaan, agar baris kelompok tidak terpecah.
+ *
+ * Paginasi per kelompok (hanya saat urutan bawaan; bila kolom diurutkan → per pageSize baris):
+ *   pageBy(row) → kunci halaman (mis. minggu / batch). Satu kunci tidak pernah terpecah ke dua halaman.
+ *   pageGroups  → maksimal jumlah kunci per halaman (mis. 4 batch).
+ *   pageRows    → batas lunak baris per halaman: kunci berikutnya pindah ke halaman baru bila melebihi.
+ * page / onPage(p): halaman awal & pemberitahuan pindah halaman (agar tidak kembali ke halaman 1 saat render ulang).
+ * rowClass(row) → kelas tambahan untuk <tr> (mis. 'is-today').
  */
-export function dataTable({ columns, rows, onRowClick, rowActions, pageSize = 25, sort, order, footer, emptyNode, compact, groupBy, className = '' }) {
+export function dataTable({ columns, rows, onRowClick, rowActions, pageSize = 25, sort, order, footer, emptyNode, compact, groupBy, className = '', pageBy, pageGroups = Infinity, pageRows = Infinity, page = 0, onPage, rowClass }) {
   columns = columns.filter(Boolean);
-  const state = { sort: sort || null, page: 0 };
+  const state = { sort: sort || null, page };
+  const isDefaultOrder = () => !state.sort || (sort && state.sort.key === sort.key && state.sort.dir === sort.dir);
+  // Pindah halaman: bila awal tabel sudah tergulir lewat, gulir kembali ke awal tabel
+  const goPage = (p) => {
+    state.page = p; if (onPage) onPage(p); render();
+    if (wrap.getBoundingClientRect().top < 0) wrap.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  };
+
+  /** Pecah baris menjadi halaman: per kelompok pageBy, atau per pageSize baris */
+  function paginate(all) {
+    if (!pageBy || !isDefaultOrder()) {
+      if (pageSize === Infinity) return [all];
+      const out = []; for (let i = 0; i < all.length; i += pageSize) out.push(all.slice(i, i + pageSize));
+      return out.length ? out : [[]];
+    }
+    const groups = []; let last;
+    all.forEach(r => { const k = pageBy(r); if (!groups.length || k !== last) { groups.push([]); last = k; } groups[groups.length - 1].push(r); });
+    const out = []; let cur = [], n = 0;
+    groups.forEach(g => {
+      if (cur.length && (n >= pageGroups || cur.length + g.length > pageRows)) { out.push(cur); cur = []; n = 0; }
+      cur = cur.concat(g); n++;
+    });
+    if (cur.length) out.push(cur);
+    return out.length ? out : [[]];
+  }
   const wrap = h('div', { class: 'dt' });
   const mainIdx = Math.max(0, columns.findIndex(c => c.main));
 
@@ -37,9 +68,10 @@ export function dataTable({ columns, rows, onRowClick, rowActions, pageSize = 25
     clear(wrap);
     if (!rows.length) { wrap.appendChild(emptyNode || h('div', { class: 'empty' }, icon('layers'), h('h3', {}, 'Belum ada data'), h('p', {}, 'Data yang cocok dengan filter tidak ditemukan.'))); return; }
     const all = sorted();
-    const pages = Math.max(1, Math.ceil(all.length / pageSize));
-    state.page = Math.min(state.page, pages - 1);
-    const slice = pageSize === Infinity ? all : all.slice(state.page * pageSize, (state.page + 1) * pageSize);
+    const chunks = paginate(all);
+    const pages = chunks.length;
+    state.page = Math.max(0, Math.min(state.page, pages - 1));
+    const slice = chunks[state.page];
 
     const thead = h('thead', {}, h('tr', {},
       columns.map(c => {
@@ -58,19 +90,19 @@ export function dataTable({ columns, rows, onRowClick, rowActions, pageSize = 25
       rowActions ? h('th', { class: 'actions-cell' }, h('span', { class: 'sr-only' }, 'Aksi')) : null));
 
     const tbody = h('tbody'); let lastGroup = null;
-    const grouping = groupBy && (!state.sort || (sort && state.sort.key === sort.key && state.sort.dir === sort.dir));
+    const grouping = groupBy && isDefaultOrder();
     slice.forEach(r => {
       if (grouping) { const g = groupBy(r); if (g !== lastGroup) { tbody.appendChild(h('tr', { class: 'group-row' }, h('td', { colspan: columns.length + (rowActions ? 1 : 0) }, g))); lastGroup = g; } }
       // Mode kartu (HP/tablet): tombol ikon saja → pojok kanan atas kartu; tombol berteks tetap di baris bawah
       const acts = rowActions ? rowActions(r) : null;
       const nBtn = acts ? acts.querySelectorAll('.btn').length : 0;
       const iconOnly = nBtn > 0 && !acts.querySelector('.btn:not(.btn-icon)');
-      const tr = h('tr', { class: [onRowClick ? 'clickable' : '', iconOnly ? 'icon-actions' : ''].join(' ').trim() },
+      const tr = h('tr', { class: [onRowClick ? 'clickable' : '', iconOnly ? 'icon-actions' : '', rowClass ? rowClass(r) || '' : ''].join(' ').trim() },
         columns.map((c, i) => {
           const v = c.render ? c.render(r) : cellValue(c, r);
           const empty = v === undefined || v === null || v === '';
           // is-empty: kolom kosong disembunyikan saat tampil sebagai kartu agar tidak penuh tanda "–"
-          return h('td', { class: [c.align || '', i === mainIdx ? 'cell-main' : '', c.nowrap ? 'nowrap' : '', empty && i !== mainIdx ? 'is-empty' : ''].join(' '), 'data-label': i === mainIdx ? '' : c.label },
+          return h('td', { class: [c.align || '', i === mainIdx ? 'cell-main' : '', c.nowrap ? 'nowrap' : '', c.cls || '', empty && i !== mainIdx ? 'is-empty' : ''].join(' '), 'data-label': i === mainIdx ? '' : c.label },
             empty ? h('span', { class: 'muted' }, '–') : v);
         }),
         acts ? h('td', { class: 'actions-cell' }, acts) : null);
@@ -91,13 +123,13 @@ export function dataTable({ columns, rows, onRowClick, rowActions, pageSize = 25
     wrap.appendChild(h('div', { class: 'table-wrap' }, table));
 
     if (pages > 1) {
-      const from = state.page * pageSize + 1, to = Math.min(all.length, (state.page + 1) * pageSize);
+      const from = chunks.slice(0, state.page).reduce((n, c) => n + c.length, 0) + 1, to = from + slice.length - 1;
       wrap.appendChild(h('div', { class: 'pager' },
         h('span', {}, `Menampilkan ${from}–${to} dari ${all.length}`),
         h('div', { class: 'btns' },
-          h('button', { class: 'btn btn-ghost btn-sm', disabled: state.page === 0, onclick: () => { state.page--; render(); } }, '‹ Sebelumnya'),
+          h('button', { class: 'btn btn-ghost btn-sm', disabled: state.page === 0, onclick: () => goPage(state.page - 1) }, '‹ Sebelumnya'),
           h('span', {}, `${state.page + 1} / ${pages}`),
-          h('button', { class: 'btn btn-ghost btn-sm', disabled: state.page >= pages - 1, onclick: () => { state.page++; render(); } }, 'Berikutnya ›'))));
+          h('button', { class: 'btn btn-ghost btn-sm', disabled: state.page >= pages - 1, onclick: () => goPage(state.page + 1) }, 'Berikutnya ›'))));
     }
   }
   render();
