@@ -24,6 +24,7 @@ Panduan singkat untuk revisi lewat ekstensi Claude di VS Code.
 - Satu cara CRUD: ubah/hapus hanya lewat tombol ikon di kanan (ikon + = isi baru, pensil = ubah, tempat sampah = hapus). `crudView` tidak lagi membuka form saat baris diklik; `onRowClick` hanya untuk aksi lain seperti membuka profil/detail (Mahasiswa, Dosen, respon Magang) atau navigasi.
 - Warna status/tag: 7 nada dengan hue berbeda — `ok` hijau, `warn` amber, `bad` merah, `info` biru, `violet` ungu, `teal` toska, `neutral` abu (token `--ok`…`--teal` + `-bg` di `tokens.css`; kelas `.badge.*`, `.pill.*`, `.select.st-*`). Status berbeda dalam satu kolom **wajib** bernada berbeda (mis. Upcoming biru · On Progress amber · Done hijau). Pemetaan umum di `TONES` (`ui.js`), absensi di `toneAbsen()` (`jadwal-lib.js`).
 - Ukuran huruf & tinggi kontrol dari token (`--fs-*`, `--ctl-h`) di `tokens.css`.
+- Logo: `assets/img/logo-light.svg` (biru, mode terang) & `logo-dark.svg` (kuning, mode gelap), satu path halus (digambar ulang dari logo asli, viewBox 0 0 1000 1000), bentuk identik untuk kedua warna. Pakai `logo(cls)` dari `ui.js` (memuat keduanya, CSS menampilkan sesuai tema; `{ onDark: true }` = selalu kuning untuk latar navy). Ukuran per tempat lewat kelas di `app.css` (`.brand-mark` 40px, `.gate-logo`, `.boot-logo`, `.pf-logo`). Favicon memakai `media="(prefers-color-scheme: …)"` (mengikuti tema perangkat). Cetak (kertas putih) selalu logo biru.
 - Foto profil: field `type: 'photo'` (`form.js`), tampil dengan `avatar(nama, foto)` (`ui.js`; mendukung link Google Drive & unggahan).
 - Waktu selalu WIB (`nowWIB()`, `today()` di `ui.js`).
 - Bilah atas (`shell()` di `app.js`): sakelar bahasa ID/EN → sakelar tema (`themeSwitch()`, bentuk sama dengan sakelar bahasa) → muat ulang → akun & keluar. Tidak ada jam di bilah atas (jam ada di Dashboard).
@@ -69,6 +70,8 @@ Sebagian besar menu daftar memakai `crudView(cfg)` dari `crud.js`, sehingga cuku
 ## Form publik penilaian magang
 
 - `penilaian-magang.html` + `assets/js/penilaian-form.js` + `assets/css/form-publik.css`, tanpa login. Parameter `?batch=B2`; `?demo=1` untuk simulasi tanpa Supabase.
+- Subtitle form menyebut batch otomatis dari `?batch=` ("… mahasiswa IBM Batch 2. Jawaban hanya dapat dibaca tim IBM. …"); tidak ada keterangan di bawah tombol kirim.
+- Halaman masuk (`loginScreen()` di `app.js`, CSS `.gate-*`): layar lebar = panel navy (logo kuning + nama aplikasi, judul, subtitle satu kalimat, hak cipta) + kartu formulir; ≤ 900px panel navy disembunyikan dan logo + nama aplikasi pindah ke dalam kartu.
 - Hanya memanggil RPC `magang_cek_nim(p_nim)` dan `kirim_penilaian_magang(p jsonb)` (SQL di `supabase/sql/form-penilaian-magang.sql`, ikut digabung ke `schema.sql`). Bila menambah kolom penilaian, ubah juga kedua fungsi ini.
 - Field bintang di dashboard: `type: 'rating'` di `form.js`; tampilan baca-saja: `stars()` di `modules/magang.js`.
 

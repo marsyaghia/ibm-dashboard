@@ -37,9 +37,15 @@ const fmtTgl = (iso) => { try { return new Intl.DateTimeFormat('id-ID', { day: '
 
 /* ---------- Tema ---------- */
 function paintTheme() { const b = $('pf-theme'); b.innerHTML = ''; b.appendChild(icon(document.documentElement.getAttribute('data-theme') === 'dark' ? 'sun' : 'moon')); }
-$('pf-theme').addEventListener('click', () => { const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem('ibm_theme', t); } catch (e) { /* abaikan */ } paintTheme(); });
+$('pf-theme').addEventListener('click', () => {
+  const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', t);
+  try { localStorage.setItem('ibm_theme', t); } catch (e) { /* abaikan */ }
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', t === 'dark' ? '#0A1124' : '#FFFFFF');
+  paintTheme();
+});
 paintTheme();
-if (BATCH) $('pf-batch').textContent = `Formulir ini ditujukan bagi mahasiswa IBM ${batchLabel(BATCH)}. Penilaian Anda akan membantu mahasiswa angkatan berikutnya dalam memilih tempat magang yang tepat.`;
+// Subtitle: nama batch otomatis dari tautan formulir (?batch=B1 → "Batch 1")
+$('pf-batch').textContent = `Formulir ini ditujukan bagi mahasiswa IBM${BATCH ? ' ' + batchLabel(BATCH) : ''}. Jawaban hanya dapat dibaca tim IBM. Ulasan dipakai untuk evaluasi mitra magang dan rekomendasi bagi mahasiswa berikutnya.`;
 
 /* ---------- Akses data (RPC aman) ---------- */
 let sb = null;

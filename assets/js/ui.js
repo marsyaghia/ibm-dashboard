@@ -395,6 +395,14 @@ function fileUrlCached(file) {
   if (hit && hit.until > Date.now()) return hit.p;
   const p = store.fileUrl(file); photoCache.set(key, { p, until: Date.now() + 25 * 60e3 }); return p;
 }
+/* Logo IBM: biru (mode terang) & kuning (mode gelap) — keduanya dimuat, CSS menampilkan yang sesuai tema.
+   Ukuran diatur lewat kelas (cls) di app.css, mis. 'brand-mark', 'gate-logo'. onDark: selalu versi kuning (latar navy). */
+export function logo(cls = '', { onDark = false } = {}) {
+  const img = (k, src) => h('img', { class: k, src, alt: '', width: 40, height: 40, decoding: 'async' });
+  return onDark ? h('span', { class: `logo ${cls}`.trim() }, img('', 'assets/img/logo-dark.svg'))
+    : h('span', { class: `logo ${cls}`.trim() }, img('logo-l', 'assets/img/logo-light.svg'), img('logo-d', 'assets/img/logo-dark.svg'));
+}
+
 export function avatar(name, photo, { size = '' } = {}) {
   const el = h('span', { class: `avatar ${size}`.trim(), 'aria-hidden': 'true' }, initials(name));
   const src = photoSrc(photo);

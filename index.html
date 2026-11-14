@@ -7,7 +7,8 @@
   <meta name="format-detection" content="telephone=no">
   <title>Dashboard IBM · Institut Asia Malang</title>
   <meta name="description" content="Dashboard internal divisi International Business Management (IBM) Institut Asia Malang.">
-  <link rel="icon" href="assets/img/logo.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/img/logo-light.svg" type="image/svg+xml" media="(prefers-color-scheme: light)">
+  <link rel="icon" href="assets/img/logo-dark.svg" type="image/svg+xml" media="(prefers-color-scheme: dark)">
 
   <!-- Pasang tema & bahasa sebelum halaman tampil agar tidak berkedip (kunci sama dengan website: ibm_theme) -->
   <script src="assets/js/boot.js"></script>
@@ -20,7 +21,7 @@
 </head>
 <body>
   <div id="root">
-    <div class="boot" role="status"><img src="assets/img/logo.svg" alt="" width="44" height="44"><p class="muted">Memuat dashboard…</p></div>
+    <div class="boot" role="status"><span class="logo boot-logo"><img class="logo-l" src="assets/img/logo-light.svg" alt="" width="56" height="56"><img class="logo-d" src="assets/img/logo-dark.svg" alt="" width="56" height="56"></span><p class="muted">Memuat dashboard…</p></div>
   </div>
   <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
 

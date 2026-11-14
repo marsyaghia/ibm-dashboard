@@ -45,8 +45,17 @@ img { max-width: 100%; }
   padding-bottom: env(safe-area-inset-bottom);
 }
 .brand { display: flex; align-items: center; gap: 12px; padding: 18px 20px 16px; border-bottom: 1px solid var(--side-line); text-decoration: none !important; }
-.brand-mark { width: 36px; height: 36px; border-radius: 10px; flex: none; display: block; }
-:root[data-theme="dark"] .brand-mark { background: #fff; padding: 3px; }
+/* Logo: dua versi (biru terang · kuning gelap), tampil sesuai tema. Ukuran per tempat di bawah. */
+.logo { display: inline-grid; flex: none; line-height: 0; }
+.logo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.logo .logo-d { display: none; }
+:root[data-theme="dark"] .logo .logo-l { display: none; }
+:root[data-theme="dark"] .logo .logo-d { display: block; }
+.brand-mark { width: 40px; height: 40px; }          /* sidebar desktop & laci menu HP */
+.gate-logo { width: 40px; height: 40px; }          /* kartu login (hanya layar sempit) */
+.gate-art-logo { width: 40px; height: 40px; }       /* panel navy login (selalu kuning) */
+.boot-logo { width: 56px; height: 56px; }           /* layar memuat */
+.pf-logo { width: 40px; height: 40px; }             /* form publik penilaian magang */
 .brand-text strong { display: block; font-family: var(--font-head); font-size: 15px; color: #fff; letter-spacing: 0; line-height: 1.25; }
 .brand-text span { display: block; font-size: var(--fs-xs); color: var(--side-muted); line-height: 1.35; }
 .nav { padding: 10px 12px 22px; flex: 1; }
@@ -663,18 +672,42 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 
 /* ---------- 14. Login ---------- */
 .boot { min-height: 100vh; min-height: 100dvh; display: grid; place-content: center; justify-items: center; gap: 12px; }
-.boot img { border-radius: 12px; animation: boot 1.2s ease-in-out infinite alternate; }
+.boot .logo { animation: boot 1.2s ease-in-out infinite alternate; }
 @keyframes boot { from { opacity: .5; } to { opacity: 1; } }
-.gate-wrap { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); background: var(--paper); }
-.gate-art { background: var(--brand-800); color: #fff; padding: clamp(28px, 5vw, 64px); display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
-.gate-art::after { content: ""; position: absolute; right: -120px; bottom: -120px; width: 380px; height: 380px; border-radius: 50%; border: 40px solid rgba(235, 178, 19, .18); }
-.gate-art h1 { color: #fff; font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.4rem); max-width: 18ch; }
-.gate-art p { color: #C9D4EC; max-width: 46ch; margin-top: 12px; }
-.gate-form { display: grid; place-items: center; padding: 24px; position: relative; }
-.gate-tools { position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; align-items: center; }
-.gate-card { width: min(400px, 100%); }
-.gate-card h2 { font-size: 22px; }
-.gate-card .field { margin-top: 14px; }
+/* Layar masuk: panel navy (kiri, layar lebar) + kartu formulir di tengah area kanan */
+.gate-wrap { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: minmax(380px, 5fr) minmax(0, 7fr); background: var(--paper); }
+.gate-art { position: relative; isolation: isolate; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; gap: 32px;
+  padding: clamp(28px, 4vw, 56px); padding-left: max(clamp(28px, 4vw, 56px), env(safe-area-inset-left)); background: var(--brand-800); color: #fff; }
+:root[data-theme="dark"] .gate-art { background: #0B1633; border-right: 1px solid var(--line); }
+/* Hiasan lembut: lingkaran tipis di kanan bawah + cahaya biru di kiri atas */
+.gate-art::before { content: ""; position: absolute; z-index: -1; right: -180px; bottom: -180px; width: 460px; height: 460px; border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, .08); box-shadow: 0 0 0 64px rgba(255, 255, 255, .018), 0 0 0 128px rgba(255, 255, 255, .012); }
+.gate-art::after { content: ""; position: absolute; z-index: -1; left: -160px; top: -180px; width: 420px; height: 420px; border-radius: 50%; background: radial-gradient(closest-side, rgba(42, 82, 160, .55), transparent); }
+.gate-brand { display: flex; align-items: center; gap: 12px; }
+.gate-brand strong, .gate-card-brand strong { display: block; font: 700 15.5px/1.25 var(--font-head); letter-spacing: -.01em; }
+.gate-brand strong { color: #fff; }
+.gate-brand small { display: block; font-size: var(--fs-xs); color: #B9C6E4; }
+.gate-hero { max-width: 500px; }
+.gate-hero .eyebrow { color: var(--gold); margin-bottom: 12px; }
+.gate-art h1 { color: #fff; font-size: clamp(1.75rem, 1.2rem + 1.3vw, 2.3rem); line-height: 1.18; letter-spacing: -.025em; text-wrap: balance; }
+.gate-art p { margin-top: 14px; color: #C9D4EC; font-size: 15px; line-height: 1.6; max-width: 36ch; }
+.gate-foot { display: flex; justify-content: space-between; gap: 6px 16px; flex-wrap: wrap; font-size: var(--fs-xs); color: #9FB0D6; }
+.gate-form { position: relative; display: flex; align-items: center; justify-content: center; min-width: 0;
+  padding: 88px max(clamp(16px, 4vw, 48px), env(safe-area-inset-right)) 48px clamp(16px, 4vw, 48px); }
+.gate-tools { position: absolute; top: max(16px, env(safe-area-inset-top)); right: max(16px, env(safe-area-inset-right)); display: flex; gap: 8px; align-items: center; }
+.gate-card { width: min(420px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: var(--shadow-card); padding: clamp(24px, 3vw, 36px); }
+.gate-card-brand { display: none; align-items: center; gap: 12px; margin-bottom: 24px; }
+.gate-card-brand strong { color: var(--ink); }
+.gate-card-brand small { display: block; font-size: var(--fs-xs); color: var(--muted); }
+.gate-card-head h2, .gate-card > h2 { font: 700 22px/1.25 var(--font-head); letter-spacing: -.015em; }
+.gate-card-head p { margin-top: 6px; color: var(--muted); font-size: var(--fs-sm); }
+.gate-card .field { margin-top: 16px; }
+.gate-card .field > label, .gate-card .label-row label { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+.gate-card .label-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.gate-card .label-row .doc-link { font-size: 12.5px; font-weight: 600; }
+.gate-card .input { height: 44px; }
+.gate-card .note { margin-top: 16px; }
+.gate-card > .btn-primary { height: 44px; margin-top: 22px; font-size: var(--fs-base); }
 
 /* ---------- 15. Responsif ---------- */
 @media (max-width: 1200px) {
@@ -760,6 +793,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   .sidebar { width: var(--rail-w); z-index: 40; scrollbar-width: none; }
   .sidebar::-webkit-scrollbar { display: none; }
   .sidebar .brand { justify-content: center; padding: 14px 8px; }
+  .brand-mark { width: 38px; height: 38px; }
   .sidebar .brand-text, .nav-group > span, .nav .count, .nav a .lbl, .side-foot { display: none; }
   .nav { padding: 6px 8px 16px; }
   .nav-group { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--side-line); }
@@ -791,13 +825,20 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 @media (max-width: 900px) {
   .dl { grid-template-columns: minmax(0, 1fr); gap: 2px 0; }
   .dl dd { margin-bottom: 8px; }
+  /* Layar sempit: panel navy disembunyikan, logo & nama aplikasi pindah ke dalam kartu */
   .gate-wrap { grid-template-columns: minmax(0, 1fr); }
-  .gate-art { min-height: 220px; }
+  .gate-art { display: none; }
+  .gate-card-brand { display: flex; }
+  .gate-form { min-height: 100vh; min-height: 100dvh; }
   .info-grid { grid-template-columns: minmax(0, 1fr); }
   .info-card.span-2 { grid-column: auto; }
 }
 @media (max-width: 640px) {
   :root { --gutter: 16px; --fs-xl: 1.3rem; }
+  .gate-form { align-items: flex-start; padding: 76px 16px calc(32px + env(safe-area-inset-bottom)); }
+  .gate-card { padding: 24px 20px; }
+  .gate-card-head h2 { font-size: 20px; }
+  .pf-logo { width: 36px; height: 36px; }
   .page { padding-top: 18px; }
   .topbar { gap: 4px; }
   .topbar .crumb { font-size: 12.5px; }
@@ -1093,7 +1134,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .cal-day { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px; border-radius: 10px; background: transparent; text-align: center; }
 .cal-day .dots { margin-top: 0; justify-content: center; }
 .cal-day .dots i { width: 5px; height: 5px; }
-.cal-day.today { background: var(--fill-ui); border-color: transparent; color: #fff; }
+/* hari ini selalu berisi warna utama — juga saat jatuh di masa perkuliahan (.kuliah) */
+.cal-day.today, .cal-day.today.kuliah:not(.out) { background: var(--fill-ui); border-color: transparent; color: #fff; }
 .cal-day.today .dots i { background: #fff; }
 .cal-day.sel:not(.today) { border-color: var(--brand-500); }
 /* Jadwal harian: garis waktu */

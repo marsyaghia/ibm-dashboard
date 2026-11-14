@@ -2,11 +2,14 @@
 <html lang="id">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FFFFFF">
+  <meta name="format-detection" content="telephone=no">
   <title>Penilaian Tempat Magang · IBM Institut Asia Malang</title>
   <meta name="description" content="Form penilaian tempat magang untuk mahasiswa International Business Management (IBM) Institut Asia Malang.">
   <meta name="robots" content="noindex">
-  <link rel="icon" href="assets/img/logo.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/img/logo-light.svg" type="image/svg+xml" media="(prefers-color-scheme: light)">
+  <link rel="icon" href="assets/img/logo-dark.svg" type="image/svg+xml" media="(prefers-color-scheme: dark)">
   <script src="assets/js/boot.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,18 +21,19 @@
 <body class="public">
   <main class="pf" id="app">
     <header class="pf-head">
-      <img src="assets/img/logo.svg" alt="" width="40" height="40">
-      <div>
-        <span class="eyebrow">International Business Management · Institut Asia Malang</span>
-        <h1>Penilaian Tempat Magang</h1>
-        <p id="pf-batch">Penilaian Anda akan membantu mahasiswa angkatan berikutnya dalam memilih tempat magang yang tepat.</p>
+      <!-- Baris merek: logo · nama program · tombol tema -->
+      <div class="pf-top">
+        <span class="logo pf-logo"><img class="logo-l" src="assets/img/logo-light.svg" alt="" width="40" height="40"><img class="logo-d" src="assets/img/logo-dark.svg" alt="" width="40" height="40"></span>
+        <span class="pf-org"><strong>International Business Management</strong><small>Institut Asia Malang</small></span>
+        <button class="btn btn-ghost btn-icon" type="button" id="pf-theme" aria-label="Ganti tema terang/gelap" title="Ganti tema terang/gelap"></button>
       </div>
-      <button class="btn btn-icon" type="button" id="pf-theme" aria-label="Ganti tema terang/gelap" title="Ganti tema terang/gelap"></button>
+      <h1>Penilaian Tempat Magang</h1>
+      <!-- Nama batch diisi otomatis dari tautan (?batch=B1) oleh penilaian-form.js -->
+      <p id="pf-batch">Formulir ini ditujukan bagi mahasiswa IBM. Jawaban hanya dapat dibaca tim IBM. Ulasan dipakai untuk evaluasi mitra magang dan rekomendasi bagi mahasiswa berikutnya.</p>
     </header>
     <div id="pf-body" class="pf-body">
       <div class="boot" role="status"><p class="muted">Memuat form…</p></div>
     </div>
-    <footer class="pf-foot">Jawaban hanya dapat dibaca tim IBM. Ulasan dipakai untuk evaluasi mitra magang dan rekomendasi bagi mahasiswa berikutnya.</footer>
   </main>
   <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
   <noscript>Form ini memerlukan JavaScript.</noscript>

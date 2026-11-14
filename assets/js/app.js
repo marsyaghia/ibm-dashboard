@@ -1,7 +1,7 @@
 /* =========================================================================
    APP — kerangka (sidebar, topbar), router, tema, bahasa, login superadmin.
    ========================================================================= */
-import { h, icon, clear, toast, greeting, nowWIB, openModal } from './ui.js';
+import { h, icon, clear, toast, greeting, nowWIB, openModal, logo } from './ui.js';
 import { store } from './store.js';
 import { CONFIG } from './config.js';
 import { lang, setLang, startI18n, t } from './i18n.js';
@@ -82,7 +82,7 @@ function shell() {
   });
   const p = store.profile || {};
   els.sidebar = h('aside', { class: 'sidebar', id: 'sidebar' },
-    h('a', { class: 'brand', href: '#/beranda' }, h('img', { class: 'brand-mark', src: 'assets/img/logo.svg', alt: '' }),
+    h('a', { class: 'brand', href: '#/beranda' }, logo('brand-mark'),
       h('span', { class: 'brand-text' }, h('strong', {}, CONFIG.app.name), h('span', {}, CONFIG.app.org))),
     nav,
     h('div', { class: 'side-foot' },
@@ -180,13 +180,14 @@ function loginScreen(message) {
     const pass = h('input', { class: 'input', type: 'password', autocomplete: 'current-password', required: true, id: 'lg_pass' });
     const err = h('div', { class: `note warn ${message ? '' : 'hidden'}`, role: 'alert' }, icon('alert'), h('div', {}, message || ''));
     const btn = h('button', { class: 'btn btn-primary btn-block', type: 'submit' }, 'Masuk');
-    const forgot = h('button', { class: 'doc-link', type: 'button', style: { marginTop: '12px' } }, 'Lupa kata sandi?');
+    const forgot = h('button', { class: 'doc-link', type: 'button' }, 'Lupa kata sandi?');
+    // Kartu masuk: logo + nama aplikasi hanya tampil di layar sempit (panel navy disembunyikan)
     const form = h('form', { class: 'gate-card' },
-      h('img', { src: 'assets/img/logo.svg', alt: '', width: 48, height: 48, style: { marginBottom: '16px', borderRadius: '12px' } }),
-      h('h2', {}, 'Masuk ke Dashboard'), h('p', { class: 'muted', style: { marginTop: '6px' } }, 'Khusus superadmin Divisi IBM.'),
+      h('div', { class: 'gate-card-brand' }, logo('gate-logo'), h('span', {}, h('strong', {}, CONFIG.app.name), h('small', {}, CONFIG.app.org))),
+      h('div', { class: 'gate-card-head' }, h('h2', {}, 'Masuk ke Dashboard'), h('p', {}, 'Khusus superadmin Divisi IBM.')),
       h('div', { class: 'field' }, h('label', { for: 'lg_email' }, 'Email'), email),
-      h('div', { class: 'field' }, h('label', { for: 'lg_pass' }, 'Kata sandi'), pass),
-      h('div', { class: 'field' }, err), h('div', { class: 'field' }, btn), forgot);
+      h('div', { class: 'field' }, h('div', { class: 'label-row' }, h('label', { for: 'lg_pass' }, 'Kata Sandi'), forgot), pass),
+      err, btn);
     form.addEventListener('submit', async (e) => {
       e.preventDefault(); btn.disabled = true; err.classList.add('hidden');
       try { await store.signIn(email.value.trim(), pass.value); resolve(); }
@@ -196,12 +197,13 @@ function loginScreen(message) {
       if (!email.value.trim()) { err.lastChild.textContent = t('Masukkan email terlebih dahulu, kemudian pilih “Lupa kata sandi?”.'); err.classList.remove('hidden'); return; }
       try { await store.resetPassword(email.value.trim()); toast('Tautan atur ulang kata sandi dikirim ke email.', 'ok'); } catch (ex) { toast(ex.message, 'bad'); }
     });
+    // Panel navy (layar lebar): merek di atas · judul & subtitle singkat di tengah · hak cipta & alamat di bawah
     root.appendChild(h('div', { class: 'gate-wrap' },
       h('section', { class: 'gate-art' },
-        h('div', { style: { display: 'flex', alignItems: 'center', gap: '12px' } }, h('img', { src: 'assets/img/logo.svg', alt: '', width: 40, height: 40, style: { borderRadius: '10px', background: '#fff', padding: '2px' } }), h('b', { style: { fontFamily: 'var(--font-head)' } }, CONFIG.app.org)),
-        h('div', {}, h('span', { class: 'eyebrow', style: { color: 'var(--gold)' } }, CONFIG.app.program), h('h1', {}, 'Dashboard operasional Divisi IBM'),
-          h('p', {}, 'Keuangan, akademik, jadwal, Trent Global College, immersion, dan data mahasiswa–dosen dalam satu tempat.')),
-        h('p', { style: { fontSize: '12.5px' } }, CONFIG.app.url.replace('https://', ''))),
+        h('div', { class: 'gate-brand' }, logo('gate-art-logo', { onDark: true }), h('span', {}, h('strong', {}, CONFIG.app.name), h('small', {}, CONFIG.app.org))),
+        h('div', { class: 'gate-hero' }, h('span', { class: 'eyebrow' }, CONFIG.app.program), h('h1', {}, 'Dashboard operasional Divisi IBM'),
+          h('p', {}, 'Akademik, keuangan, dan program IBM dalam satu tempat.')),
+        h('div', { class: 'gate-foot', 'data-no-i18n': '' }, h('span', {}, `© ${nowWIB().getFullYear()} IBM Institut Asia Malang`), h('span', {}, CONFIG.app.url.replace('https://', '')))),
       h('section', { class: 'gate-form' }, gateTools(), form)));
     startI18n(); email.focus();
   });

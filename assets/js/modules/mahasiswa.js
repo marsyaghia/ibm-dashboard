@@ -106,7 +106,7 @@ export function printForm(r = {}) {
   const box = (on) => on ? '☑' : '☐';
   const inc = (k) => PENGHASILAN.map(o => `<div>${box(r[k] === o)} ${esc(o)}</div>`).join('');
   const docs = Array.isArray(r.dokumen_magang) ? r.dokumen_magang : [];
-  const logo = new URL('assets/img/logo.svg', location.href).href;
+  const logo = new URL('assets/img/logo-light.svg', location.href).href;
   const html = `<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Formulir Pendataan — ${v('nama') || 'Kosong'}</title>
 <style>
   @page { size: A4; margin: 16mm 16mm 18mm; }

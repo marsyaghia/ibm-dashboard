@@ -68,6 +68,7 @@ export const EN = {
   // ---------- Login ----------
   'Masuk ke Dashboard': 'Sign in to the Dashboard', 'Khusus superadmin Divisi IBM.': 'For IBM Division superadmins only.', 'Email': 'Email', 'Kata sandi': 'Password', 'Masuk': 'Sign in',
   'Lupa kata sandi?': 'Forgot password?', 'Dashboard operasional Divisi IBM': 'IBM Division operations dashboard',
+  'Akademik, keuangan, dan program IBM dalam satu tempat.': 'Academics, finance, and IBM programs in one place.',
   'Keuangan, akademik, jadwal, Trent Global College, immersion, dan data mahasiswa–dosen dalam satu tempat.': 'Finance, academics, schedules, Trent Global College, immersion, and student–lecturer data in one place.',
   'Email atau kata sandi salah.': 'Incorrect email or password.', 'Akun ini tidak memiliki akses ke Dashboard IBM. Hubungi Koordinator IBM.': 'This account has no access to the IBM Dashboard. Please contact the IBM Coordinator.',
   'Masukkan email terlebih dahulu, kemudian pilih “Lupa kata sandi?”.': 'Enter your email first, then click “Forgot password?”.', 'Tautan atur ulang kata sandi dikirim ke email.': 'A password reset link has been sent to your email.',

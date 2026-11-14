@@ -76,7 +76,7 @@ ibm-dashboard/
 │   ├── css/tokens.css          ← design token (sama dengan website)
 │   ├── css/app.css             ← tata letak & komponen
 │   ├── css/form-publik.css     ← tata letak form publik penilaian magang
-│   ├── img/logo.svg
+│   ├── img/logo-light.svg, logo-dark.svg   (logo biru mode terang · kuning mode gelap)
 │   └── js/
 │       ├── boot.js             ← pasang tema & bahasa sebelum halaman tampil
 │       ├── app.js              ← kerangka, menu, login, router
