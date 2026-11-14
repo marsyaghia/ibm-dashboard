@@ -337,9 +337,17 @@ table.tbl { width: 100%; border-collapse: separate; border-spacing: 0; font-size
 .badge.warn { background: var(--warn-bg); color: var(--warn); }
 .badge.bad { background: var(--bad-bg); color: var(--bad); }
 .badge.info { background: var(--info-bg); color: var(--info); }
+.badge.violet { background: var(--violet-bg); color: var(--violet); }
+.badge.teal { background: var(--teal-bg); color: var(--teal); }
+.badge.neutral { background: var(--neutral-bg); color: var(--neutral); }
 .pill { display: inline-block; padding: 1px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; background: var(--brand-50); color: var(--link); border: 1px solid var(--brand-100); white-space: nowrap; vertical-align: 1px; line-height: 1.5; }
 .pill.gold { background: var(--gold-100); color: var(--gold-ink); border-color: transparent; }
 .pill.lb { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
+/* Pill bernada: dipakai bila beberapa tag tampil berdampingan (mis. UTS/UAS, mode kelas, libur) agar tidak serupa */
+.pill.ok { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
+.pill.bad { background: var(--bad-bg); color: var(--bad); border-color: transparent; }
+.pill.teal { background: var(--teal-bg); color: var(--teal); border-color: transparent; }
+.pill.violet { background: var(--violet-bg); color: var(--violet); border-color: transparent; }
 .doc-links { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .doc-link { display: inline-flex; align-items: flex-start; gap: 6px; font-size: 12.5px; max-width: 100%; line-height: 1.4; }
 .doc-link span { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
@@ -516,6 +524,9 @@ dialog::backdrop { background: var(--scrim); backdrop-filter: blur(3px); -webkit
 .select.st-bad { border-color: var(--bad); color: var(--bad); font-weight: 600; }
 .select.st-warn { border-color: var(--gold); color: var(--warn); font-weight: 600; }
 .select.st-info { border-color: var(--info); color: var(--info); font-weight: 600; }
+.select.st-violet { border-color: var(--violet); color: var(--violet); font-weight: 600; }
+.select.st-teal { border-color: var(--teal); color: var(--teal); font-weight: 600; }
+.select.st-neutral { border-color: var(--neutral); color: var(--neutral); font-weight: 600; }
 
 /* ---------- 13. Kalender & jam (Dashboard) ---------- */
 /* Hero: judul | jam, lalu subjudul selebar halaman di bawahnya. Layar sempit: bertumpuk (judul, subjudul, jam). */
@@ -994,6 +1005,156 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
      agar tidak terpotong di tepi kiri/kanan layar sempit */
   .page-head .menu-list, .card .menu-list { position: fixed; left: 12px; right: 12px; top: auto; bottom: calc(var(--bottom-h) + 12px + env(safe-area-inset-bottom)); min-width: 0; z-index: 70; padding: 8px; }
   .page-head .menu-list button, .card .menu-list button { padding: 12px; }
+}
+
+/* ---------- 15e. Tema 2026: sidebar terang, kartu bulat, ikon pastel, tab pil ----------
+   Ditulis setelah bagian responsif agar menimpa gaya dasar di semua ukuran layar. */
+/* ---------- Sidebar ---------- */
+.sidebar { scrollbar-color: var(--line) transparent; }
+.brand { border-bottom: 0; padding: 20px 20px 12px; }
+.brand-text strong { color: var(--ink); font-size: 15.5px; letter-spacing: -.01em; }
+.nav { padding: 4px 12px 16px; }
+.nav-group { margin-top: 14px; }
+.nav-group > span { padding: 0 12px 6px; }
+.nav a { min-height: 40px; padding: 8px 12px; border-radius: 11px; gap: 12px; }
+.nav a .icon { color: var(--muted); opacity: 1; }
+.nav a:hover { color: var(--ink); }
+.nav a[aria-current="page"] { color: var(--link); font-weight: 650; }
+.nav a[aria-current="page"]::before { display: none; }
+.nav a[aria-current="page"] .icon { color: var(--link); }
+.side-foot { margin: 0 14px 16px; padding: 14px; border: 1px solid var(--brand-100); border-radius: 14px; background: linear-gradient(160deg, var(--brand-50), transparent 150%); }
+.side-foot .mode { color: var(--ink); font-weight: 600; }
+.side-foot .dot { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-bg); }
+.side-foot .dot.demo { background: var(--gold); box-shadow: 0 0 0 3px var(--gold-100); }
+.app-footer { border-top: 1px solid var(--line); }
+
+/* ---------- Bilah atas ---------- */
+.lang-switch { border-radius: 10px; padding: 3px; background: var(--surface-sunk); }
+.lang-switch button { border-radius: 7px; height: 28px; }
+.lang-switch button[aria-pressed="true"] { background: var(--surface); color: var(--link); box-shadow: 0 1px 2px rgba(15, 26, 51, .12); }
+.user-chip .avatar, .more-btn { border-radius: 50%; }
+.btn-icon { border-radius: 10px; }
+
+/* ---------- Judul halaman ---------- */
+.page-head h1, .module-head h1, .hero h1 { font-size: clamp(1.3rem, 1.1rem + .8vw, 1.75rem); }
+.tab-body .page-head h1 { font-size: var(--fs-lg); }
+
+/* ---------- Kartu ---------- */
+.card-head:has(+ .card-body) { border-bottom: 0; padding-bottom: 6px; }
+.card-head + .card-body { padding-top: 8px; }
+.btn-primary { box-shadow: 0 6px 14px -8px var(--fill-ui); }
+.search .input { background: var(--surface-sunk); }
+.note { border-radius: 12px; }
+.modal { border-radius: 18px; }
+.dlg-foot { border-radius: 0 0 18px 18px; }
+.menu-list { border-radius: 14px; padding: 8px; }
+.menu-list button { border-radius: 9px; }
+
+/* ---------- KPI: ikon bulat pastel di kiri, label · angka · keterangan di kanan ---------- */
+.kpis { gap: 16px; }
+.kpi { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 14px; align-content: center; padding: 18px; }
+.kpi > .label { display: contents; }
+.kpi .kpi-ico { grid-column: 1; grid-row: 1 / span 3; align-self: center; width: 46px; height: 46px; border-radius: 50%; background: var(--t-blue-bg); color: var(--t-blue); }
+.kpi .kpi-ico .icon { width: 20px; height: 20px; }
+.kpi .label > span:not(.kpi-ico), .kpi .value, .kpi .sub { grid-column: 2; }
+.kpi .value { margin-top: 2px; }
+.kpi .sub { margin-top: 2px; }
+.kpi .meter, .kpi .sub + .meter, .kpi .value + .meter { grid-column: 1 / -1; margin-top: 12px; }
+.kpi.accent { box-shadow: var(--shadow-card); }
+.kpis .kpi:nth-child(4n+1) .kpi-ico { background: var(--t-blue-bg); color: var(--t-blue); }
+.kpis .kpi:nth-child(4n+2) .kpi-ico { background: var(--t-green-bg); color: var(--t-green); }
+.kpis .kpi:nth-child(4n+3) .kpi-ico { background: var(--t-amber-bg); color: var(--t-amber); }
+.kpis .kpi:nth-child(4n+4) .kpi-ico { background: var(--t-violet-bg); color: var(--t-violet); }
+.meter, .meter > i { border-radius: 99px; }
+
+/* ---------- Tab: pil di dalam kotak ---------- */
+.tabs { gap: 4px; width: fit-content; max-width: 100%; padding: 4px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); margin: 14px 0 22px; }
+.tabs button { padding: 8px 14px; border-radius: 9px; font-size: 13px; }
+.tabs button:hover { background: var(--row-hover); }
+.tabs button[aria-selected="true"] { background: var(--brand-50); color: var(--link); }
+.tabs button[aria-selected="true"]::after { display: none; }
+.seg { border-radius: 10px; }
+.seg button { border-radius: 7px; }
+.seg button[aria-pressed="true"] { color: var(--link); }
+
+/* ---------- Tabel ---------- */
+.tbl td, .tbl td.actions-cell { vertical-align: middle; }
+.tbl .group-row td { color: var(--link); letter-spacing: .02em; border-bottom: 0; }
+.row-actions .btn-icon { border-radius: 9px; }
+.pager { padding: 12px 16px; }
+.avatar.sm { border-radius: 11px; }
+.user-chip .avatar.sm { border-radius: 50%; }
+
+/* ---------- Dashboard ---------- */
+.clock-card { border-radius: 14px; padding: 10px 16px; gap: 12px; }
+.clock-card .big { font-size: 22px; }
+.hero .clock-card .icon { width: 40px; height: 40px; padding: 10px; border-radius: 12px; background: var(--t-blue-bg); color: var(--t-blue); }
+/* Kalender: angka di tengah, hari ini berisi warna utama */
+.cal-day { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px; border-radius: 10px; background: transparent; text-align: center; }
+.cal-day .dots { margin-top: 0; justify-content: center; }
+.cal-day .dots i { width: 5px; height: 5px; }
+.cal-day.today { background: var(--fill-ui); border-color: transparent; color: #fff; }
+.cal-day.today .dots i { background: #fff; }
+.cal-day.sel:not(.today) { border-color: var(--brand-500); }
+/* Jadwal harian: garis waktu */
+.cal-agenda .agenda-kicker { color: var(--link); }
+.cal-agenda .list.compact li { border-bottom: 0; padding: 8px 0; align-items: stretch; }
+.cal-agenda .time-cell { position: relative; padding-right: 24px; }
+.cal-agenda .time-cell::after { content: ""; position: absolute; right: 3px; top: 5px; width: 9px; height: 9px; border-radius: 50%; background: var(--fill-ui); box-shadow: 0 0 0 3px var(--brand-50); }
+.cal-agenda .list li:not(:last-child) .time-cell::before { content: ""; position: absolute; right: 7px; top: 18px; bottom: -14px; width: 1px; background: var(--line); }
+/* Pengingat */
+.rem-list { padding: 4px 8px 8px; }
+.rem-list a { border-bottom: 0; border-radius: 12px; padding: 10px 12px; }
+.rem-list .ico { width: 38px; height: 38px; border-radius: 12px; }
+.rem-sep { margin: 4px 0; border: 0; border-radius: 8px; padding: 6px 12px; }
+/* Rekap tiap menu: ikon dalam kotak pastel */
+.module-card { gap: 6px; padding: 16px; transition: border-color .15s, box-shadow .15s, transform .15s; }
+.module-card:hover { transform: translateY(-1px); border-color: var(--brand-100); }
+.module-card .top { gap: 10px; color: var(--ink); font-size: var(--fs-sm); }
+.module-card .top .icon { width: 38px; height: 38px; padding: 10px; border-radius: 12px; background: var(--t-blue-bg); color: var(--t-blue); }
+.module-grid .module-card:nth-child(4n+2) .top .icon { background: var(--t-green-bg); color: var(--t-green); }
+.module-grid .module-card:nth-child(4n+3) .top .icon { background: var(--t-amber-bg); color: var(--t-amber); }
+.module-grid .module-card:nth-child(4n+4) .top .icon { background: var(--t-violet-bg); color: var(--t-violet); }
+.module-card .v { margin-top: 6px; }
+.module-card .meter { margin-top: auto; }
+.module-card .s { margin-bottom: 8px; }
+.list .ico { border-radius: 11px; }
+
+/* ---------- Responsif ---------- */
+/* Tablet (rel ikon): menu tetap bertumpuk ikon + label pendek */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .nav { padding: 6px 6px 16px; }
+  .nav-group { margin-top: 6px; }
+  .nav-group.no-label { margin-top: 0; }
+  .nav a { min-height: 56px; padding: 8px 2px; gap: 4px; border-radius: 12px; }
+}
+/* Layar sentuh (HP/tablet): tombol ikon & tab lebih mudah ditekan */
+@media (pointer: coarse) {
+  .row-actions .btn-icon { width: 38px; height: 38px; }
+  .tbl.stack.as-cards tr.icon-actions > td.cell-main { padding-right: calc(var(--act-n, 2) * 40px + 4px); }
+  .tabs button { min-height: 38px; }
+}
+/* Tablet & HP: KPI tetap berupa kartu terpisah (2 kolom), bukan satu kartu berpetak */
+@media (max-width: 1024px) {
+  .kpis { gap: 12px; background: none; border: 0; border-radius: 0; overflow: visible; box-shadow: none; }
+  .kpi { border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: var(--shadow-card); }
+  .kpi.accent { box-shadow: var(--shadow-card); }
+}
+@media (max-width: 640px) {
+  :root { --topbar-h: 56px; }
+  .kpis { gap: 10px; }
+  /* HP: ikon di atas agar angka rupiah punya ruang penuh */
+  .kpi { grid-template-columns: minmax(0, 1fr); padding: 14px; }
+  .kpi .kpi-ico { display: inline-grid; grid-row: auto; width: 36px; height: 36px; margin-bottom: 8px; justify-self: start; }
+  .kpi .kpi-ico .icon { width: 17px; height: 17px; }
+  .kpi .label > span:not(.kpi-ico), .kpi .value, .kpi .sub { grid-column: 1; }
+  .tabs { gap: 4px; width: auto; margin: 10px 0 18px; padding: 4px; }
+  .tabs button { font-size: 12.5px; padding: 8px 12px; }
+  .tab-body .page-head h1 { font-size: 15.5px; }
+  .module-card { padding: 14px; }
+  .module-card .top .icon { width: 32px; height: 32px; padding: 8px; border-radius: 10px; }
+  .hero .clock-card .icon { width: 36px; height: 36px; padding: 9px; }
+  .rem-list a { padding: 10px; }
 }
 
 /* ---------- 16. Cetak ---------- */

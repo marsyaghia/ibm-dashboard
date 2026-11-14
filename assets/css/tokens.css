@@ -61,8 +61,8 @@
   color-scheme: light;
 
   /* ---------- Tambahan dashboard ---------- */
-  --topbar-h: 60px;
-  --sidebar-w: 256px;
+  --topbar-h: 64px;
+  --sidebar-w: 252px;
   --rail-w: 84px;       /* sidebar ikon di tablet (641–1024px) */
   --bottom-h: 62px;     /* navigasi bawah di HP (≤ 640px) */
   --page-max: 1560px;
@@ -80,22 +80,28 @@
   --fs-kpi: clamp(1.2rem, 1.08rem + .4vw, 1.45rem);  /* angka KPI */
   --ctl-h: 38px;     /* tinggi input, select, tombol */
   --ctl-h-sm: 32px;
-  --r-card: 12px;
+  --r-card: 16px;
+  --r-sm: 10px;                       /* tombol, input (menimpa nilai website 8px khusus dashboard) */
+  --paper: #F5F7FB;                   /* latar halaman dashboard */
+  --line:  #E6EAF2;                   /* garis kartu/tabel dashboard */
   --surface-sunk: #F8FAFD;            /* header tabel, area input pasif */
   --row-hover:    #F5F8FD;
-  --group-bg:     #E8EDF5;            /* baris pembatas grup tabel (mis. Semester 1) — sedikit lebih gelap dari baris data */
-  --shadow-card:  0 1px 2px rgba(8, 20, 47, .04), 0 1px 3px rgba(8, 20, 47, .03);
+  --group-bg:     #EEF2F9;            /* baris pembatas grup tabel (mis. Semester 1 / Batch 1) — biru lembut, teks --link */
+  --shadow-card:  0 1px 2px rgba(15, 26, 51, .04), 0 4px 16px -6px rgba(15, 26, 51, .06);
   --placeholder:  #8A95AD;
   --ring:         rgba(42, 82, 160, .16);
-  --line-soft:    #E8ECF4;            /* garis antar-baris tabel */
+  --line-soft:    #EEF1F6;            /* garis antar-baris tabel */
   --scrim:        rgba(8, 20, 47, .45);
 
-  /* Status — selalu dipasangkan dengan label/ikon, tidak warna saja */
-  --ok:       #1B7347;  --ok-bg:   #E2F3E9;
-  --warn:     var(--gold-ink); --warn-bg: var(--gold-100);
-  --bad:      #B42318;  --bad-bg:  #FDECEA;
-  --info:     var(--brand-500); --info-bg: var(--brand-50);
-  --neutral:  var(--muted); --neutral-bg: #EEF1F6;
+  /* Status — selalu dipasangkan dengan label/ikon, tidak warna saja.
+     Tiap nada punya hue yang jelas berbeda (tidak "nyaru"), kontras teks ≥ 4.5:1 di atas latarnya. */
+  --ok:       #067647;  --ok-bg:      #DCFAE6;   /* hijau  — selesai, lunas, hadir */
+  --warn:     #A15C07;  --warn-bg:    #FEF3C7;   /* amber  — proses, menunggu */
+  --bad:      #B42318;  --bad-bg:     #FEE4E2;   /* merah  — belum, ditolak, tidak hadir */
+  --info:     #175CD3;  --info-bg:    #DCEBFE;   /* biru   — dijadwalkan, diterima, online */
+  --neutral:  #475467;  --neutral-bg: #EEF1F6;   /* abu    — draft, tidak aktif */
+  --violet:   #6941C6;  --violet-bg:  #EFE8FD;   /* ungu   — lulus, diganti dosen lain */
+  --teal:     #0E7490;  --teal-bg:    #D5F4F9;   /* toska  — berjalan, tugas mandiri, daring */
 
   /* Grafik (divalidasi untuk buta warna & kontras terhadap permukaan) */
   --chart-1: #2A52A0;   /* pemasukan / seri utama */
@@ -103,13 +109,19 @@
   --chart-3: #B4466E;   /* seri ketiga (divalidasi CVD bersama chart-1 & 2) */
   --chart-grid: #E6EAF2;
 
-  /* Sidebar: tetap biru identitas di kedua mode */
-  --side-bg:      var(--brand-800);
-  --side-ink:     #D5DEF0;
-  --side-muted:   #8CA2D2;
-  --side-hover:   rgba(255, 255, 255, .06);
-  --side-active:  rgba(235, 178, 19, .14);
-  --side-line:    rgba(255, 255, 255, .08);
+  /* Sidebar terang (sewarna kartu); menu aktif = pil biru lembut. Footer mengikuti --side-bg. */
+  --side-bg:      var(--surface);
+  --side-ink:     var(--text);
+  --side-muted:   var(--muted);
+  --side-hover:   var(--row-hover);
+  --side-active:  var(--brand-50);
+  --side-line:    var(--line);
+
+  /* Warna pastel ikon (lingkaran KPI, kotak ikon rekap menu): teks + latar */
+  --t-blue:   #2563EB;  --t-blue-bg:   #E8F0FE;
+  --t-green:  #0E9F6E;  --t-green-bg:  #E3F7EE;
+  --t-amber:  #B7791F;  --t-amber-bg:  #FDF1D7;
+  --t-violet: #6D4AD6;  --t-violet-bg: #EEE9FC;
 }
 
 /* =========================================================================
@@ -148,14 +160,20 @@
   --line-soft:    #1E2B50;
   --scrim:        rgba(3, 8, 20, .65);
   --shadow-card:  0 1px 0 rgba(255, 255, 255, .02) inset;
-  --ok:  #74D3A2;  --ok-bg:  rgba(116, 211, 162, .12);
-  --bad: #FF9C94;  --bad-bg: rgba(255, 120, 110, .13);
-  --info: #8FB0F5; --info-bg: rgba(143, 176, 245, .12);
-  --neutral-bg: rgba(152, 165, 194, .12);
+  --ok:      #74D3A2;  --ok-bg:      rgba(116, 211, 162, .13);
+  --warn:    #F5BE4F;  --warn-bg:    rgba(245, 190, 79, .14);
+  --bad:     #FF9C94;  --bad-bg:     rgba(255, 120, 110, .14);
+  --info:    #84B4FF;  --info-bg:    rgba(132, 180, 255, .14);
+  --neutral: #A9B4CC;  --neutral-bg: rgba(169, 180, 204, .13);
+  --violet:  #C4B1FA;  --violet-bg:  rgba(196, 177, 250, .14);
+  --teal:    #6FD3E3;  --teal-bg:    rgba(111, 211, 227, .13);
   --chart-1: #5A82D2;
   --chart-2: #B8870A;
   --chart-3: #C8608A;
   --chart-grid: #1E2A4D;
-  --side-bg: #070E20;
-  --side-line: rgba(255, 255, 255, .06);
+  --side-bg: #0E1730;
+  --t-blue:   #8FB0F5;  --t-blue-bg:   rgba(143, 176, 245, .14);
+  --t-green:  #6FD6A8;  --t-green-bg:  rgba(111, 214, 168, .13);
+  --t-amber:  #F0C15A;  --t-amber-bg:  rgba(240, 193, 90, .13);
+  --t-violet: #B7A4F5;  --t-violet-bg: rgba(183, 164, 245, .14);
 }

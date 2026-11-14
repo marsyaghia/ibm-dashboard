@@ -11,7 +11,8 @@ export const HARI = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 export const STATUS_ABSEN = ['Hadir', 'Terlambat', 'Online (daring)', 'Diganti dosen lain', 'Tugas mandiri', 'Tidak hadir', 'Dijadwal ulang', 'Libur'];
 export const HADIR = ['Hadir', 'Terlambat', 'Online (daring)'];
 export const TIDAK_DIHITUNG = ['Dijadwal ulang', 'Libur'];
-export const toneAbsen = (s) => ({ 'Hadir': 'ok', 'Terlambat': 'warn', 'Online (daring)': 'info', 'Diganti dosen lain': 'warn', 'Tugas mandiri': 'warn', 'Tidak hadir': 'bad', 'Dijadwal ulang': '', 'Libur': '' }[s] ?? '');
+// Satu warna per status absensi (Hadir hijau · Terlambat amber · Daring biru · Diganti ungu · Tugas mandiri toska · Tidak hadir merah)
+export const toneAbsen = (s) => ({ 'Hadir': 'ok', 'Terlambat': 'warn', 'Online (daring)': 'info', 'Diganti dosen lain': 'violet', 'Tugas mandiri': 'teal', 'Tidak hadir': 'bad', 'Dijadwal ulang': 'neutral', 'Libur': 'neutral' }[s] ?? '');
 export const KATEGORI_KALENDER = ['Perkuliahan', 'UTS', 'UAS', 'Libur', 'Lainnya'];
 
 const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };

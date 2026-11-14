@@ -51,7 +51,10 @@ const ROUTES = Object.fromEntries(NAV.flatMap(g => g.items.map(i => [i.id, { ...
 const QUICK = ['beranda', 'jadwal', 'absensi', 'pengeluaran'];
 
 const getTheme = () => document.documentElement.getAttribute('data-theme') || 'light';
-function setTheme(v) { document.documentElement.setAttribute('data-theme', v); try { localStorage.setItem('ibm_theme', v); } catch (e) { /* abaikan */ } }
+function setTheme(v) {
+  document.documentElement.setAttribute('data-theme', v); try { localStorage.setItem('ibm_theme', v); } catch (e) { /* abaikan */ }
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', v === 'dark' ? '#0A1124' : '#FFFFFF');
+}
 
 /* Sakelar tema terang/gelap — bentuknya sama dengan sakelar bahasa ID/EN */
 function themeSwitch() {

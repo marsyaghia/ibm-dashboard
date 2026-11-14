@@ -235,10 +235,16 @@ export const studentOf = (r) => { const s = findStudent(r); return s ? s.nama : 
 export const withStudent = (r) => { const s = store.get('students', r.student_id); return s ? { ...r, nim: s.nim || r.nim || '', nama_mahasiswa: s.nama } : r; };
 
 /* ---------- Badge ---------- */
+/* Nada badge per status. Status yang tampil dalam satu kolom yang sama diberi nada berbeda
+   (mis. Upcoming biru · On Progress amber · Done hijau) agar tidak terlihat serupa. */
 const TONES = {
-  ok: ['lunas', 'paid', 'lengkap', 'done', 'selesai', 'aktif', 'mahasiswa aktif', 'sudah terbit', 'terbit', 'tersedia', 'diterima', 'disetujui', 'lulus'],
-  warn: ['on progress', 'proses', 'sebagian', 'pending', 'menunggu', 'belum lengkap', 'cuti', 'under checking', 'sedang berjalan', 'diajukan', 'belum ditagih', 'upcoming', 'tbc'],
-  bad: ['belum dibayar', 'belum', 'belum ada', 'unfinished', 'ditolak', 'non-aktif', 'mengundurkan diri', 'dibatalkan', 'kedaluwarsa', 'unpaid', 'drop out'],
+  ok: ['lunas', 'paid', 'lengkap', 'done', 'selesai', 'aktif', 'mahasiswa aktif', 'sudah terbit', 'terbit', 'tersedia', 'disetujui', 'final', 'confirmed', 'terverifikasi', 'hadir'],
+  warn: ['on progress', 'proses', 'sebagian', 'pending', 'menunggu', 'menunggu pembayaran', 'menunggu verifikasi', 'belum lengkap', 'cuti', 'under checking', 'belum ditagih', 'tbc', 'revisi', 'terlambat', 'rencana'],
+  bad: ['belum dibayar', 'belum', 'belum ada', 'unfinished', 'ditolak', 'mengundurkan diri', 'dibatalkan', 'kedaluwarsa', 'unpaid', 'drop out', 'tidak hadir', 'dihentikan'],
+  info: ['upcoming', 'diterima', 'diajukan', 'diajukan (reimburse)', 'belum mulai', 'draft', 'online (daring)', 'realisasi'],
+  violet: ['lulus', 'diganti dosen lain'],
+  teal: ['berjalan', 'sedang berjalan', 'tugas mandiri'],
+  neutral: ['non-aktif', 'tidak aktif', 'dijadwal ulang', 'libur'],
 };
 export function toneOf(text) {
   const t = String(text || '').toLowerCase().trim();

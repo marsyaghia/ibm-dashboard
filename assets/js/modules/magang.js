@@ -22,7 +22,7 @@ const ASPEK = [
   ['rating_jobdesk', 'Kesesuaian jobdesk'], ['rating_lingkungan', 'Lingkungan kerja'], ['rating_bimbingan', 'Bimbingan mentor'],
   ['rating_kompensasi', 'Kompensasi'], ['rating_pengembangan', 'Pengembangan skill'],
 ];
-const toneStatus = (s) => ({ Proses: 'warn', Diterima: '', Berjalan: 'ok', Selesai: 'ok', Dihentikan: 'bad' }[s] ?? '');
+const toneStatus = (s) => ({ Proses: 'warn', Diterima: 'info', Berjalan: 'teal', Selesai: 'ok', Dihentikan: 'bad' }[s] ?? '');
 const norm = (s) => String(s || '').toLowerCase().replace(/\b(pt|cv|tbk)\b\.?/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 // Semua respon ditampilkan & diperhitungkan (fitur tinjau/sembunyikan dihapus)
 const visible = () => true;
@@ -245,7 +245,9 @@ const responCfg = (bid) => ({
   id: 'internshipReviews', collection: 'internshipReviews', noun: 'penilaian', title: 'Respon Penilaian Magang', eyebrow: `Data Magang · ${batchName(bid)}`,
   description: 'Jawaban formulir penilaian dari mahasiswa.',
   // Semua batch dimuat; filter "Batch" di bilah alat (awal = batch terpilih di atas tab), dikelompokkan per batch
-  addLabel: 'Input penilaian', tableClass: 'tbl-mid', pageSize: 20,
+  // Baca-saja: respon hanya dari form publik — tanpa tambah, impor, ubah, atau hapus. Klik baris → baca ulasan.
+  editable: false, addable: false, importable: false,
+  tableClass: 'tbl-mid', pageSize: 20,
   sections: [
     { title: 'Mahasiswa & tempat magang', fields: [
       { key: 'batch_id', label: 'Batch', type: 'batch', required: true, col: 'half' },

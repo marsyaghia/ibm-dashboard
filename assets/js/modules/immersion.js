@@ -32,7 +32,7 @@ const jenisOf = (r) => r.jenis || 'Pengeluaran';
 const statusKas = (r) => r.status || 'Realisasi';
 const isOut = (r) => jenisOf(r) === 'Pengeluaran';
 const isIn = (r) => jenisOf(r) === 'Pemasukan lain';
-const toneJenis = (j) => ({ Pengeluaran: 'bad', 'Pemasukan lain': 'ok', 'Penukaran uang': '' }[j] || '');
+const toneJenis = (j) => ({ Pengeluaran: 'bad', 'Pemasukan lain': 'ok', 'Penukaran uang': 'info' }[j] || '');
 const fmtAsing = (r) => r.mata_uang && r.mata_uang !== 'IDR' && r.nominal_asing ? `${SIMBOL[r.mata_uang] || r.mata_uang} ${fmtNum(r.nominal_asing)}${r.kurs ? ` × ${fmtNum(r.kurs, 2)}` : ''}` : '';
 
 /* ---------- Batch aktif (berlaku di semua tab) — bawaan Batch 1 bila belum dipilih ---------- */
@@ -401,7 +401,7 @@ const targetCfg = (bid) => ({
     { key: 'target_per_mahasiswa', label: 'Target / mahasiswa', align: 'right', render: r => r.target_per_mahasiswa ? h('span', { class: 'num' }, fmtIDR(r.target_per_mahasiswa)) : h('span', { class: 'muted' }, 'belum diisi') },
     { key: 'progres', label: 'Terkumpul', value: r => { const P = batchProgress(r.batch_id); return P.targetTotal ? pct(P.total, P.targetTotal) : 0; }, render: r => { const P = batchProgress(r.batch_id); return P.target && P.target.id === r.id ? (P.targetTotal ? progressCell(Math.min(100, pct(P.total, P.targetTotal))) : h('span', { class: 'num' }, fmtIDR(P.total))) : h('span', { class: 'muted' }, 'tidak aktif'); } },
     { key: 'tenggat', label: 'Tenggat', render: r => r.tenggat ? fmtDate(r.tenggat) : null, nowrap: true },
-    { key: 'status', label: 'Status', nowrap: true, render: r => badge(r.status || 'Aktif') },
+    { key: 'status', label: 'Status', nowrap: true, render: r => badge(r.status || 'Aktif', (r.status || 'Aktif') === 'Selesai' ? 'ok' : 'info') },
   ],
   exportName: 'Target_Immersion', order: chain(byBatch(), byText(r => r.tenggat)), importable: true,
   defaults: () => ({ batch_id: bid, status: 'Aktif' }),

@@ -23,7 +23,7 @@ const courseOpts = () => [...store.all('courses')].sort((a, b) => a.semester - b
 const lecturerOpts = (r) => uniq([...store.all('lecturers').map(l => l.nama).sort((a, b) => a.localeCompare(b)), r && r.dosen]);
 const ttCls = (s) => `tt-item ${s.tipe === 'Trent' ? 'trent' : s.tipe === 'IBM Activity' ? 'act' : ''}`;
 const jenisPill = (s) => { const j = jenisDosen(s); return h('span', { class: `pill ${j === 'Dosen External' ? 'gold' : ''}` }, j); };
-const sessPill = (x) => x.jenis !== 'Kuliah' ? h('span', { class: 'pill gold' }, x.jenis) : null;
+const sessPill = (x) => x.jenis !== 'Kuliah' ? h('span', { class: 'pill bad' }, x.jenis) : null;
 const absenCell = (x, t) => {
   const j = jenisDosen(x.slot); if (j !== 'Dosen External') return h('span', { class: 'muted' }, j === 'Ikut Fakultas' ? 'Ikut fakultas' : 'Dosen internal');
   return x.absen && x.absen.status ? badge(x.absen.status, toneAbsen(x.absen.status)) : h('span', { class: 'muted' }, x.tanggal <= t ? 'Belum dicatat' : '–');
@@ -147,8 +147,8 @@ function weekly(root) {
         h('b', {}, s.mata_kuliah),
         h('span', { class: 'meta' }, s.dosen || 'Dosen belum ditentukan'),
         h('span', { class: 'tags' }, st.batch ? null : h('span', { class: 'pill' }, batchName(s.batch_id)), s.ruang ? h('span', { class: 'pill' }, s.ruang) : null,
-          lib ? h('span', { class: 'pill' }, 'Libur') : x ? [h('span', { class: 'pill' }, `P${x.no}`), sessPill(x)] : null,
-          s.mode && s.mode !== 'Onsite' ? h('span', { class: 'pill gold' }, s.mode) : null));
+          lib ? h('span', { class: 'pill ok' }, 'Libur') : x ? [h('span', { class: 'pill' }, `P${x.no}`), sessPill(x)] : null,
+          s.mode && s.mode !== 'Onsite' ? h('span', { class: 'pill teal' }, s.mode) : null));
     };
     const grid = h('table', { class: 'timetable' },
       h('thead', {}, h('tr', {}, h('th', { class: 'time' }, 'Jam'), HARI.map(d => h('th', {}, d, dateOf(d) ? h('small', {}, fmtDate(dateOf(d))) : null)))),
@@ -288,7 +288,7 @@ const slotView = crudView({
   pageBy: r => r.batch_id || '', pageGroups: 4,
   groupBy: r => [batchName(r.batch_id), r.semester ? `Semester ${r.semester}` : 'Semester belum diisi'].join(' · '),
   columns: [
-    { key: 'mata_kuliah', label: 'Mata kuliah', main: true, render: r => h('div', {}, h('span', { class: 'primary' }, r.mata_kuliah), r.tipe && r.tipe !== 'Kuliah' ? h('span', { class: 'pill gold', style: { marginLeft: '6px' } }, r.tipe) : null, h('span', { class: 'secondary' }, [r.kode, r.sks ? `${r.sks} SKS` : ''].filter(Boolean).join(' · '))) },
+    { key: 'mata_kuliah', label: 'Mata kuliah', main: true, render: r => h('div', {}, h('span', { class: 'primary' }, r.mata_kuliah), r.tipe && r.tipe !== 'Kuliah' ? h('span', { class: `pill ${r.tipe === 'Trent' ? 'gold' : 'violet'}`, style: { marginLeft: '6px' } }, r.tipe) : null, h('span', { class: 'secondary' }, [r.kode, r.sks ? `${r.sks} SKS` : ''].filter(Boolean).join(' · '))) },
     { key: 'hari', label: 'Hari & jam', value: r => `${hariIdx(r)}${r.jam_mulai || ''}`, render: r => h('div', {}, h('span', { class: 'primary' }, r.hari || 'Tanpa hari tetap'), h('span', { class: 'secondary num' }, timeLabel(r))), exportValue: r => r.hari, nowrap: true },
     { key: 'batch_id', label: 'Batch', value: r => `${String(batchRank(r.batch_id)).padStart(4, '0')}${r.semester || ''}`, render: r => h('div', {}, batchName(r.batch_id), h('span', { class: 'secondary' }, [r.semester ? `Semester ${r.semester}` : '', r.periode].filter(Boolean).join(' · '))), nowrap: true },
     { key: 'dosen', label: 'Dosen', render: r => h('div', {}, r.dosen || '–', h('span', { class: 'secondary' }, jenisDosen(r))) },
@@ -314,7 +314,7 @@ const slotView = crudView({
 });
 
 /* =================== TAB 5 — KALENDER AKADEMIK =================== */
-const toneKat = (k) => ({ Perkuliahan: 'info', UTS: 'warn', UAS: 'warn', Libur: 'ok' }[k] || '');
+const toneKat = (k) => ({ Perkuliahan: 'info', UTS: 'warn', UAS: 'violet', Libur: 'ok' }[k] || '');
 const kalenderView = crudView({
   id: 'calendar', collection: 'calendar', noun: 'kegiatan', title: 'Kalender Akademik', eyebrow: 'Jadwal Kuliah · Data dasar',
   // Tahun ajaran mengikuti periode yang sedang berjalan (otomatis, tanpa diubah manual)

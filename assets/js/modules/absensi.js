@@ -145,7 +145,7 @@ function lembar(root) {
       const date = h('input', { class: 'input', type: 'date', value: x.tanggal, title: x.tanggal !== x.rencana ? `Jadwal awal ${fmtDate(x.rencana)}` : 'Ubah apabila jadwal kelas dipindahkan', 'aria-label': `Tanggal pertemuan ${x.no}` });
       date.addEventListener('change', () => { if (date.value) save(x, { tanggal: date.value }, tr); });
       tr.append(
-        h('td', { class: 'cell-main' }, h('div', { class: 'meet-no' }, h('b', {}, `Pertemuan ${x.no}`), x.jenis !== 'Kuliah' ? h('span', { class: 'pill gold' }, x.jenis) : null)),
+        h('td', { class: 'cell-main' }, h('div', { class: 'meet-no' }, h('b', {}, `Pertemuan ${x.no}`), x.jenis !== 'Kuliah' ? h('span', { class: 'pill bad' }, x.jenis) : null)),
         L('Tanggal', date), L('Status', st), L('Dosen pengajar', dsn),
         L('Jam masuk – keluar', h('div', { class: 'jam' }, time('jam_masuk', 'Jam masuk'), time('jam_keluar', 'Jam keluar'))),
         L('Catatan', note));

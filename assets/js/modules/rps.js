@@ -77,7 +77,7 @@ function templateTab(root) {
     { key: 'pengampu', label: 'Pengampu', value: x => x.c.pengampu, render: x => h('div', {}, h('span', { class: `pill ${x.c.jenis_pengampu === 'Dosen External' ? 'gold' : ''}` }, x.c.jenis_pengampu || '–'), h('span', { class: 'secondary' }, x.c.pengampu || '')) },
     { key: 'rps', label: 'Template RPS', sortable: false, render: x => docLink(x.t && x.t.template_rps, 'Belum ada') },
     { key: 'obe', label: 'Template OBE', sortable: false, render: x => docLink(x.t && x.t.template_obe, 'Belum ada') },
-    { key: 'status', label: 'Status', value: x => tplStatus(x.t), render: x => badge(tplStatus(x.t), tplStatus(x.t) === 'Final' ? 'ok' : tplStatus(x.t) === 'Belum ada' ? 'bad' : 'warn') },
+    { key: 'status', label: 'Status', value: x => tplStatus(x.t), render: x => badge(tplStatus(x.t), ({ Final: 'ok', Revisi: 'warn', Draft: 'info', 'Belum ada': 'bad' })[tplStatus(x.t)] || 'neutral') },
   ];
   const exportCols = [
     { key: 'semester', label: 'Semester', value: x => x.c.semester }, { key: 'kode', label: 'Kode MK', value: x => x.c.kode },

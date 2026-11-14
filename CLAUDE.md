@@ -22,15 +22,17 @@ Panduan singkat untuk revisi lewat ekstensi Claude di VS Code.
 - Tabel panjang dibagi per kelompok, bukan dipotong di tengah kelompok: `dataTable({ pageBy, pageGroups, pageRows })` (juga lewat `crudView`). Contoh: Jadwal Full per minggu (`pageRows: 30`), List Jadwal maks. 4 batch per halaman (`pageGroups: 4`).
 - Baris pembatas grup tabel (`groupBy`, mis. "Semester 1") memakai token `--group-bg`.
 - Satu cara CRUD: ubah/hapus hanya lewat tombol ikon di kanan (ikon + = isi baru, pensil = ubah, tempat sampah = hapus). `crudView` tidak lagi membuka form saat baris diklik; `onRowClick` hanya untuk aksi lain seperti membuka profil/detail (Mahasiswa, Dosen, respon Magang) atau navigasi.
+- Warna status/tag: 7 nada dengan hue berbeda — `ok` hijau, `warn` amber, `bad` merah, `info` biru, `violet` ungu, `teal` toska, `neutral` abu (token `--ok`…`--teal` + `-bg` di `tokens.css`; kelas `.badge.*`, `.pill.*`, `.select.st-*`). Status berbeda dalam satu kolom **wajib** bernada berbeda (mis. Upcoming biru · On Progress amber · Done hijau). Pemetaan umum di `TONES` (`ui.js`), absensi di `toneAbsen()` (`jadwal-lib.js`).
 - Ukuran huruf & tinggi kontrol dari token (`--fs-*`, `--ctl-h`) di `tokens.css`.
 - Foto profil: field `type: 'photo'` (`form.js`), tampil dengan `avatar(nama, foto)` (`ui.js`; mendukung link Google Drive & unggahan).
 - Waktu selalu WIB (`nowWIB()`, `today()` di `ui.js`).
 - Bilah atas (`shell()` di `app.js`): sakelar bahasa ID/EN → sakelar tema (`themeSwitch()`, bentuk sama dengan sakelar bahasa) → muat ulang → akun & keluar. Tidak ada jam di bilah atas (jam ada di Dashboard).
 - Footer hak cipta (`footer()` di `app.js`, kelas `.app-footer`) tampil di bawah setiap halaman, warnanya mengikuti sidebar (`--side-bg`), tanpa garis aksen.
+- Tema tampilan (sejak Nov 2026, `app.css` bagian 15e + token di `tokens.css`): warna utama tetap Navy IBM; **sidebar terang** (`--side-*`, menu aktif = pil `--brand-50`); kartu bersudut 16px (`--r-card`) dengan bayangan halus; KPI = ikon bulat pastel di kiri (`--t-blue/green/amber/violet` + `-bg`, bergilir per urutan) lalu label · angka · keterangan; tab berbentuk pil dalam kotak; isi tabel rata tengah vertikal; baris grup tabel biru lembut. Jangan memakai warna pastel di luar token `--t-*`. Warna bilah browser HP (`meta theme-color`) mengikuti tema lewat `boot.js` dan `setTheme()`.
 - Tampilan per perangkat (`app.css` bagian 15):
   - desktop (> 1024px): sidebar penuh;
-  - tablet (641–1024px): sidebar menjadi rel ikon dengan label pendek (`short` di `NAV`, `app.js`); KPI jadi satu kartu 2 kolom; tabel-kartu 3 kolom;
-  - HP (≤ 640px): navigasi bawah (`QUICK` di `app.js` = 4 menu + tombol Menu), bilah atas hanya judul + menu avatar (bahasa, tema, muat ulang, keluar), KPI jadi satu kartu berpetak, filter `crudView` dilipat di balik tombol "Filter".
+  - tablet (641–1024px): sidebar menjadi rel ikon dengan label pendek (`short` di `NAV`, `app.js`); KPI 2 kolom (kartu terpisah); tabel-kartu 3 kolom;
+  - HP (≤ 640px): navigasi bawah (`QUICK` di `app.js` = 4 menu + tombol Menu), bilah atas hanya judul + menu avatar (bahasa, tema, muat ulang, keluar), KPI 2 kolom dengan ikon di atas angka, filter `crudView` dilipat di balik tombol "Filter".
   - Tabel-kartu: tombol ikon saja pindah ke pojok kanan atas; kolom kosong (`is-empty`) disembunyikan.
 
 ## Alur data

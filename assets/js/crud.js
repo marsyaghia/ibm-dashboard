@@ -30,7 +30,8 @@ export const flatFields = (sections) => sections.flatMap(s => s.fields);
  *   beforeSave(rec) → rec, aliases, importNote, pageSize, groupBy, footer,
  *   pageBy / pageGroups / pageRows: paginasi per kelompok (lihat dataTable di table.js),
  *   description: teks atau fungsi → teks (dihitung saat halaman dibuka),
- *   importSection: key field yang diisi dari baris judul di berkas impor (mis. "BATCH 1 / 2023" → batch_id)
+ *   importSection: key field yang diisi dari baris judul di berkas impor (mis. "BATCH 1 / 2023" → batch_id),
+ *   editable: false → baca-saja: tanpa tombol ubah/hapus di baris (pakai bersama addable/importable: false)
  * }
  */
 export function crudView(cfg) {
@@ -154,7 +155,8 @@ export function crudView(cfg) {
     toolbar.appendChild(countEl);
     searchIn.addEventListener('input', () => { state.q = searchIn.value; refresh(); });
 
-    const rowActions = (r) => h('div', { class: 'row-actions' },
+    // editable: false → tabel baca-saja (tanpa tombol pensil/tempat sampah); klik baris tetap memakai onRowClick
+    const rowActions = cfg.editable === false ? null : (r) => h('div', { class: 'row-actions' },
       ...(cfg.rowExtra ? cfg.rowExtra(r, ctx) : []),
       h('button', { class: 'btn btn-icon', type: 'button', title: 'Ubah', 'aria-label': 'Ubah', onclick: () => openForm(r) }, icon('edit', 'sm')),
       h('button', { class: 'btn btn-icon danger', type: 'button', title: 'Hapus', 'aria-label': 'Hapus', onclick: async () => { if (await confirmDialog(`Hapus ${cfg.noun || 'data'} ini?`)) removeRow(r); } }, icon('trash', 'sm')));
