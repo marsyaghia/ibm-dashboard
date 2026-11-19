@@ -85,7 +85,7 @@ const data = crudView({
   importSection: 'batch_id',
   aliases: { nama_mahasiswa: ['Nama', 'Nama Mahasiswa', 'Student Name'], batch_id: ['Angkatan'], du: ['Daftar Ulang'], ukt_per_semester: ['UKT', 'UKT/SPP', 'UKT per semester'] },
   importNote: 'Sheet “Biaya Batch 1 sd 4” dapat digunakan secara langsung (File → Download → .xlsx/.csv). Kolom yang dikenali: NIM, Nama, DU, DPP, dan UKT per semester. Baris judul seperti “BATCH 1 / 2023” digunakan sebagai batch untuk baris di bawahnya, sedangkan baris total akan diabaikan. Data mahasiswa dengan NIM yang sama akan diperbarui.',
-  emptyTitle: 'Belum ada data biaya mahasiswa', emptyText: 'Tambahkan data mahasiswa secara manual atau impor dari sheet biaya per batch.',
+  emptyIcon: 'income', emptyTitle: 'Belum ada data biaya mahasiswa', emptyText: 'Tambahkan data mahasiswa secara manual atau impor dari sheet biaya per batch.',
 });
 
 /* ---------- Tab Rekapitulasi ---------- */

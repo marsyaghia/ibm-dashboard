@@ -171,6 +171,8 @@ const TOP_REMINDERS = 5;
 const TONE_LABEL = { bad: 'Mendesak', warn: 'Perlu dilengkapi', info: 'Info' };
 const MENU_LABEL = { jadwal: 'Jadwal Kuliah', absensi: 'Absensi Dosen Eksternal', rps: 'RPS & OBE', materi: 'Materi & PPT', pengeluaran: 'Pengeluaran Divisi', trent: 'Trent Global College', immersion: 'Immersion', mahasiswa: 'Biodata Mahasiswa', sertifikat: 'Sertifikat Mahasiswa', dosen: 'Biodata Dosen' };
 
+/* "Tampilkan lainnya" dibuka/ditutup di tempat (tanpa render ulang Dashboard),
+   sehingga chevron berputar dan baris tambahan muncul berurutan. */
 function reminderCard(rem, showAll, onToggle) {
   const item = (r) => h('li', {}, h('a', { href: `#/${r.route}`, title: r.text },
     h('span', { class: `ico ${r.tone}` }, icon(r.tone === 'bad' ? 'alert' : r.tone === 'warn' ? 'bell' : 'info', 'sm')),
@@ -179,15 +181,21 @@ function reminderCard(rem, showAll, onToggle) {
     h('span', { class: `badge ${r.tone === 'info' ? '' : r.tone}` }, String(r.n)),
     icon('arrow', 'sm go')));
   const rest = rem.length - TOP_REMINDERS;
+  const extra = rest > 0 ? [h('li', { class: 'rem-sep', 'aria-hidden': 'true' }, 'Lainnya'), ...rem.slice(TOP_REMINDERS).map(item)] : [];
+  extra.forEach((li, i) => { li.classList.add('rem-extra'); li.style.animationDelay = `${Math.min(i, 8) * 30}ms`; li.hidden = !showAll; });
+  const label = h('span', {}, showAll ? 'Sembunyikan' : `Tampilkan ${rest} lainnya`);
+  const more = rest > 0 ? h('button', { class: 'rem-more', type: 'button', 'aria-expanded': String(showAll), onclick: () => {
+    const open = more.getAttribute('aria-expanded') !== 'true';
+    more.setAttribute('aria-expanded', String(open)); label.textContent = open ? 'Sembunyikan' : `Tampilkan ${rest} lainnya`;
+    extra.forEach(li => { li.hidden = !open; });
+    onToggle(open);
+  } }, label, icon('chevron', 'sm')) : null;
   return h('div', { class: 'card rem-card' },
     h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, icon('bell', 'sm'), ' Pengingat data'),
       h('p', {}, rem.length ? `${rem.length} hal perlu ditindaklanjuti` : 'Seluruh data utama telah lengkap'))),
-    rem.length ? h('ul', { class: 'rem-list' },
-      rem.slice(0, TOP_REMINDERS).map(item),
-      showAll && rest > 0 ? [h('li', { class: 'rem-sep', 'aria-hidden': 'true' }, 'Lainnya'), ...rem.slice(TOP_REMINDERS).map(item)] : null)
-      : h('div', { class: 'empty' }, icon('check'), h('h3', {}, 'Tidak ada pengingat'), h('p', {}, 'Tidak ada data yang perlu ditindaklanjuti.')),
-    rest > 0 ? h('button', { class: 'rem-more', type: 'button', 'aria-expanded': String(showAll), onclick: onToggle },
-      showAll ? 'Sembunyikan' : `Tampilkan ${rest} lainnya`, icon('chevron', 'sm')) : null);
+    rem.length ? h('ul', { class: 'rem-list' }, rem.slice(0, TOP_REMINDERS).map(item), extra)
+      : h('div', { class: 'empty is-done' }, icon('check'), h('h3', {}, 'Tidak ada pengingat'), h('p', {}, 'Tidak ada data yang perlu ditindaklanjuti.')),
+    more);
 }
 
 /* ---------- Rekap tiap menu ---------- */
@@ -243,7 +251,7 @@ export default {
           h('div', { class: 'clock-card' }, icon('clock'), h('div', {}, clockBig, clockSub)),
           // dua kalimat dipisah agar masing-masing tetap cocok dengan kamus EN
           h('p', { class: 'hero-sub' }, h('span', {}, periodeLine()), ' ', h('span', {}, PAGE_INFO))),
-        h('div', { class: 'grid grid-main dash-main' }, cal.el, reminderCard(rem, showAll, () => { showAll = !showAll; render(); })),
+        h('div', { class: 'grid grid-main dash-main' }, cal.el, reminderCard(rem, showAll, (open) => { showAll = open; })),
         h('h2', { class: 'section-title' }, icon('dashboard', 'sm'), 'Rekap tiap menu'),
         moduleCards());
     }

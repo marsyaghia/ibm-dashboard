@@ -27,7 +27,8 @@
 
 /* Langkah 1: NIM */
 .pf-nim { display: flex; gap: 10px; margin-top: 16px; }
-.pf-nim .input { height: 46px; font-size: 16px; letter-spacing: .04em; }
+.pf-nim .input { height: 46px; font-size: 16px; letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+.pf-nim .input::placeholder { letter-spacing: 0; }
 .pf-nim .btn { height: 46px; flex: none; padding: 0 18px; }
 
 .pf-who { display: flex; gap: 12px; align-items: center; margin-top: 16px; padding: 12px 14px; border-radius: 12px; background: var(--brand-50); border: 1px solid var(--brand-100); }
@@ -67,6 +68,12 @@
 .pf-done { text-align: center; padding: clamp(28px, 5vw, 44px) 22px; }
 .pf-done .ok { width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%; display: grid; place-items: center; background: var(--ok-bg); color: var(--ok); }
 .pf-done .ok .icon { width: 32px; height: 32px; stroke-width: 2.4; }
+/* Momen penutup: lingkaran membesar lembut, lalu centang tergambar (mati bila reduced-motion) */
+@keyframes pf-ring { from { transform: scale(.6); opacity: 0; } }
+@keyframes pf-draw { to { stroke-dashoffset: 0; } }
+.pf-done .ok { animation: pf-ring 420ms var(--ease-out) both; }
+.pf-done .ok .icon path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: pf-draw 360ms var(--ease-out) 220ms forwards; }
+@media (prefers-reduced-motion: reduce) { .pf-done .ok .icon path { stroke-dashoffset: 0; } }
 .pf-done h2 { font-size: 20px; justify-content: center; }
 .pf-done p { margin: 8px auto 0; max-width: 46ch; color: var(--muted); line-height: 1.6; }
 

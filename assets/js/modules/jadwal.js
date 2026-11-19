@@ -310,7 +310,7 @@ const slotView = crudView({
   defaults: () => ({ periode: currentPeriode(), tipe: 'Kuliah', mode: 'Onsite', jumlah_pertemuan: store.setting('akademik').target_pertemuan }),
   aliases: { mata_kuliah: ['Subject in English', 'Subject', 'Matkul', 'Mata Kuliah'], dosen: ['Lectures', 'Lecturer', 'Pengajar', 'Dosen'], hari: ['Day'], ruang: ['ROOM', 'Room'], batch_id: ['BATCH'], jam_mulai: ['Time', 'Jam'] },
   importNote: 'Format sheet jadwal (Subject in English, Lectures, BATCH, ROOM, Day, Time) dikenali secara otomatis. Kolom “Time” dengan isi seperti “09.30 - 12.00” akan dipisahkan menjadi jam mulai dan jam selesai. Nama hari dalam bahasa Inggris (Monday, dst.) juga dikenali.',
-  emptyTitle: 'Belum ada jadwal', unit: 'kelas',
+  emptyIcon: 'calendar', emptyTitle: 'Belum ada jadwal', unit: 'kelas',
 });
 
 /* =================== TAB 5 — KALENDER AKADEMIK =================== */
@@ -356,7 +356,7 @@ const kalenderView = crudView({
   sort: { key: 'mulai', dir: 'asc' }, pageSize: 100, exportName: 'Kalender_Akademik', unit: 'kegiatan',
   groupBy: null,
   defaults: () => { const p = currentPeriode().split(' '); return { semester: p[0] || 'Ganjil', tahun_ajaran: p[1] || '' }; },
-  emptyTitle: 'Kalender akademik belum diisi', emptyText: 'Tambahkan kegiatan secara manual atau impor dari tabel PDF kalender akademik.',
+  emptyIcon: 'calendar', emptyTitle: 'Kalender akademik belum diisi', emptyText: 'Tambahkan kegiatan secara manual atau impor dari tabel PDF kalender akademik.',
 });
 
 /* ---------- Popup ubah slot (dipakai Weekly, Daily, Jadwal Full) ---------- */

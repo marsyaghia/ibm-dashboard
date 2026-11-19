@@ -42,6 +42,7 @@ export function crudView(cfg) {
 
     const searchIn = h('input', { class: 'input', type: 'search', placeholder: cfg.searchPlaceholder || 'Cari…', 'aria-label': 'Cari' });
     const countEl = h('span', { class: 'count' });
+    const emptyEl = h('div', { class: 'empty' });
     const kpiBox = h('div');
     const aboveBox = h('div');
     const tableBox = h('div');
@@ -123,13 +124,15 @@ export function crudView(cfg) {
     // Subtitle otomatis selebar halaman (lihat widenPageDesc di ui.js).
     // description boleh berupa fungsi agar teks dinamis (mis. tahun ajaran berjalan) dihitung saat dibuka.
     const desc = typeof cfg.description === 'function' ? cfg.description() : cfg.description;
+    const openImport = () => importDialog({ title: cfg.title, fields: [...fields, ...(cfg.importExtra || []), ...schemaExtras(cfg.collection, [...fields, ...(cfg.importExtra || [])])], aliases: cfg.aliases, note: cfg.importNote, sectionKey: cfg.importSection, onImport: (recs) => importRecords(recs) });
+    const addLabel = cfg.addLabel || `Tambah ${cfg.noun || ''}`.trim();
     const head = h('div', { class: 'page-head' },
       h('div', {}, cfg.eyebrow ? h('span', { class: 'eyebrow' }, cfg.eyebrow) : null, h('h1', {}, cfg.title), desc ? h('p', {}, desc) : null),
       h('div', { class: 'actions no-print' },
         ...(cfg.extraActions ? cfg.extraActions(ctx) : []),
-        cfg.importable === false ? null : h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => importDialog({ title: cfg.title, fields: [...fields, ...(cfg.importExtra || []), ...schemaExtras(cfg.collection, [...fields, ...(cfg.importExtra || [])])], aliases: cfg.aliases, note: cfg.importNote, sectionKey: cfg.importSection, onImport: (recs) => importRecords(recs) }) }, icon('upload'), 'Impor'),
+        cfg.importable === false ? null : h('button', { class: 'btn btn-ghost', type: 'button', onclick: openImport }, icon('upload'), 'Impor'),
         exportMenu,
-        cfg.addable === false ? null : h('button', { class: 'btn btn-primary', type: 'button', onclick: () => openForm(null) }, icon('plus'), cfg.addLabel || `Tambah ${cfg.noun || ''}`.trim()),
+        cfg.addable === false ? null : h('button', { class: 'btn btn-primary', type: 'button', onclick: () => openForm(null) }, icon('plus'), addLabel),
       ));
 
     // Filter bar
@@ -152,7 +155,10 @@ export function crudView(cfg) {
       sel.addEventListener('change', () => { state.f[f.key] = sel.value; pref.set(key, state.f); refresh(); });
       toolbar.appendChild(sel);
     });
-    toolbar.appendChild(countEl);
+    // Hapus filter: tampil hanya bila ada filter/kata kunci aktif
+    const resetFilters = () => { state.f = {}; state.q = ''; searchIn.value = ''; pref.set(key, state.f); refresh(); searchIn.focus(); };
+    const clearBtn = h('button', { class: 'btn btn-sm btn-ghost filter-clear hidden', type: 'button', onclick: resetFilters }, icon('x', 'sm'), 'Hapus filter');
+    toolbar.append(clearBtn, countEl);
     searchIn.addEventListener('input', () => { state.q = searchIn.value; refresh(); });
 
     // editable: false → tabel baca-saja (tanpa tombol pensil/tempat sampah); klik baris tetap memakai onRowClick
@@ -166,10 +172,27 @@ export function crudView(cfg) {
       // modul memberi aksi lain (mis. membuka profil/detail), bukan membuka form ubah.
       columns: cfg.columns, rows: [], sort: cfg.sort, order: cfg.order, onRowClick: cfg.onRowClick ? (r) => cfg.onRowClick(r, ctx) : null, rowActions,
       pageSize: cfg.pageSize || 25, footer: cfg.footer, groupBy: cfg.groupBy, className: cfg.tableClass || '', pageBy: cfg.pageBy, pageGroups: cfg.pageGroups, pageRows: cfg.pageRows,
-      emptyNode: h('div', { class: 'empty' }, icon('layers'), h('h3', {}, cfg.emptyTitle || 'Belum ada data'), h('p', {}, cfg.emptyText || 'Tambahkan data baru atau impor dari Excel/CSV.'),
-        cfg.addable === false ? null : h('button', { class: 'btn btn-primary', type: 'button', onclick: () => openForm(null) }, icon('plus'), cfg.addLabel || `Tambah ${cfg.noun || ''}`.trim())),
+      emptyNode: emptyEl,
     });
     tableBox.appendChild(table.el);
+
+    /* Tampilan kosong dua jenis: (1) memang belum ada data → ajakan tambah/impor;
+       (2) data ada tetapi tersembunyi oleh filter/kata kunci → ajakan "Hapus filter",
+       agar filter tersimpan dari sesi lalu tidak terbaca seperti data hilang. */
+    function fillEmpty(filteredOut, nActive) {
+      clear(emptyEl); emptyEl.classList.toggle('is-filtered', filteredOut);
+      if (filteredOut) {
+        const q = state.q.trim();
+        emptyEl.append(icon('search'), h('h3', {}, 'Tidak ada data yang cocok'),
+          h('p', {}, q ? (nActive ? `Tidak ada hasil untuk “${q}” dengan ${nActive} filter aktif.` : `Tidak ada hasil untuk “${q}”.`) : `${nActive} filter aktif menyembunyikan semua data.`),
+          h('div', { class: 'empty-actions' }, h('button', { class: 'btn btn-ghost', type: 'button', onclick: resetFilters }, icon('x', 'sm'), 'Hapus filter')));
+        return;
+      }
+      emptyEl.append(icon(cfg.emptyIcon || 'layers'), h('h3', {}, cfg.emptyTitle || 'Belum ada data'), h('p', {}, cfg.emptyText || 'Tambahkan data baru atau impor dari Excel/CSV.'),
+        cfg.addable === false && cfg.importable === false ? null : h('div', { class: 'empty-actions' },
+          cfg.addable === false ? null : h('button', { class: 'btn btn-primary', type: 'button', onclick: () => openForm(null) }, icon('plus'), addLabel),
+          cfg.importable === false ? null : h('button', { class: 'btn btn-ghost', type: 'button', onclick: openImport }, icon('upload'), 'Impor')));
+    }
 
     function refresh() {
       (cfg.filters || []).forEach(f => f._fill && f._fill());
@@ -177,6 +200,9 @@ export function crudView(cfg) {
       countEl.textContent = `${rows.length} dari ${allRows.length} ${cfg.unit || 'baris'}`;
       const nActive = (cfg.filters || []).filter(f => state.f[f.key] !== undefined && state.f[f.key] !== '').length;
       filterN.textContent = String(nActive); filterN.classList.toggle('hidden', !nActive);
+      const searching = !!state.q.trim();
+      clearBtn.classList.toggle('hidden', !(nActive || searching));
+      fillEmpty(!rows.length && allRows.length > 0 && (nActive > 0 || searching), nActive);
       clear(kpiBox); if (cfg.kpis) kpiBox.appendChild(kpiRow(cfg.kpis(rows, allRows)));
       clear(aboveBox); if (cfg.above) { const n = cfg.above(rows, allRows, ctx); if (n) aboveBox.appendChild(n); }
       table.update(rows);

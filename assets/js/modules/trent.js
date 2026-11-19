@@ -107,7 +107,7 @@ const pembayaran = crudView({
     ];
   },
   footer: (rows) => ['Total', '', h('span', { class: 'num' }, fmtNum(sum(rows, r => Number(r.mahasiswa_aktif) || 0))), h('span', { class: 'num' }, fmtSGD(sum(rows, tagihanSGD))), h('span', { class: 'num' }, fmtIDR(sum(rows, 'total_idr'))), '', ''],
-  emptyTitle: 'Belum ada data pembayaran Trent',
+  emptyIcon: 'handshake', emptyTitle: 'Belum ada data pembayaran Trent',
 });
 
 /* ---------- Tab 2: Progres mahasiswa ---------- */

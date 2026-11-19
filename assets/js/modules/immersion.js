@@ -168,7 +168,7 @@ function studentLog(studentId, bid) {
 /** Popup daftar setoran yang menunggu verifikasi */
 function pendingLog(bid) {
   const body = h('div');
-  const fill = () => { const list = batchProgress(bid).pending.map(r => ({ ...r })).sort((a, b) => String(a.tanggal).localeCompare(String(b.tanggal))); clear(body).appendChild(list.length ? setoranTable(list, { showStudent: true }) : h('div', { class: 'empty' }, icon('check'), h('h3', {}, 'Semua setoran sudah terverifikasi'))); };
+  const fill = () => { const list = batchProgress(bid).pending.map(r => ({ ...r })).sort((a, b) => String(a.tanggal).localeCompare(String(b.tanggal))); clear(body).appendChild(list.length ? setoranTable(list, { showStudent: true }) : h('div', { class: 'empty is-done' }, icon('check'), h('h3', {}, 'Semua setoran sudah terverifikasi'))); };
   fill(); const unsub = store.subscribe(fill);
   const { close } = openModal({ title: 'Menunggu verifikasi', subtitle: batchName(bid), body, size: 'lg', onClose: unsub, footer: [h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => close() }, 'Tutup')] });
 }

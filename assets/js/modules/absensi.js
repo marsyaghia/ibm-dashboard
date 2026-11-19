@@ -230,7 +230,7 @@ const logView = crudView({
     { label: 'Diganti dosen lain', value: rows.filter(r => r.status === 'Diganti dosen lain').length, icon: 'users' },
     { label: 'Tidak hadir', value: rows.filter(r => r.status === 'Tidak hadir').length, icon: 'alert' },
   ],
-  emptyTitle: 'Belum ada absensi tercatat', emptyText: 'Absensi dapat diisi melalui tab Lembar absensi atau langsung dari menu Jadwal Kuliah → Daily.',
+  emptyIcon: 'clipboard', emptyTitle: 'Belum ada absensi tercatat', emptyText: 'Absensi dapat diisi melalui tab Lembar absensi atau langsung dari menu Jadwal Kuliah → Daily.',
 });
 
 /* Urutan tab: Lembar absensi (langsung siap diisi) · Log absensi · Rekap kehadiran */

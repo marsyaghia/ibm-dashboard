@@ -30,7 +30,13 @@ const P = {
 function icon(name, cls = '') { const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('class', `icon ${cls}`.trim()); s.setAttribute('aria-hidden', 'true'); s.innerHTML = P[name] || ''; return s; }
 function toast(msg, type = 'info') {
   const el = h('div', { class: `toast ${type}` }, icon(type === 'bad' ? 'alert' : type === 'ok' ? 'check' : 'info'), h('div', {}, msg));
-  $('toasts').appendChild(el); setTimeout(() => el.remove(), type === 'bad' ? 6500 : 3500);
+  $('toasts').appendChild(el); setTimeout(() => { el.classList.add('leaving'); setTimeout(() => el.remove(), 240); }, type === 'bad' ? 6500 : 3500);
+}
+/* Animasi masuk sekali pakai untuk kartu langkah (CSS .is-entering di app.css) */
+function enter(el) {
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  clearTimeout(el._enterT); el.classList.remove('is-entering'); void el.offsetWidth; el.classList.add('is-entering');
+  el._enterT = setTimeout(() => el.classList.remove('is-entering'), 600);
 }
 const batchLabel = (id) => id ? `Batch ${id.replace(/^B/, '')}` : '';
 const fmtTgl = (iso) => { try { return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' }).format(new Date(iso)); } catch (e) { return String(iso || '').slice(0, 10); } };
@@ -121,6 +127,7 @@ function stepNim() {
     h('h2', {}, h('span', { class: 'stepno' }, '1'), 'Masukkan NIM'),
     h('p', { class: 'lead' }, 'Nama, perusahaan, dan posisi magang akan terisi secara otomatis berdasarkan data program studi. Estimasi waktu pengisian ±3 menit.'),
     form, msg));
+  enter(body);
   setTimeout(() => nim.focus(), 50);
 }
 
@@ -184,6 +191,7 @@ function stepForm(nim, info) {
   const send = h('button', { class: 'btn btn-primary', type: 'button' }, icon('check'), 'Kirim Penilaian');
   const actions = h('div', { class: 'pf-actions' }, h('span', { class: 'muted' }, 'Semua kolom wajib diisi.'), send);
   body.append(sec1, sec2, sec3, sec4, actions);
+  enter(body);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   send.addEventListener('click', async () => {
@@ -203,6 +211,7 @@ function stepForm(nim, info) {
         h('div', { class: 'ok' }, icon('check')), h('h2', {}, 'Terima kasih!'),
         h('p', {}, `Penilaian Anda untuk ${payload.perusahaan} telah berhasil disimpan. Ulasan Anda akan membantu Program Studi IBM dalam mengevaluasi mitra magang serta membantu mahasiswa angkatan berikutnya dalam memilih tempat magang.`),
         h('div', { class: 'pf-actions', style: 'justify-content:center' }, h('button', { class: 'btn btn-ghost', type: 'button', onclick: stepNim }, 'Isi Penilaian untuk Tempat Magang Lain'))));
+      enter(body);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) { toast(err.message || 'Gagal mengirim. Silakan coba kembali.', 'bad'); send.disabled = false; send.replaceChildren(icon('check'), 'Kirim Penilaian'); }
   });

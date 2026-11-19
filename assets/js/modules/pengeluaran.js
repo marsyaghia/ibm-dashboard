@@ -77,7 +77,7 @@ const transaksi = crudView({
     ];
   },
   footer: (rows) => ['Total', '', '', '', '', h('span', { class: 'num' }, fmtIDR(sum(rows.filter(r => r.status !== 'Dibatalkan'), 'jumlah'))), ''],
-  emptyTitle: 'Belum ada pengeluaran tercatat', emptyText: 'Tambahkan transaksi secara manual atau impor dari berkas Excel pencatatan yang tersedia.',
+  emptyIcon: 'expense', emptyTitle: 'Belum ada pengeluaran tercatat', emptyText: 'Tambahkan transaksi secara manual atau impor dari berkas Excel pencatatan yang tersedia.',
 });
 
 /* ---------- Laporan ---------- */

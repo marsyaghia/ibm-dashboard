@@ -66,7 +66,7 @@ export function dataTable({ columns, rows, onRowClick, rowActions, pageSize = 25
 
   function render() {
     clear(wrap);
-    if (!rows.length) { wrap.appendChild(emptyNode || h('div', { class: 'empty' }, icon('layers'), h('h3', {}, 'Belum ada data'), h('p', {}, 'Data yang cocok dengan filter tidak ditemukan.'))); return; }
+    if (!rows.length) { wrap.appendChild(emptyNode || h('div', { class: 'empty' }, icon('layers'), h('h3', {}, 'Tidak ada data untuk ditampilkan'), h('p', {}, 'Ubah pilihan filter, atau tambahkan data baru.'))); return; }
     const all = sorted();
     const chunks = paginate(all);
     const pages = chunks.length;

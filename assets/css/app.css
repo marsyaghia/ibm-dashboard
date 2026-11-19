@@ -208,9 +208,9 @@ img { max-width: 100%; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: var(--ctl-h); padding: 0 14px; border-radius: var(--r-sm);
   border: 1px solid transparent; font-weight: 600; font-size: var(--fs-sm); line-height: 1; cursor: pointer; white-space: nowrap; text-decoration: none !important;
-  transition: background .15s var(--ease), border-color .15s var(--ease), color .15s var(--ease), box-shadow .15s var(--ease);
+  transition: background .15s var(--ease), border-color .15s var(--ease), color .15s var(--ease), box-shadow .15s var(--ease), transform var(--dur-1) var(--ease-out);
 }
-.btn:active { transform: translateY(1px); }
+.btn:active:not([disabled]) { transform: translateY(1px); }
 .btn[disabled] { opacity: .55; cursor: not-allowed; }
 .btn-primary { background: var(--fill-ui); color: #fff; box-shadow: 0 1px 2px rgba(8, 20, 47, .12); }
 .btn-primary:hover { background: var(--fill-ui-hover); }
@@ -1198,6 +1198,85 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   .hero .clock-card .icon { width: 36px; height: 36px; padding: 9px; }
   .rem-list a { padding: 10px; }
 }
+
+/* ---------- 15f. Poles: ritme jarak, tampilan kosong, transisi ----------
+   Ditulis setelah 15e agar berlaku di semua ukuran layar. Jarak dari token --sp-*,
+   gerak dari --ease-out / --dur-* (tokens.css). */
+
+/* Ritme: judul + tab satu kelompok (rapat), lalu jarak lega sebelum isi tab;
+   KPI → tabel dipisah satu blok agar ringkasan dan data tidak menyatu. */
+.page { padding-top: var(--sp-block); }
+.page-head { margin-bottom: var(--sp-block); }
+.module-head { margin-bottom: 0; }
+.tabs { margin: var(--sp-group) 0 var(--sp-block); }
+.tab-body > div > .page-head, .tab-body > .page-head { margin-bottom: var(--sp-group); }
+.kpis { margin-bottom: var(--sp-block); }
+.section-title { margin: var(--sp-section) 0 var(--sp-group); }
+.hero { margin-bottom: var(--sp-block); }
+@media (max-width: 640px) {
+  .tabs { margin-top: 12px; margin-bottom: var(--sp-block); }
+  .kpis { margin-bottom: var(--sp-group); }
+  .kpi .label, .kpi .sub { font-size: var(--fs-xs); }   /* minimal 12px di HP */
+}
+
+/* Permukaan browser ikut tema: scrollbar, caret, kontrol bawaan */
+html { scrollbar-color: var(--scroll-thumb) transparent; accent-color: var(--fill-ui); }
+.input, .textarea { caret-color: var(--link-2); }
+
+/* Tampilan kosong: ikon dalam lingkaran pastel (bahasa visual KPI), judul tinta, teks terukur.
+   .is-filtered = data ada tapi tersembunyi filter (abu, ajakan "Hapus filter");
+   .is-done = semua beres (hijau). */
+.empty { display: flex; flex-direction: column; align-items: center; padding: clamp(36px, 5vw, 56px) 20px; }
+.empty > .icon { width: 52px; height: 52px; padding: 15px; margin: 0 0 14px; border-radius: 50%; background: var(--t-blue-bg); color: var(--t-blue); stroke-width: 1.7; }
+.empty.is-filtered > .icon { background: var(--neutral-bg); color: var(--neutral); }
+.empty.is-done > .icon { background: var(--t-green-bg); color: var(--t-green); }
+.empty h3 { color: var(--ink); font-size: var(--fs-md); margin: 0; text-wrap: balance; }
+.empty p { margin: 6px auto 0; max-width: 46ch; font-size: var(--fs-sm); line-height: 1.55; text-wrap: pretty; }
+.empty > .btn, .empty-actions { margin-top: 18px; }
+.empty-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.card-body > .empty, .card-pad > .empty { padding-top: 24px; padding-bottom: 24px; }
+.filter-clear { color: var(--link-2); }
+.toolbar .filter-clear:not(.hidden) { margin-left: auto; }
+.toolbar .filter-clear:not(.hidden) + .count { margin-left: 0; }
+/* HP: Hapus filter hanya di dalam panel Filter yang terbuka (saat tertutup, angka pada tombol
+   Filter & tampilan kosong sudah memberi tanda), sebaris dengan jumlah baris. */
+@media (max-width: 640px) {
+  .toolbar.has-filters:not(.filters-open) .filter-clear { display: none; }
+  .toolbar.filters-open .count { order: 2; width: auto; flex: 1 1 auto; align-self: center; }
+  .toolbar .filter-clear { order: 3; }
+}
+
+/* Transisi masuk: isi halaman/tab naik 6px & memudar, berurutan sesuai urutan baca.
+   Kelas dipasang sesaat oleh enter() (ui.js) lalu dilepas, jadi render ulang (filter, ketik)
+   tidak ikut beranimasi dan tidak ada transform yang tertinggal. */
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+.is-entering > * { animation: rise var(--dur-3) var(--ease-out) backwards; }
+.is-entering > :nth-child(2) { animation-delay: 40ms; }
+.is-entering > :nth-child(3) { animation-delay: 80ms; }
+.is-entering > :nth-child(n+4) { animation-delay: 120ms; }
+
+/* Popup: masuk dan keluar sama halusnya; latar memudar */
+@keyframes pop-out { to { opacity: 0; transform: translateY(6px) scale(.985); } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes fade-out { to { opacity: 0; } }
+.modal[open] { animation: pop var(--dur-2) var(--ease-out); }
+dialog[open]::backdrop { animation: fade-in var(--dur-2) var(--ease-out); }
+.modal.closing { animation: pop-out var(--dur-1) ease-in forwards; pointer-events: none; }
+.modal.closing::backdrop { animation: fade-out var(--dur-1) ease-in forwards; }
+.toast { animation: pop var(--dur-2) var(--ease-out); transition: opacity var(--dur-2) ease-in, transform var(--dur-2) ease-in; }
+.toast.leaving { opacity: 0; transform: translateY(6px); }
+
+/* Pengingat "Tampilkan lainnya": baris tambahan muncul berurutan, chevron berputar */
+.rem-list li.rem-extra { animation: rise var(--dur-3) var(--ease-out) backwards; }
+.rem-list li.rem-extra[hidden] { display: none; }
+
+/* Dashboard: jam jadi bagian blok judul (bukan kartu yang bersaing dengan isi);
+   kolom waktu jadwal harian lebar tetap agar titik garis waktu sejajar walau jam kosong. */
+.hero .clock-card { background: transparent; border-color: transparent; box-shadow: none; padding: 0; }
+.cal-agenda .time-cell { flex: 0 0 72px; }
+.cal-day.out { opacity: 1; color: var(--placeholder); }
+.cal-day.out .dots { opacity: .45; }
+@media (max-width: 640px) { .hero .clock-card { padding: 4px 0 0; } }
 
 /* ---------- 16. Cetak ---------- */
 @media print {

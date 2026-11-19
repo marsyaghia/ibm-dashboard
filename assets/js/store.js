@@ -101,7 +101,9 @@ class SupabaseAdapter {
     const results = await Promise.all(COLLECTIONS.map(async (c) => {
       const table = SCHEMA[c].table; const rows = []; let from = 0;
       for (;;) {
-        const { data, error } = await this.client.from(table).select('*').order('created_at', { ascending: true }).range(from, from + 999);
+        // Urutan harus unik agar paginasi stabil: baris hasil impor massal punya created_at yang sama,
+        // jadi tanpa "id" sebagai pemutus seri, baris bisa terlewat/terulang saat tabel > 1000 baris.
+        const { data, error } = await this.client.from(table).select('*').order('created_at', { ascending: true }).order('id', { ascending: true }).range(from, from + 999);
         if (error) throw new Error(`Gagal memuat tabel ${table}: ${error.message}`);
         rows.push(...data); if (data.length < 1000) break; from += 1000;
       }

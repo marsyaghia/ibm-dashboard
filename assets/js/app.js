@@ -1,7 +1,7 @@
 /* =========================================================================
    APP — kerangka (sidebar, topbar), router, tema, bahasa, login superadmin.
    ========================================================================= */
-import { h, icon, clear, toast, greeting, nowWIB, openModal, logo } from './ui.js';
+import { h, icon, clear, toast, greeting, nowWIB, openModal, logo, enter } from './ui.js';
 import { store } from './store.js';
 import { CONFIG } from './config.js';
 import { lang, setLang, startI18n, t } from './i18n.js';
@@ -165,6 +165,7 @@ function route() {
   try { current = r.mod.mount(els.page) || null; }
   catch (e) { console.error(e); els.page.appendChild(h('div', { class: 'note warn' }, icon('alert'), h('div', {}, 'Halaman gagal dimuat: ' + e.message))); }
   els.closeSide && els.closeSide(); window.scrollTo(0, 0);
+  enter(els.page);
 }
 
 /* ---------- Layar login ---------- */

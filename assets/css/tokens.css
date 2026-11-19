@@ -88,8 +88,22 @@
   --row-hover:    #F5F8FD;
   --group-bg:     #EEF2F9;            /* baris pembatas grup tabel (mis. Semester 1 / Batch 1) — biru lembut, teks --link */
   --shadow-card:  0 1px 2px rgba(15, 26, 51, .04), 0 4px 16px -6px rgba(15, 26, 51, .06);
-  --placeholder:  #8A95AD;
+  --placeholder:  #687390;            /* ≥ 4.5:1 di atas --surface & --surface-sunk */
+  --scroll-thumb: #C3CDE2;
   --ring:         rgba(42, 82, 160, .16);
+
+  /* Ritme jarak: rapat di dalam satu kelompok, lega di antara blok
+     (judul → tab → isi tab → KPI → tabel; judul bagian Dashboard memakai --sp-section) */
+  --sp-tight:   8px;
+  --sp-group:   16px;
+  --sp-block:   clamp(20px, 1rem + .9vw, 28px);
+  --sp-section: clamp(28px, 1.25rem + 1.6vw, 44px);
+
+  /* Gerak: ease-out eksponensial, singkat; semua mati otomatis bila prefers-reduced-motion */
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --dur-1: 120ms;   /* hover, tekan, keluar */
+  --dur-2: 200ms;   /* popup masuk, toast */
+  --dur-3: 320ms;   /* isi halaman/tab masuk */
   --line-soft:    #EEF1F6;            /* garis antar-baris tabel */
   --scrim:        rgba(8, 20, 47, .45);
 
@@ -155,7 +169,8 @@
   --surface-sunk: #0D1630;
   --row-hover:    #16224A;
   --group-bg:     #1B2852;
-  --placeholder:  #6F7C9B;
+  --placeholder:  #7F8BA8;            /* ≥ 4.5:1 di atas --surface gelap */
+  --scroll-thumb: #2E3D66;
   --ring:         rgba(165, 190, 242, .2);
   --line-soft:    #1E2B50;
   --scrim:        rgba(3, 8, 20, .65);

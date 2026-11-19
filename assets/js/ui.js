@@ -258,7 +258,18 @@ export function toast(msg, type = 'info') {
   const box = document.getElementById('toasts');
   const el = h('div', { class: `toast ${type}` }, icon(type === 'bad' ? 'alert' : type === 'ok' ? 'check' : 'info'), h('div', {}, msg));
   box.appendChild(el);
-  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 320); }, type === 'bad' ? 6000 : 3200);
+  setTimeout(() => { el.classList.add('leaving'); setTimeout(() => el.remove(), 240); }, type === 'bad' ? 6000 : 3200);
+}
+
+/* ---------- Gerak ---------- */
+export const calmMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+/** Animasi masuk sekali pakai untuk anak-anak el (CSS .is-entering, app.css 15f).
+    Kelas dilepas setelah selesai agar render ulang berikutnya tidak beranimasi. */
+export function enter(el) {
+  if (!el || calmMotion()) return;
+  clearTimeout(el._enterT);
+  el.classList.remove('is-entering'); void el.offsetWidth; el.classList.add('is-entering');
+  el._enterT = setTimeout(() => el.classList.remove('is-entering'), 560);
 }
 
 /* ---------- Dialog (popup di tengah layar) ---------- */
@@ -269,7 +280,16 @@ function makeDialog({ title, subtitle, body, footer, onClose, size = 'md' }) {
     h('div', { class: 'dlg-body' }, body),
     footer ? h('div', { class: 'dlg-foot' }, footer) : null,
   );
-  const close = () => { if (dlg.open) dlg.close(); };
+  // Tutup dengan animasi keluar singkat (Esc juga), lalu dialog benar-benar ditutup
+  const close = () => {
+    if (!dlg.open || dlg.classList.contains('closing')) return;
+    if (calmMotion()) { dlg.close(); return; }
+    dlg.classList.add('closing');
+    const done = () => { if (dlg.open) dlg.close(); };
+    dlg.addEventListener('animationend', (e) => { if (e.target === dlg) done(); }, { once: true });
+    setTimeout(done, 200);
+  };
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); close(); });
   closeBtn.addEventListener('click', close);
   dlg.addEventListener('close', () => { dlg.remove(); onClose && onClose(); });
   dlg.addEventListener('mousedown', (e) => { if (e.target === dlg) dlg._down = true; });
@@ -336,14 +356,22 @@ export function docLink(att, fallback = 'Belum ada') {
 }
 
 /* ---------- Kosong ---------- */
-export const emptyState = (title, text, action) => h('div', { class: 'empty' }, icon('layers'), h('h3', {}, title), text ? h('p', {}, text) : null, action || null);
+export const emptyState = (title, text, action, ic = 'layers') => h('div', { class: 'empty' }, icon(ic), h('h3', {}, title), text ? h('p', {}, text) : null, action || null);
 
-/* ---------- Tab ---------- */
+/* ---------- Tab ----------
+   Tombol tab memakai roving tabindex: Tab masuk ke tab aktif, ←/→/Home/End berpindah tab. */
 export function tabs(items, active, onChange) {
   const bar = h('div', { class: 'tabs', role: 'tablist' });
-  items.forEach(it => bar.appendChild(h('button', { type: 'button', role: 'tab', 'aria-selected': String(it.id === active), onclick: () => onChange(it.id) }, tc(it.label))));
+  items.forEach(it => bar.appendChild(h('button', { type: 'button', role: 'tab', 'data-tab': it.id, 'aria-selected': String(it.id === active), tabindex: it.id === active ? '0' : '-1', onclick: () => onChange(it.id) }, tc(it.label))));
+  bar.addEventListener('keydown', (e) => {
+    const btns = [...bar.querySelectorAll('[role="tab"]')]; const i = btns.indexOf(document.activeElement); if (i < 0) return;
+    const j = e.key === 'ArrowRight' ? (i + 1) % btns.length : e.key === 'ArrowLeft' ? (i - 1 + btns.length) % btns.length : e.key === 'Home' ? 0 : e.key === 'End' ? btns.length - 1 : -1;
+    if (j < 0) return;
+    e.preventDefault(); btns[j].focus(); btns[j].click();
+  });
   return bar;
 }
+const syncTabs = (bar, active) => bar.querySelectorAll('[role="tab"]').forEach(b => { const on = b.dataset.tab === active; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; });
 
 /** Judul halaman menu (dipakai di atas tab): hanya eyebrow + judul besar, tanpa subtitle.
     (opsi description sengaja diabaikan; keterangan ada di subtitle masing-masing tab) */
@@ -362,17 +390,33 @@ export function tabPage(root, items, opts = {}) {
   const key = opts.key; const remember = opts.remember !== false;
   let tab = (remember && key ? pref.get(key, opts.def) : opts.def) || items[0].id;
   if (!items.some(x => x.id === tab)) tab = opts.def || items[0].id;
-  let inner = null; const body = h('div', { class: 'tab-body' });
+  let inner = null; let head = null; let bar = null;
+  const body = h('div', { class: 'tab-body', role: 'tabpanel' });
   const ctx = {
     get tab() { return tab; },
-    go(id) { tab = id; if (remember && key) pref.set(key, id); draw(); window.scrollTo(0, 0); return inner; },
+    go(id) {
+      const changed = id !== tab; tab = id; if (remember && key) pref.set(key, id);
+      draw();
+      if (changed) {
+        enter(body);
+        // Pindah tab tidak melompat ke atas halaman; hanya gulir bila bilah tab sudah lewat dari layar
+        const off = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--topbar-h')) || 64) + 12;
+        const top = bar.getBoundingClientRect().top;
+        if (top < off) window.scrollTo({ top: window.scrollY + top - off });
+      }
+      return inner;
+    },
     redraw: () => draw(),
   };
+  // Judul & bilah tab dibuat sekali; saat berpindah tab hanya judul (tombol aksi bisa berubah)
+  // dan isi tab yang diganti, sehingga fokus keyboard tetap di tombol tab.
   function draw() {
-    inner && inner.destroy && inner.destroy(); clear(root);
-    root.append(moduleHead({ eyebrow: opts.eyebrow, title: opts.title, actions: opts.actions ? opts.actions(ctx) : null }),
-      tabs(items, tab, (id) => ctx.go(id)));
-    clear(body); root.appendChild(body);
+    inner && inner.destroy && inner.destroy();
+    const nextHead = moduleHead({ eyebrow: opts.eyebrow, title: opts.title, actions: opts.actions ? opts.actions(ctx) : null });
+    if (!bar) { clear(root); bar = tabs(items, tab, (id) => ctx.go(id)); root.append(nextHead, bar, body); }
+    else { head.replaceWith(nextHead); syncTabs(bar, tab); }
+    head = nextHead;
+    clear(body);
     inner = (items.find(x => x.id === tab) || items[0]).fn(body, ctx) || null;
   }
   draw();

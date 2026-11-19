@@ -189,7 +189,7 @@ const penempatanCfg = (bid) => ({
   },
   aliases: { student_id: ['Nama', 'Nama Mahasiswa', 'Nama Lengkap', 'Full Name'], perusahaan: ['Accepted', 'Perusahaan', 'Tempat Magang', 'Diterima'], kandidat: ['Place of Internship', 'Tempat Dilamar'], posisi: ['Position', 'Posisi'], durasi: ['Duration', 'Durasi'], mulai: ['Start', 'Mulai', 'Tanggal Mulai'], selesai: ['End', 'Selesai', 'Tanggal Selesai'], kota: ['City', 'Kota'], panggilan: ['Nick Name', 'Panggilan'] },
   importNote: 'Kolom yang digunakan: Batch, Nama/NIM mahasiswa, Perusahaan, Posisi, Kota, Durasi, Mulai, Selesai, dan Status (Proses / Diterima / Berjalan / Selesai / Dihentikan). Data mahasiswa dicocokkan secara otomatis berdasarkan NIM atau nama.',
-  emptyTitle: 'Belum ada data magang', emptyText: 'Tambahkan data tempat magang mahasiswa atau impor dari sheet Data Magang.',
+  emptyIcon: 'briefcase', emptyTitle: 'Belum ada data magang', emptyText: 'Tambahkan data tempat magang mahasiswa atau impor dari sheet Data Magang.',
 });
 
 /* =================== Penilaian per perusahaan =================== */
@@ -333,7 +333,7 @@ const responCfg = (bid) => ({
   },
   aliases: { nama_lengkap: ['Nama', 'Nama Lengkap'], perusahaan: ['Perusahaan', 'Tempat Magang'], rating_keseluruhan: ['Rating', 'Bintang', 'Rating Keseluruhan'] },
   importNote: 'Susunan kolom mengikuti template penilaian_magang.csv. Rating diisi dengan angka 1–5.',
-  emptyTitle: 'Belum ada penilaian', emptyText: 'Bagikan tautan formulir penilaian (tab Link form) kepada mahasiswa yang sedang atau telah menyelesaikan magang.',
+  emptyIcon: 'message', emptyTitle: 'Belum ada penilaian', emptyText: 'Bagikan tautan formulir penilaian (tab Link form) kepada mahasiswa yang sedang atau telah menyelesaikan magang.',
 });
 
 /* =================== Link form per batch =================== */
